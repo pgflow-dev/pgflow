@@ -6,15 +6,13 @@ import type {
   StepOutput,
 } from '@pgflow/dsl';
 import type { RunRow, StepStateRow } from '@pgflow/core';
-import {
-  FlowStepStatus,
-  FlowRunStatus,
-} from './types.js';
+import { FlowStepStatus, FlowRunStatus } from './types.js';
 import type {
   BroadcastRunEvent,
   BroadcastStepEvent,
   FlowRunEvent,
   StepEvent,
+  SkipReason,
 } from './types.js';
 
 /**
@@ -60,7 +58,7 @@ export function toTypedRunEvent<TFlow extends AnyFlow>(
  */
 export function toTypedStepEvent<
   TFlow extends AnyFlow,
-  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 >(evt: BroadcastStepEvent): StepEvent<TFlow, TStepSlug> {
   switch (evt.status) {
     case FlowStepStatus.Started:
@@ -88,6 +86,15 @@ export function toTypedStepEvent<
         status: FlowStepStatus.Failed,
         failed_at: evt.failed_at,
         error_message: evt.error_message,
+      };
+    case FlowStepStatus.Skipped:
+      return {
+        event_type: 'step:skipped',
+        run_id: evt.run_id,
+        step_slug: evt.step_slug as TStepSlug,
+        status: FlowStepStatus.Skipped,
+        skipped_at: evt.skipped_at,
+        skip_reason: evt.skip_reason,
       };
   }
 }
@@ -137,7 +144,7 @@ export function runRowToTypedEvent<TFlow extends AnyFlow>(
  */
 export function stepStateRowToTypedEvent<
   TFlow extends AnyFlow,
-  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 >(row: StepStateRow): StepEvent<TFlow, TStepSlug> {
   switch (row.status) {
     case 'created':
@@ -166,6 +173,15 @@ export function stepStateRowToTypedEvent<
         status: FlowStepStatus.Failed,
         failed_at: row.failed_at!,
         error_message: row.error_message || 'Step failed',
+      };
+    case 'skipped':
+      return {
+        event_type: 'step:skipped',
+        run_id: row.run_id,
+        step_slug: row.step_slug as TStepSlug,
+        status: FlowStepStatus.Skipped,
+        skipped_at: row.skipped_at!,
+        skip_reason: (row.skip_reason as SkipReason) ?? 'condition_unmet',
       };
     default:
       throw new Error(`Unknown step status: ${row.status}`);

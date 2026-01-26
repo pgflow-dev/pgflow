@@ -10,6 +10,7 @@ import {
   createStepStartedEvent,
   createStepCompletedEvent,
   createStepFailedEvent,
+  createStepSkippedEvent,
 } from '../helpers/event-factories';
 import { createFlowStep } from '../helpers/state-factories';
 // Test scenarios have been inlined for clarity
@@ -161,6 +162,74 @@ describe('FlowStep', () => {
       // They only have error_message as strings (already verified above)
     });
 
+    test('handles skipped event correctly', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+      });
+
+      const skippedEvent = createStepSkippedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        skip_reason: 'condition_unmet',
+      });
+
+      // Set up event tracking
+      const allTracker = createEventTracker();
+      const skippedTracker = createEventTracker();
+      step.on('*', allTracker.callback);
+      step.on('skipped', skippedTracker.callback);
+
+      // Update state and verify
+      const result = step.updateState(skippedEvent);
+      expect(result).toBe(true);
+
+      // Check state was updated correctly
+      expect(step.status).toBe(FlowStepStatus.Skipped);
+      expect(step.skipped_at).toBeInstanceOf(Date);
+      expect(step.skip_reason).toBe('condition_unmet');
+      // Skipped steps have null output per Q1 design decision
+      expect(step.output).toBeNull();
+
+      // Verify events were emitted with comprehensive matchers
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(skippedTracker).toHaveReceivedEvent('step:skipped');
+      expect(allTracker).toHaveReceivedEvent('step:skipped', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Skipped,
+        skip_reason: 'condition_unmet',
+      });
+      expect(allTracker).toNotHaveReceivedEvent('step:completed');
+      expect(allTracker).toNotHaveReceivedEvent('step:failed');
+      expect(allTracker).toNotHaveReceivedEvent('step:started');
+    });
+
+    test('handles skipped event with different skip reasons', () => {
+      const skipReasons = [
+        'condition_unmet',
+        'handler_failed',
+        'dependency_skipped',
+      ] as const;
+
+      for (const skipReason of skipReasons) {
+        const step = createFlowStep({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG as any,
+        });
+
+        const skippedEvent = createStepSkippedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          skip_reason: skipReason,
+        });
+
+        const result = step.updateState(skippedEvent);
+        expect(result).toBe(true);
+        expect(step.skip_reason).toBe(skipReason);
+      }
+    });
+
     test('handles events with missing fields gracefully', () => {
       const step = new FlowStep({
         run_id: RUN_ID,
@@ -172,6 +241,8 @@ describe('FlowStep', () => {
         started_at: null,
         completed_at: null,
         failed_at: null,
+        skipped_at: null,
+        skip_reason: null,
       });
 
       // Incomplete failed event without timestamps
@@ -179,12 +250,12 @@ describe('FlowStep', () => {
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Failed,
-        error_message: 'Something went wrong'
+        error_message: 'Something went wrong',
       };
-      
+
       // Should still update the state correctly
       step.updateState(incompleteEvent as any);
-      
+
       expect(step.status).toBe(FlowStepStatus.Failed);
       expect(step.failed_at).toBeInstanceOf(Date);
       expect(step.error_message).toBe('Something went wrong');
@@ -280,14 +351,14 @@ describe('FlowStep', () => {
         error_message: 'Attempt to override completed step',
       });
       const result = step.updateState(failedEvent);
-      
+
       // Should not update terminal state
       expect(result).toBe(false);
       expect(step.status).toBe(FlowStepStatus.Completed);
-      
+
       // Output should remain unchanged
       expect(step.output).toEqual({ step_result: 'success' });
-      
+
       // Error fields should remain null
       expect(step.error).toBeNull();
       expect(step.error_message).toBeNull();
@@ -316,12 +387,58 @@ describe('FlowStep', () => {
 
       // Try to update with a new completed event
       const result = step.updateState(newCompletedEvent);
-      
+
       // Should not update terminal state even with same status
       expect(result).toBe(false);
-      
+
       // Output should remain unchanged
       expect(step.output).toEqual({ step_result: 'success' });
+    });
+
+    test('protects skipped terminal state from subsequent updates', () => {
+      // Create a step in skipped state
+      const step = new FlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Skipped,
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: null,
+        completed_at: null,
+        failed_at: null,
+        skipped_at: new Date(),
+        skip_reason: 'condition_unmet',
+      });
+
+      // Try to update to started state
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      const result = step.updateState(startedEvent);
+
+      // Should not update terminal skipped state
+      expect(result).toBe(false);
+      expect(step.status).toBe(FlowStepStatus.Skipped);
+
+      // Try to update to completed state
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output: { result: 'success' },
+      });
+      expect(step.updateState(completedEvent)).toBe(false);
+      expect(step.status).toBe(FlowStepStatus.Skipped);
+
+      // Try to update to failed state
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: 'Attempt to override skipped step',
+      });
+      expect(step.updateState(failedEvent)).toBe(false);
+      expect(step.status).toBe(FlowStepStatus.Skipped);
     });
   });
 
@@ -352,7 +469,10 @@ describe('FlowStep', () => {
 
       // Verify exact event sequence
       expect(tracker).toHaveReceivedTotalEvents(2);
-      expect(tracker).toHaveReceivedEventSequence(['step:started', 'step:completed']);
+      expect(tracker).toHaveReceivedEventSequence([
+        'step:started',
+        'step:completed',
+      ]);
       expect(tracker).toHaveReceivedInOrder('step:started', 'step:completed');
       expect(tracker).toNotHaveReceivedEvent('step:failed');
 
@@ -396,7 +516,10 @@ describe('FlowStep', () => {
 
       // Verify exact event sequence
       expect(tracker).toHaveReceivedTotalEvents(2);
-      expect(tracker).toHaveReceivedEventSequence(['step:started', 'step:failed']);
+      expect(tracker).toHaveReceivedEventSequence([
+        'step:started',
+        'step:failed',
+      ]);
       expect(tracker).toHaveReceivedInOrder('step:started', 'step:failed');
       expect(tracker).toNotHaveReceivedEvent('step:completed');
 
@@ -406,6 +529,41 @@ describe('FlowStep', () => {
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Failed,
         error_message: 'Handler threw exception',
+      });
+    });
+
+    test('skipped step: skipped ONLY (no started event)', () => {
+      // Skipped steps go directly from created to skipped without starting
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      // Simulate skipped event (no started event for skipped steps)
+      const skippedEvent = createStepSkippedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        skip_reason: 'condition_unmet',
+      });
+      step.updateState(skippedEvent);
+
+      // Verify ONLY skipped event was emitted
+      expect(tracker).toHaveReceivedTotalEvents(1);
+      expect(tracker).toNotHaveReceivedEvent('step:started');
+      expect(tracker).toNotHaveReceivedEvent('step:completed');
+      expect(tracker).toNotHaveReceivedEvent('step:failed');
+      expect(tracker).toHaveReceivedEvent('step:skipped');
+
+      // Verify skipped payload
+      expect(tracker).toHaveReceivedEvent('step:skipped', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Skipped,
+        skip_reason: 'condition_unmet',
       });
     });
 
@@ -589,7 +747,7 @@ describe('FlowStep', () => {
 
       // Create a promise that should resolve when the status is updated
       const waitPromise = step.waitForStatus(FlowStepStatus.Completed);
-      
+
       // Update the status after a delay
       setTimeout(() => {
         const completedEvent = createStepCompletedEvent({
@@ -602,7 +760,7 @@ describe('FlowStep', () => {
 
       // Advance timers to trigger the update
       await advanceTimersAndFlush(1000);
-      
+
       // Wait for the promise to resolve
       const result = await waitPromise;
       expect(result).toBe(step);
@@ -623,14 +781,18 @@ describe('FlowStep', () => {
       });
 
       // Should timeout after 5000ms (default is 5min, but we'll use a shorter timeout)
-      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
-      
+      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, {
+        timeoutMs: 5000,
+      });
+
       // Immediately add catch handler to avoid unhandled rejection
-      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
-      
+      const expectPromise = expect(waitPromise).rejects.toThrow(
+        /Timeout waiting for step/
+      );
+
       // Advance timers past the timeout
       await advanceTimersAndFlush(5001);
-      
+
       // Wait for the expectation to complete
       await expectPromise;
     });
@@ -651,7 +813,7 @@ describe('FlowStep', () => {
       // Should resolve immediately since already in completed status
       const waitPromise = step.waitForStatus(FlowStepStatus.Completed);
       const result = await waitPromise;
-      
+
       expect(result).toBe(step);
     });
 
@@ -669,19 +831,21 @@ describe('FlowStep', () => {
       });
 
       const controller = new AbortController();
-      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { 
-        signal: controller.signal 
+      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, {
+        signal: controller.signal,
       });
-      
+
       // Immediately add catch handler to avoid unhandled rejection
-      const expectPromise = expect(waitPromise).rejects.toThrow(/Aborted waiting for step/);
-      
+      const expectPromise = expect(waitPromise).rejects.toThrow(
+        /Aborted waiting for step/
+      );
+
       // Abort the operation
       setTimeout(() => controller.abort(), 1000);
-      
+
       // Advance timers to trigger the abort
       await advanceTimersAndFlush(1000);
-      
+
       // Wait for the expectation to complete
       await expectPromise;
     });
@@ -700,8 +864,10 @@ describe('FlowStep', () => {
       });
 
       // Create a promise that should resolve if status is reached before timeout
-      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
-      
+      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, {
+        timeoutMs: 5000,
+      });
+
       // Update status before timeout
       setTimeout(() => {
         const completedEvent = createStepCompletedEvent({
@@ -711,10 +877,10 @@ describe('FlowStep', () => {
         });
         step.updateState(completedEvent);
       }, 1000);
-      
+
       // Advance timers partway
       await advanceTimersAndFlush(1000);
-      
+
       // The promise should resolve
       const result = await waitPromise;
       expect(result).toBe(step);
@@ -736,7 +902,7 @@ describe('FlowStep', () => {
 
       // Test waiting for started status
       const startedPromise = step.waitForStatus(FlowStepStatus.Started);
-      
+
       // Update to started
       setTimeout(() => {
         const startedEvent = createStepStartedEvent({
@@ -745,15 +911,15 @@ describe('FlowStep', () => {
         });
         step.updateState(startedEvent);
       }, 1000);
-      
+
       await advanceTimersAndFlush(1000);
-      
+
       const startedResult = await startedPromise;
       expect(startedResult.status).toBe(FlowStepStatus.Started);
-      
+
       // Test waiting for failed status
       const failedPromise = step.waitForStatus(FlowStepStatus.Failed);
-      
+
       // Update to failed
       setTimeout(() => {
         const failedEvent = createStepFailedEvent({
@@ -763,9 +929,9 @@ describe('FlowStep', () => {
         });
         step.updateState(failedEvent);
       }, 1000);
-      
+
       await advanceTimersAndFlush(1000);
-      
+
       const failedResult = await failedPromise;
       expect(failedResult.status).toBe(FlowStepStatus.Failed);
     });
@@ -780,8 +946,12 @@ describe('FlowStep', () => {
       });
 
       // Start waiting for 'started' status
-      const waitPromise = step.waitForStatus(FlowStepStatus.Started, { timeoutMs: 2000 });
-      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
+      const waitPromise = step.waitForStatus(FlowStepStatus.Started, {
+        timeoutMs: 2000,
+      });
+      const expectPromise = expect(waitPromise).rejects.toThrow(
+        /Timeout waiting for step/
+      );
 
       // Simulate empty map: goes directly to completed WITHOUT started event
       setTimeout(() => {
@@ -812,7 +982,9 @@ describe('FlowStep', () => {
       });
 
       // Start waiting for completed
-      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, {
+        timeoutMs: 5000,
+      });
 
       // Simulate empty map: goes directly to completed
       setTimeout(() => {
@@ -841,7 +1013,9 @@ describe('FlowStep', () => {
       });
 
       // Normal steps should successfully wait for 'started'
-      const waitPromise = step.waitForStatus(FlowStepStatus.Started, { timeoutMs: 5000 });
+      const waitPromise = step.waitForStatus(FlowStepStatus.Started, {
+        timeoutMs: 5000,
+      });
 
       // Simulate normal step: sends started event
       setTimeout(() => {
@@ -857,6 +1031,36 @@ describe('FlowStep', () => {
       // Should resolve successfully
       const result = await waitPromise;
       expect(result.status).toBe(FlowStepStatus.Started);
+    });
+
+    test('waitForStatus(Skipped) resolves when step is skipped', async () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      // Start waiting for 'skipped' status
+      const waitPromise = step.waitForStatus(FlowStepStatus.Skipped, {
+        timeoutMs: 5000,
+      });
+
+      // Simulate skipped event
+      setTimeout(() => {
+        const skippedEvent = createStepSkippedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          skip_reason: 'condition_unmet',
+        });
+        step.updateState(skippedEvent);
+      }, 100);
+
+      await advanceTimersAndFlush(100);
+
+      // Should resolve successfully
+      const result = await waitPromise;
+      expect(result.status).toBe(FlowStepStatus.Skipped);
+      expect(result.skip_reason).toBe('condition_unmet');
     });
   });
 });
