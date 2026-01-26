@@ -1,12 +1,12 @@
--- Test: fail_task with when_failed='skip-cascade' skips step and cascades to dependents
+-- Test: fail_task with when_exhausted='skip-cascade' skips step and cascades to dependents
 begin;
 select plan(7);
 select pgflow_tests.reset_db();
 
--- SETUP: Create a flow with when_failed='skip-cascade'
+-- SETUP: Create a flow with when_exhausted='skip-cascade'
 -- step_a (will fail) -> step_b (depends on a) -> step_c (depends on b)
 select pgflow.create_flow('test_flow');
-select pgflow.add_step('test_flow', 'step_a', max_attempts => 0, when_failed => 'skip-cascade');
+select pgflow.add_step('test_flow', 'step_a', max_attempts => 0, when_exhausted => 'skip-cascade');
 select pgflow.add_step('test_flow', 'step_b', ARRAY['step_a']);
 select pgflow.add_step('test_flow', 'step_c', ARRAY['step_b']);
 select pgflow.add_step('test_flow', 'step_d');  -- Independent step to verify run continues
@@ -19,7 +19,7 @@ select pgflow_tests.poll_and_fail('test_flow');
 select is(
   (select status from pgflow.step_states where flow_slug = 'test_flow' and step_slug = 'step_a'),
   'skipped',
-  'step_a should be marked as skipped when when_failed=skip-cascade'
+  'step_a should be marked as skipped when when_exhausted=skip-cascade'
 );
 
 -- TEST 2: step_a skip reason should be handler_failed
@@ -61,7 +61,7 @@ select is(
 select isnt(
   (select status from pgflow.runs where flow_slug = 'test_flow'),
   'failed',
-  'Run should NOT be marked as failed when when_failed=skip-cascade'
+  'Run should NOT be marked as failed when when_exhausted=skip-cascade'
 );
 
 select finish();

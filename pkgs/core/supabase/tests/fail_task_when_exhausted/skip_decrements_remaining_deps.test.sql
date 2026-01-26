@@ -1,11 +1,11 @@
--- Test: when_failed='skip' (non-cascade) should decrement remaining_deps on dependent steps
+-- Test: when_exhausted='skip' (non-cascade) should decrement remaining_deps on dependent steps
 -- This mirrors the behavior in cascade_resolve_conditions.sql for when_unmet='skip'
 --
 -- Flow structure:
---   step_a (when_failed='skip', max_attempts=0) → step_b
+--   step_a (when_exhausted='skip', max_attempts=0) → step_b
 --
 -- Expected behavior:
---   1. step_a fails, gets skipped (when_failed='skip')
+--   1. step_a fails, gets skipped (when_exhausted='skip')
 --   2. step_b.remaining_deps decremented from 1 to 0
 --   3. step_b becomes ready and starts
 --   4. Run continues (status != 'failed')
@@ -14,9 +14,9 @@ begin;
 select plan(5);
 select pgflow_tests.reset_db();
 
--- Create flow with step_a → step_b where step_a has when_failed='skip' and max_attempts=0
+-- Create flow with step_a → step_b where step_a has when_exhausted='skip' and max_attempts=0
 select pgflow.create_flow('skip_test');
-select pgflow.add_step('skip_test', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('skip_test', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 select pgflow.add_step('skip_test', 'step_b', array['step_a']);
 
 -- Start the flow

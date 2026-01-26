@@ -1,7 +1,7 @@
--- Test: when_failed='skip' on the only step should complete the run
+-- Test: when_exhausted='skip' on the only step should complete the run
 --
 -- Flow structure:
---   step_a (when_failed='skip', max_attempts=0) - only step in flow
+--   step_a (when_exhausted='skip', max_attempts=0) - only step in flow
 --
 -- Expected behavior:
 --   1. step_a fails and gets skipped
@@ -14,7 +14,7 @@ select pgflow_tests.reset_db();
 
 -- Create flow with single step
 select pgflow.create_flow('single_skip');
-select pgflow.add_step('single_skip', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('single_skip', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 
 -- Start the flow
 select pgflow.start_flow('single_skip', '"input"'::jsonb);

@@ -1,7 +1,7 @@
--- Test: when_failed='skip' decrements remaining_deps on MULTIPLE dependent steps
+-- Test: when_exhausted='skip' decrements remaining_deps on MULTIPLE dependent steps
 --
 -- Flow structure (diamond pattern):
---   step_a (when_failed='skip', max_attempts=0)
+--   step_a (when_exhausted='skip', max_attempts=0)
 --     ├── step_b (depends on step_a)
 --     └── step_c (depends on step_a)
 --
@@ -16,7 +16,7 @@ select pgflow_tests.reset_db();
 
 -- Create diamond flow: step_a -> step_b, step_a -> step_c
 select pgflow.create_flow('diamond_skip');
-select pgflow.add_step('diamond_skip', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('diamond_skip', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 select pgflow.add_step('diamond_skip', 'step_b', array['step_a']);
 select pgflow.add_step('diamond_skip', 'step_c', array['step_a']);
 
