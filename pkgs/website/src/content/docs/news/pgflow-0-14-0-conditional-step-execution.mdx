@@ -1,0 +1,154 @@
+---
+draft: false
+title: 'pgflow 0.14.0: Conditional Step Execution'
+description: 'Run steps based on input patterns with if/ifNot conditions and handle failures gracefully with retriesExhausted.'
+date: 2026-01-21
+authors:
+  - jumski
+tags:
+  - release
+  - dsl
+  - conditional-execution
+featured: true
+cover:
+  alt: 'A cyberpunk control room with a holographic DAG showing conditional workflow execution - active steps glow in teal while skipped steps are dimmed'
+  image: '../../../assets/cover-images/pgflow-0-14-0-conditional-step-execution.png'
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+pgflow 0.14.0 introduces conditional step execution - run steps based on input patterns and handle failures gracefully without failing the entire workflow.
+
+## Highlights
+
+- **`if` / `ifNot`** - Skip steps based on JSON containment patterns
+- **`whenUnmet`** - Control behavior when conditions aren't met (`fail`, `skip`, `skip-cascade`)
+- **`retriesExhausted`** - Handle step failures gracefully after all retries fail
+- **Type-safe** - TypeScript tracks which dependencies may be `undefined`
+
+## Pattern Matching with `if` / `ifNot`
+
+Use `if` to run a step only when input contains a pattern:
+
+```typescript
+.step({
+  slug: 'premiumFeature',
+  if: { plan: 'premium' },
+  whenUnmet: 'skip',
+}, handler)
+```
+
+Use `ifNot` to run a step only when input does NOT contain a pattern:
+
+```typescript
+.step({
+  slug: 'trialReminder',
+  ifNot: { plan: 'premium' },
+  whenUnmet: 'skip',
+}, handler)
+```
+
+### JSON Containment Semantics
+
+Patterns use PostgreSQL's `@>` containment operator. Your pattern only needs the fields you care about:
+
+| Input                                      | Pattern                       | Match? |
+| ------------------------------------------ | ----------------------------- | ------ |
+| `{ plan: 'premium', name: 'Alice' }`       | `{ plan: 'premium' }`         | Yes    |
+| `{ plan: 'free' }`                         | `{ plan: 'premium' }`         | No     |
+| `{ user: { role: 'admin', name: 'Bob' } }` | `{ user: { role: 'admin' } }` | Yes    |
+| `{ tags: ['urgent', 'support'] }`          | `{ tags: ['urgent'] }`        | Yes    |
+
+<Aside type="tip">
+  For root steps, patterns match against flow input. For dependent steps, patterns match against `{ depSlug: depOutput, ... }`.
+</Aside>
+
+See [Pattern Matching](/build/conditional-steps/pattern-matching/) for complete semantics.
+
+## Behavior Modes
+
+The `whenUnmet` option controls what happens when a condition isn't met:
+
+| Mode           | Step    | Dependents          | Run       |
+| -------------- | ------- | ------------------- | --------- |
+| `fail`         | Fails   | Not executed        | Fails     |
+| `skip`         | Skipped | Receive `undefined` | Continues |
+| `skip-cascade` | Skipped | All skipped         | Continues |
+
+```typescript
+// Skip entire feature branch if condition not met
+.step({
+  slug: 'loadPremiumData',
+  if: { plan: 'premium' },
+  whenUnmet: 'skip-cascade',
+}, handler)
+```
+
+See [Skip Modes](/build/conditional-steps/skip-modes/) for detailed guidance on choosing modes.
+
+## Graceful Failure Handling
+
+The new `retriesExhausted` option controls what happens after all retries fail:
+
+```typescript
+.step({
+  slug: 'sendWelcomeEmail',
+  dependsOn: ['createAccount'],
+  maxAttempts: 3,
+  retriesExhausted: 'skip',  // Continue even if email fails
+}, handler)
+```
+
+Use `retriesExhausted: 'skip'` for non-critical steps like notifications, analytics, or enrichment that shouldn't block the main workflow.
+
+See [Graceful Failure](/build/graceful-failure/) for patterns.
+
+## Type Safety
+
+pgflow's type system tracks which steps may be skipped:
+
+```typescript
+.step({
+  slug: 'processResults',
+  dependsOn: ['optionalEnrichment'],
+}, async (input) => {
+  // TypeScript knows this may be undefined
+  if (input.optionalEnrichment) {
+    return processWithEnrichment(input.optionalEnrichment);
+  }
+  return processBasic(input.run);
+})
+```
+
+With `skip-cascade`, dependent types remain required - if the step runs, the dependency is guaranteed.
+
+## Migration
+
+This release includes schema changes. After upgrading, run:
+
+```bash frame="none"
+npx pgflow@latest install
+```
+
+Then apply the new migration:
+
+```bash frame="none"
+npx supabase db push
+```
+
+<Aside type="caution">
+  The migration adds new columns (`required_input_pattern`,
+  `forbidden_input_pattern`, `when_unmet`, `when_failed`, `skip_reason`,
+  `skipped_at`) and a new step status (`skipped`). Existing flows continue to
+  work unchanged.
+</Aside>
+
+See [Install pgflow](/get-started/installation/) for upgrade details.
+
+## Learn More
+
+- [Conditional Steps Overview](/build/conditional-steps/) - Introduction to the feature
+- [Pattern Matching](/build/conditional-steps/pattern-matching/) - JSON containment patterns
+- [Skip Modes](/build/conditional-steps/skip-modes/) - Detailed mode comparison
+- [Graceful Failure](/build/graceful-failure/) - Handling failures with `retriesExhausted`
+- [Examples](/build/conditional-steps/examples/) - AI/LLM patterns like query routing and RAG fallback

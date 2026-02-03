@@ -1,0 +1,134 @@
+---
+title: Conditional Steps
+description: Control which steps execute based on input patterns and handle failures gracefully.
+sidebar:
+  label: Overview
+  order: 0
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+<Aside type="note" title="Prerequisites">
+  This guide assumes familiarity with [step dependencies and data
+  flow](/concepts/understanding-flows/#understanding-step-inputs-and-data-flow).
+</Aside>
+
+pgflow lets you skip steps based on input patterns or when handlers fail.
+
+## Pattern Matching and Failure Handling
+
+pgflow provides two ways to skip steps:
+
+| Feature                   | When Evaluated   | Purpose                          |
+| ------------------------- | ---------------- | -------------------------------- |
+| `if`/`ifNot` conditions   | Before step runs | Route based on input data        |
+| `retriesExhausted` option | After step fails | Recover gracefully from failures |
+
+Both use the same three modes: `fail`, `skip`, and `skip-cascade`.
+
+<Aside type="tip" title="Zero overhead">
+  Skipped steps are never pushed to the queue or executed by workers. The skip
+  decision happens at the database level during dependency resolution, making
+  conditional steps highly efficient.
+</Aside>
+
+## Behavior Modes
+
+When a condition is unmet or a step fails, you control what happens:
+
+| Mode           | Behavior                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| `fail`         | Step fails, entire run fails (default for `retriesExhausted`)                                   |
+| `skip`         | Step marked as skipped, run continues, dependents receive `undefined` (default for `whenUnmet`) |
+| `skip-cascade` | Step AND all downstream dependents skipped, run continues                                       |
+
+## Quick Examples
+
+### Conditional Execution
+
+Run premium-only features based on input:
+
+```typescript
+new Flow<{ userId: string; plan: 'free' | 'premium' }>({
+  slug: 'userOnboarding',
+})
+  .step({ slug: 'createAccount' }, async (input) => {
+    return { accountId: await createUser(input.run.userId) };
+  })
+  .step(
+    {
+      slug: 'setupPremiumFeatures',
+      dependsOn: ['createAccount'],
+      if: { plan: 'premium' }, // Only run for premium users
+      whenUnmet: 'skip', // Skip (don't fail) for free users
+    },
+    async (input) => {
+      return await enablePremium(input.createAccount.accountId);
+    }
+  );
+```
+
+### Graceful Failure Handling
+
+Continue the workflow even if an optional step fails:
+
+```typescript
+.step({
+  slug: 'sendWelcomeEmail',
+  dependsOn: ['createAccount'],
+  maxAttempts: 3,
+  retriesExhausted: 'skip',     // If email fails, continue anyway
+}, async (input) => {
+  return await sendEmail(input.createAccount.accountId);
+})
+```
+
+<Aside type="tip">
+  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  analytics, or enrichment that shouldn't block the main workflow.
+</Aside>
+
+## Type Safety
+
+pgflow's type system tracks which steps may be skipped:
+
+- **`skip` mode**: Dependent steps receive `T | undefined` - you must handle the missing case
+- **`skip-cascade` mode**: Dependents are also skipped, so if they run, output is guaranteed
+
+```typescript
+.step({
+  slug: 'processResults',
+  dependsOn: ['optionalEnrichment'],
+}, async (input) => {
+  // TypeScript knows this may be undefined
+  if (input.optionalEnrichment) {
+    return processWithEnrichment(input.optionalEnrichment);
+  }
+  return processBasic(input.run);
+})
+```
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="Pattern Matching"
+    href="/build/conditional-steps/pattern-matching/"
+    description="Use if/ifNot conditions with JSON containment patterns"
+  />
+  <LinkCard
+    title="Skip Modes"
+    href="/build/conditional-steps/skip-modes/"
+    description="Understand fail, skip, and skip-cascade behaviors"
+  />
+  <LinkCard
+    title="Graceful Failure"
+    href="/build/graceful-failure/"
+    description="Handle step failures gracefully with retriesExhausted"
+  />
+  <LinkCard
+    title="Examples"
+    href="/build/conditional-steps/examples/"
+    description="AI/LLM patterns: query routing, RAG fallback, multi-source retrieval"
+  />
+</CardGrid>

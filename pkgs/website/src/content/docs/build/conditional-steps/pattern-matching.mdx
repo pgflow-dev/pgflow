@@ -1,0 +1,235 @@
+---
+title: Pattern Matching
+description: Use if/ifNot conditions to control step execution based on input patterns.
+sidebar:
+  order: 1
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+
+Pattern matching lets you conditionally execute steps based on input data. pgflow uses PostgreSQL's `@>` JSON containment operator for pattern matching.
+
+## Basic Syntax
+
+Use `if` to run a step only when input contains a pattern:
+
+```typescript
+.step({
+  slug: 'premiumFeature',
+  if: { plan: 'premium' },     // Run if input contains plan: 'premium'
+  whenUnmet: 'skip',           // Skip if condition not met
+}, handler)
+```
+
+Use `ifNot` to run a step only when input does NOT contain a pattern:
+
+```typescript
+.step({
+  slug: 'trialReminder',
+  ifNot: { plan: 'premium' },  // Run if input does NOT contain plan: 'premium'
+  whenUnmet: 'skip',
+}, handler)
+```
+
+<Aside type="note">
+  `whenUnmet` defaults to `'skip'` when using `if` or `ifNot`. You can
+  explicitly set it to `'fail'` or `'skip-cascade'` for different behaviors. See
+  [Skip Modes](/build/conditional-steps/skip-modes/) for details.
+</Aside>
+
+## What Gets Checked
+
+The pattern is checked against different data depending on the step type:
+
+| Step Type                  | Pattern Checked Against                                      |
+| -------------------------- | ------------------------------------------------------------ |
+| Root step (no `dependsOn`) | Flow input                                                   |
+| Dependent step             | Aggregated dependency outputs: `{ depSlug: depOutput, ... }` |
+
+### Root Step Example
+
+For root steps, the pattern matches against the flow input:
+
+```typescript
+type Input = { userId: string; plan: 'free' | 'premium' };
+
+new Flow<Input>({ slug: 'onboarding' }).step(
+  {
+    slug: 'setupPremium',
+    if: { plan: 'premium' }, // Checks flow input.plan
+    whenUnmet: 'skip',
+  },
+  async (input) => {
+    // input.run.plan is guaranteed to be 'premium' here
+    return await enablePremiumFeatures(input.run.userId);
+  }
+);
+```
+
+### Dependent Step Example
+
+For dependent steps, the pattern matches against an object containing all dependency outputs:
+
+```typescript
+new Flow<{ url: string }>({ slug: 'contentPipeline' })
+  .step({ slug: 'analyze' }, async (input) => {
+    const result = await analyzeContent(input.run.url);
+    return { needsModeration: result.flagged, content: result.text };
+  })
+  .step(
+    {
+      slug: 'moderate',
+      dependsOn: ['analyze'],
+      if: { analyze: { needsModeration: true } }, // Check analyze output
+      whenUnmet: 'skip',
+    },
+    async (input) => {
+      return await moderateContent(input.analyze.content);
+    }
+  );
+```
+
+The pattern `{ analyze: { needsModeration: true } }` matches the object `{ analyze: <output of analyze step> }`.
+
+## JSON Containment Semantics
+
+pgflow uses PostgreSQL's `@>` containment operator. Understanding its behavior helps write correct patterns.
+
+### Key Rules
+
+1. **Partial matching**: Your pattern only needs to include the fields you care about
+2. **Nested matching**: Patterns can match nested objects recursively
+3. **Array containment**: Array patterns check if elements exist (order doesn't matter)
+
+### Examples
+
+<Aside type="tip" title="Pattern Matching Truth Table">
+
+| Input                                      | Pattern                           | Match?                          |
+| ------------------------------------------ | --------------------------------- | ------------------------------- |
+| `{ plan: 'premium', name: 'Alice' }`       | `{ plan: 'premium' }`             | Yes - superset contains pattern |
+| `{ plan: 'free' }`                         | `{ plan: 'premium' }`             | No - different value            |
+| `{ tags: ['urgent', 'support'] }`          | `{ tags: ['urgent'] }`            | Yes - array contains element    |
+| `{ tags: ['urgent', 'support'] }`          | `{ tags: ['support', 'urgent'] }` | Yes - order doesn't matter      |
+| `{ user: { role: 'admin' } }`              | `{ user: { role: 'admin' } }`     | Yes - exact nested match        |
+| `{ user: { role: 'admin', name: 'Bob' } }` | `{ user: { role: 'admin' } }`     | Yes - nested partial match      |
+
+</Aside>
+
+### Practical Pattern Examples
+
+```typescript
+// Match a specific value
+if: { status: 'active' }
+
+// Match nested object
+if: { user: { verified: true } }
+
+// Match array containing element
+if: { tags: ['priority'] }
+
+// Match multiple conditions (AND)
+if: { status: 'active', type: 'premium' }
+```
+
+## Combining if and ifNot
+
+You can use both `if` and `ifNot` on the same step. Both conditions must be satisfied:
+
+```typescript
+.step({
+  slug: 'standardUserFeature',
+  if: { status: 'active' },      // Must be active
+  ifNot: { role: 'admin' },      // Must NOT be admin
+  whenUnmet: 'skip',
+}, handler)
+```
+
+This step runs only for active non-admin users.
+
+## Branching Patterns
+
+Create mutually exclusive branches using opposite conditions:
+
+```typescript
+new Flow<{ userType: 'individual' | 'business' }>({ slug: 'pricing' })
+  .step(
+    {
+      slug: 'individualPricing',
+      if: { userType: 'individual' },
+      whenUnmet: 'skip',
+    },
+    calculateIndividualPrice
+  )
+  .step(
+    {
+      slug: 'businessPricing',
+      if: { userType: 'business' },
+      whenUnmet: 'skip',
+    },
+    calculateBusinessPrice
+  )
+  .step(
+    {
+      slug: 'finalize',
+      dependsOn: ['individualPricing', 'businessPricing'],
+    },
+    async (input) => {
+      // Exactly one will have a value
+      const price = input.individualPricing ?? input.businessPricing;
+      return { finalPrice: price };
+    }
+  );
+```
+
+<Aside type="caution">
+  When using `whenUnmet: 'skip'`, downstream steps must handle `undefined` for
+  skipped dependencies. TypeScript will enforce this.
+</Aside>
+
+### Visual: Branching Execution
+
+With `userType: 'business'` as input:
+
+```d2 width="700" pad="20"
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+input: "Input" { class: neutral }
+individual: "individual" { class: step_skipped }
+business: "business" { class: step_started }
+finalize: "finalize" { class: step_created }
+
+input -> individual: "NOT met" { style.stroke-dash: 3 }
+input -> business: "MET"
+individual -> finalize { style.stroke-dash: 3 }
+business -> finalize
+```
+
+## Detecting Skipped Dependencies
+
+Use `ifNot` with an empty object to detect when a dependency was skipped:
+
+```typescript
+.step({
+  slug: 'primaryAction',
+  if: { someCondition: true },
+  whenUnmet: 'skip',
+}, primaryHandler)
+.step({
+  slug: 'fallbackAction',
+  dependsOn: ['primaryAction'],
+  ifNot: { primaryAction: {} },  // Run if primaryAction was skipped
+  whenUnmet: 'skip',
+}, fallbackHandler)
+```
+
+The pattern `{ primaryAction: {} }` matches any non-null output. Using `ifNot` inverts it to match when the dependency is absent (skipped).
+
+<Aside type="tip">
+  See [Skip Modes](/build/conditional-steps/skip-modes/) for how `skip` and
+  `skip-cascade` affect TypeScript types, and the [Query Routing
+  example](/build/conditional-steps/examples/#query-routing) for a complete
+  flow.
+</Aside>

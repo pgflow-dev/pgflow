@@ -67,14 +67,12 @@ The visibility timeout (in seconds) - how long a task remains invisible to other
 Set `timeout` higher than your task's maximum processing time.
 
 <details>
-<summary>
-Here's why:
-</summary>
-- When a worker picks up a task, it becomes invisible for `timeout` seconds
-- If processing takes longer than `timeout`, the task becomes visible again
-- Other workers can then pick up and process the same task
-- This leads to duplicate processing
-- For example: with `timeout: 30` and a task that takes 45 seconds, the task could be processed twice
+  <summary>Here's why:</summary>- When a worker picks up a task, it becomes
+  invisible for `timeout` seconds - If processing takes longer than `timeout`,
+  the task becomes visible again - Other workers can then pick up and process
+  the same task - This leads to duplicate processing - For example: with
+  `timeout: 30` and a task that takes 45 seconds, the task could be processed
+  twice
 </details>
 
 Currently, pgflow uses timeout only for visibility. In the future, the Edge Worker will also use it to terminate tasks that exceed their timeout.
@@ -120,13 +118,14 @@ Time 40:  Step C starts (waits 10s after B completes)
 
 This results in 40+ seconds of delays, not the expected 10s.
 
+</details>
+
 **Better alternatives:**
 
 - **Need uniform delays?** Use a constant as shown below
 - **Rate limiting?** Use worker's `maxConcurrent` setting
 - **Debug delays?** Add only to specific steps you're debugging
 - **Compliance delays?** Make them explicit on relevant steps
-</details>
 
 To apply the same delay to multiple steps, use a constant:
 
@@ -137,6 +136,132 @@ flow
   .step({ slug: 'apiCall2', startDelay: RATE_LIMIT_DELAY }, handler2);
 ```
 
+</Aside>
+
+## Conditional Execution Options
+
+These options control which steps execute based on input patterns and how failures are handled. See [Conditional Steps](/build/conditional-steps/) for detailed explanations and examples.
+
+### `if`
+
+**Type:** `ContainmentPattern<Input>`
+**Default:** Not applicable (must be explicitly set)
+
+Run the step only if input contains the specified pattern. pgflow uses PostgreSQL's `@>` containment operator for matching.
+
+```typescript
+// Root step - checks flow input
+.step({
+  slug: 'premiumFeature',
+  if: { plan: 'premium' },  // Only run for premium users
+}, handler)
+
+// Dependent step - checks dependency output
+.step({
+  slug: 'notify',
+  dependsOn: ['analyze'],
+  if: { analyze: { needsAlert: true } },  // Check analyze output
+}, handler)
+```
+
+<Aside type="note">
+The pattern type `ContainmentPattern<Input>` matches the input shape:
+- Root steps: Pattern is checked against flow input
+- Dependent steps: Pattern is checked against object `{ depSlug: depOutput, ... }`
+</Aside>
+
+### `ifNot`
+
+**Type:** `ContainmentPattern<Input>`
+**Default:** Not applicable (must be explicitly set)
+
+Run the step only if input does NOT contain the specified pattern.
+
+```typescript
+.step({
+  slug: 'standardUserFlow',
+  ifNot: { role: 'admin' },  // Skip admin users
+}, handler)
+```
+
+You can combine `if` and `ifNot` - both conditions must be satisfied:
+
+```typescript
+.step({
+  slug: 'targetedNotification',
+  if: { status: 'active' },      // Must be active
+  ifNot: { role: 'admin' },       // AND must not be admin
+}, handler)
+```
+
+### `whenUnmet`
+
+**Type:** `'fail' | 'skip' | 'skip-cascade'`
+**Default:** `'skip'`
+
+Controls what happens when `if` or `ifNot` condition is not met.
+
+| Mode             | Behavior                                                                        |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `'fail'`         | Step fails, entire run fails                                                    |
+| `'skip'`         | Step marked as skipped, run continues, dependents receive `undefined` (default) |
+| `'skip-cascade'` | Step AND all downstream dependents skipped, run continues                       |
+
+```typescript
+.step({
+  slug: 'enrichData',
+  if: { includeEnrichment: true },
+  whenUnmet: 'skip',  // Default - could be omitted
+}, handler)
+
+.step({
+  slug: 'criticalPath',
+  if: { plan: 'premium' },
+  whenUnmet: 'fail',  // Explicit - fail if not premium
+}, handler)
+```
+
+<Aside type="tip">
+  The default of `'skip'` means steps with conditions automatically continue the
+  workflow rather than failing the entire run.
+</Aside>
+
+### `retriesExhausted`
+
+**Type:** `'fail' | 'skip' | 'skip-cascade'`
+**Default:** `'fail'`
+
+Controls what happens when a step fails after exhausting all `maxAttempts` retry attempts.
+
+| Mode             | Behavior                                                              |
+| ---------------- | --------------------------------------------------------------------- |
+| `'fail'`         | Step fails, entire run fails (default)                                |
+| `'skip'`         | Step marked as skipped, run continues, dependents receive `undefined` |
+| `'skip-cascade'` | Step AND all downstream dependents skipped, run continues             |
+
+```typescript
+.step({
+  slug: 'sendEmail',
+  maxAttempts: 3,
+  retriesExhausted: 'skip',  // Don't fail run if email service is down
+}, handler)
+
+.step({
+  slug: 'criticalOperation',
+  maxAttempts: 5,
+  retriesExhausted: 'fail',  // Default - fail if operation fails
+}, handler)
+```
+
+<Aside type="tip">
+  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  analytics, or optional enrichment.
+</Aside>
+
+<Aside type="caution" title="TYPE_VIOLATION Errors">
+  Programming errors like returning wrong type (e.g., string instead of array
+  for map step) always fail the run, regardless of `retriesExhausted` setting.
+  These are bugs in your code, not runtime conditions.
 </Aside>
 
 ## Configuration Examples
