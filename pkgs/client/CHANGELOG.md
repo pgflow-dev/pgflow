@@ -1,5 +1,13 @@
 # @pgflow/client
 
+## 0.13.3
+
+### Patch Changes
+
+- Updated dependencies [4391432]
+  - @pgflow/core@0.13.3
+  - @pgflow/dsl@0.13.3
+
 ## 0.13.2
 
 ### Patch Changes

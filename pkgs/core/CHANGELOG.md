@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.13.3
+
+### Patch Changes
+
+- 4391432: Add PGFLOW_AUTH_SECRET support to bypass JWT format mismatch in ensure_workers authentication
+  - @pgflow/dsl@0.13.3
+
 ## 0.13.2
 
 ### Patch Changes
