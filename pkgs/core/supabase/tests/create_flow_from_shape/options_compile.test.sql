@@ -7,7 +7,7 @@ select pgflow._create_flow_from_shape(
   'flow_with_options',
   '{
     "steps": [
-      {"slug": "step1", "stepType": "single", "dependencies": []}
+      {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"}
     ],
     "options": {
       "maxAttempts": 5,
@@ -33,6 +33,8 @@ select pgflow._create_flow_from_shape(
         "slug": "step1",
         "stepType": "single",
         "dependencies": [],
+        "whenUnmet": "skip",
+        "whenFailed": "fail",
         "options": {
           "maxAttempts": 7,
           "baseDelay": 15,
@@ -56,7 +58,7 @@ select pgflow._create_flow_from_shape(
   'flow_no_options',
   '{
     "steps": [
-      {"slug": "step1", "stepType": "single", "dependencies": []}
+      {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"}
     ]
   }'::jsonb
 );
@@ -84,6 +86,8 @@ select pgflow._create_flow_from_shape(
         "slug": "step1",
         "stepType": "single",
         "dependencies": [],
+        "whenUnmet": "skip",
+        "whenFailed": "fail",
         "options": {
           "timeout": 30
         }

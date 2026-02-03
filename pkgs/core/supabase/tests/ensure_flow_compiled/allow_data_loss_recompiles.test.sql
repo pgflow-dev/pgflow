@@ -17,7 +17,7 @@ select is(
       'allow_loss_flow',
       '{
         "steps": [
-          {"slug": "new_step", "stepType": "single", "dependencies": []}
+          {"slug": "new_step", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"}
         ]
       }'::jsonb,
       true  -- allow_data_loss = true

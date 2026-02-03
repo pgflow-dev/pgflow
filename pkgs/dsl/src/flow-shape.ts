@@ -1,8 +1,17 @@
-import { AnyFlow } from './dsl.js';
+import { AnyFlow, WhenUnmetMode, RetriesExhaustedMode, Json } from './dsl.js';
 
 // ========================
 // SHAPE TYPE DEFINITIONS
 // ========================
+
+/**
+ * Input pattern wrapper - explicit representation to avoid null vs JSON-null ambiguity.
+ * - { defined: false } means no pattern (don't check)
+ * - { defined: true, value: Json } means pattern is set (check against value)
+ */
+export type InputPattern =
+  | { defined: false }
+  | { defined: true; value: Json };
 
 /**
  * Step-level options that can be included in the shape for creation,
@@ -31,11 +40,18 @@ export interface FlowShapeOptions {
  * The `options` field is included for flow creation but NOT compared during
  * shape comparison. Options can be tuned at runtime via SQL without
  * requiring recompilation. See: /deploy/tune-flow-config/
+ *
+ * `whenUnmet`, `whenFailed`, and pattern fields ARE structural - they affect
+ * DAG execution semantics and must match between worker and database.
  */
 export interface StepShape {
   slug: string;
   stepType: 'single' | 'map';
   dependencies: string[]; // sorted alphabetically for deterministic comparison
+  whenUnmet: WhenUnmetMode;
+  whenFailed: RetriesExhaustedMode;
+  requiredInputPattern: InputPattern;
+  forbiddenInputPattern: InputPattern;
   options?: StepShapeOptions;
 }
 
@@ -107,6 +123,18 @@ export function extractFlowShape(flow: AnyFlow): FlowShape {
       stepType: stepDef.stepType ?? 'single',
       // Sort dependencies alphabetically for deterministic comparison
       dependencies: [...stepDef.dependencies].sort(),
+      // Condition modes are structural - they affect DAG execution semantics
+      whenUnmet: stepDef.options.whenUnmet ?? 'skip',
+      whenFailed: stepDef.options.retriesExhausted ?? 'fail',
+      // Input patterns use explicit wrapper to avoid null vs JSON-null ambiguity
+      requiredInputPattern:
+        stepDef.options.if !== undefined
+          ? { defined: true, value: stepDef.options.if }
+          : { defined: false },
+      forbiddenInputPattern:
+        stepDef.options.ifNot !== undefined
+          ? { defined: true, value: stepDef.options.ifNot }
+          : { defined: false },
     };
 
     // Only include options if at least one is defined
@@ -175,9 +203,13 @@ export function compareFlowShapes(
     const bStep = b.steps[i];
 
     if (!aStep) {
-      differences.push(`Step at index ${i}: missing in first shape (second has '${bStep.slug}')`);
+      differences.push(
+        `Step at index ${i}: missing in first shape (second has '${bStep.slug}')`
+      );
     } else if (!bStep) {
-      differences.push(`Step at index ${i}: missing in second shape (first has '${aStep.slug}')`);
+      differences.push(
+        `Step at index ${i}: missing in second shape (first has '${aStep.slug}')`
+      );
     } else {
       compareSteps(aStep, bStep, i, differences);
     }
@@ -217,7 +249,40 @@ function compareSteps(
   const bDeps = b.dependencies.join(',');
   if (aDeps !== bDeps) {
     differences.push(
-      `Step at index ${index}: dependencies differ [${a.dependencies.join(', ')}] vs [${b.dependencies.join(', ')}]`
+      `Step at index ${index}: dependencies differ [${a.dependencies.join(
+        ', '
+      )}] vs [${b.dependencies.join(', ')}]`
+    );
+  }
+
+  // Compare condition modes (structural - affects DAG execution semantics)
+  if (a.whenUnmet !== b.whenUnmet) {
+    differences.push(
+      `Step at index ${index}: whenUnmet differs '${a.whenUnmet}' vs '${b.whenUnmet}'`
+    );
+  }
+
+  if (a.whenFailed !== b.whenFailed) {
+    differences.push(
+      `Step at index ${index}: whenFailed differs '${a.whenFailed}' vs '${b.whenFailed}'`
+    );
+  }
+
+  // Compare pattern fields (structural - affects DAG execution semantics)
+  // Uses wrapper objects: { defined: false } or { defined: true, value: Json }
+  const aReqPattern = JSON.stringify(a.requiredInputPattern);
+  const bReqPattern = JSON.stringify(b.requiredInputPattern);
+  if (aReqPattern !== bReqPattern) {
+    differences.push(
+      `Step at index ${index}: requiredInputPattern differs '${aReqPattern}' vs '${bReqPattern}'`
+    );
+  }
+
+  const aForbPattern = JSON.stringify(a.forbiddenInputPattern);
+  const bForbPattern = JSON.stringify(b.forbiddenInputPattern);
+  if (aForbPattern !== bForbPattern) {
+    differences.push(
+      `Step at index ${index}: forbiddenInputPattern differs '${aForbPattern}' vs '${bForbPattern}'`
     );
   }
 }

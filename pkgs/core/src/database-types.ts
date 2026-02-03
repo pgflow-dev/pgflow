@@ -132,6 +132,8 @@ export type Database = {
           remaining_deps: number
           remaining_tasks: number | null
           run_id: string
+          skip_reason: string | null
+          skipped_at: string | null
           started_at: string | null
           status: string
           step_slug: string
@@ -147,6 +149,8 @@ export type Database = {
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id: string
+          skip_reason?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           status?: string
           step_slug: string
@@ -162,6 +166,8 @@ export type Database = {
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id?: string
+          skip_reason?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           status?: string
           step_slug?: string
@@ -284,37 +290,49 @@ export type Database = {
           created_at: string
           deps_count: number
           flow_slug: string
+          forbidden_input_pattern: Json | null
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          required_input_pattern: Json | null
           step_index: number
           step_slug: string
           step_type: string
+          when_failed: string
+          when_unmet: string
         }
         Insert: {
           created_at?: string
           deps_count?: number
           flow_slug: string
+          forbidden_input_pattern?: Json | null
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          required_input_pattern?: Json | null
           step_index?: number
           step_slug: string
           step_type?: string
+          when_failed?: string
+          when_unmet?: string
         }
         Update: {
           created_at?: string
           deps_count?: number
           flow_slug?: string
+          forbidden_input_pattern?: Json | null
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          required_input_pattern?: Json | null
           step_index?: number
           step_slug?: string
           step_type?: string
+          when_failed?: string
+          when_unmet?: string
         }
         Relationships: [
           {
@@ -388,6 +406,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _cascade_force_skip_steps: {
+        Args: { run_id: string; skip_reason: string; step_slug: string }
+        Returns: number
+      }
       _compare_flow_shapes: {
         Args: { p_db: Json; p_local: Json }
         Returns: string[]
@@ -402,23 +424,31 @@ export type Database = {
           base_delay?: number
           deps_slugs?: string[]
           flow_slug: string
+          forbidden_input_pattern?: Json
           max_attempts?: number
+          required_input_pattern?: Json
           start_delay?: number
           step_slug: string
           step_type?: string
           timeout?: number
+          when_failed?: string
+          when_unmet?: string
         }
         Returns: {
           created_at: string
           deps_count: number
           flow_slug: string
+          forbidden_input_pattern: Json | null
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          required_input_pattern: Json | null
           step_index: number
           step_slug: string
           step_type: string
+          when_failed: string
+          when_unmet: string
         }
         SetofOptions: {
           from: "*"
@@ -435,6 +465,7 @@ export type Database = {
         Args: { run_id: string }
         Returns: number
       }
+      cascade_resolve_conditions: { Args: { run_id: string }; Returns: boolean }
       cleanup_ensure_workers_logs: {
         Args: { retention_hours?: number }
         Returns: {
