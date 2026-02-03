@@ -299,7 +299,7 @@ export type Database = {
           step_index: number
           step_slug: string
           step_type: string
-          when_failed: string
+          when_exhausted: string
           when_unmet: string
         }
         Insert: {
@@ -315,7 +315,7 @@ export type Database = {
           step_index?: number
           step_slug: string
           step_type?: string
-          when_failed?: string
+          when_exhausted?: string
           when_unmet?: string
         }
         Update: {
@@ -331,7 +331,7 @@ export type Database = {
           step_index?: number
           step_slug?: string
           step_type?: string
-          when_failed?: string
+          when_exhausted?: string
           when_unmet?: string
         }
         Relationships: [
@@ -431,7 +431,7 @@ export type Database = {
           step_slug: string
           step_type?: string
           timeout?: number
-          when_failed?: string
+          when_exhausted?: string
           when_unmet?: string
         }
         Returns: {
@@ -447,7 +447,7 @@ export type Database = {
           step_index: number
           step_slug: string
           step_type: string
-          when_failed: string
+          when_exhausted: string
           when_unmet: string
         }
         SetofOptions: {

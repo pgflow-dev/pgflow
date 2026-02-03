@@ -334,8 +334,8 @@ type OptionalDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
  * Asymmetric step input type:
  * - Root steps (no dependencies): receive flow input directly
  * - Dependent steps: receive only their dependencies (flow input available via context)
- *   - Skippable deps (whenUnmet/retriesExhausted: 'skip') are optional
- *   - Cascade deps (whenUnmet/retriesExhausted: 'skip-cascade') are required
+ *   - Skippable deps (whenUnmet/whenExhausted: 'skip') are optional
+ *   - Cascade deps (whenUnmet/whenExhausted: 'skip-cascade') are required
  *     (because if handler runs, the dependency must have succeeded)
  *   - All other deps are required
  *
@@ -439,15 +439,15 @@ export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
  *
  * @example
  * // Fail the run after retries exhausted (default)
- * { retriesExhausted: 'fail' }
+ * { whenExhausted: 'fail' }
  *
  * @example
  * // Skip this step after retries exhausted, continue run
- * { retriesExhausted: 'skip' }
+ * { whenExhausted: 'skip' }
  *
  * @example
  * // Skip this step and all dependents after retries exhausted
- * { retriesExhausted: 'skip-cascade' }
+ * { whenExhausted: 'skip-cascade' }
  *
  * @remarks
  * - `'fail'`: Step fails -> run fails (default behavior)
@@ -456,10 +456,10 @@ export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
  *
  * @note
  * TYPE_VIOLATION errors (e.g., single step returns non-array for map dependent)
- * are NOT subject to retriesExhausted - these always hard fail as they indicate
+ * are NOT subject to whenExhausted - these always hard fail as they indicate
  * programming errors, not runtime conditions.
  */
-export type RetriesExhaustedMode = 'fail' | 'skip' | 'skip-cascade';
+export type WhenExhaustedMode = 'fail' | 'skip' | 'skip-cascade';
 
 /**
  * Helper type for dependent step handlers - creates deps object with correct optionality.
@@ -550,23 +550,23 @@ export interface StepRuntimeOptions extends RuntimeOptions {
    * @default 'fail'
    *
    * @example
-   * { retriesExhausted: 'fail' }        // Step fails -> run fails
-   * { retriesExhausted: 'skip' }        // Skip step, continue run
-   * { retriesExhausted: 'skip-cascade' } // Skip step + all dependents
+   * { whenExhausted: 'fail' }        // Step fails -> run fails
+   * { whenExhausted: 'skip' }        // Skip step, continue run
+   * { whenExhausted: 'skip-cascade' } // Skip step + all dependents
    *
    * @remarks
    * Only applies after maxAttempts retries are exhausted.
    * TYPE_VIOLATION errors always fail regardless of this setting.
    *
-   * @see RetriesExhaustedMode for detailed documentation of each mode
+   * @see WhenExhaustedMode for detailed documentation of each mode
    */
-  retriesExhausted?: RetriesExhaustedMode;
+  whenExhausted?: WhenExhaustedMode;
 }
 
 // Base runtime options without condition-related fields
 interface BaseStepRuntimeOptions extends RuntimeOptions {
   startDelay?: number;
-  retriesExhausted?: RetriesExhaustedMode;
+  whenExhausted?: WhenExhaustedMode;
 }
 
 /**
@@ -720,19 +720,19 @@ export class Flow<
     Slug extends string,
     TOutput,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn?: never;
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: (
       flowInput: TFlowInput,
@@ -765,13 +765,13 @@ export class Flow<
     Deps extends Extract<keyof Steps, string>,
     TOutput,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn: [Deps, ...Deps[]];
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
             whenUnmet?: TWhenUnmet;
@@ -781,7 +781,7 @@ export class Flow<
           > & { whenUnmet?: TWhenUnmet })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: (
       deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
@@ -834,8 +834,8 @@ export class Flow<
     if (opts.if !== undefined) options.if = opts.if;
     if (opts.ifNot !== undefined) options.ifNot = opts.ifNot;
     if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
-    if (opts.retriesExhausted !== undefined)
-      options.retriesExhausted = opts.retriesExhausted;
+    if (opts.whenExhausted !== undefined)
+      options.whenExhausted = opts.whenExhausted;
 
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });
@@ -885,19 +885,19 @@ export class Flow<
     Slug extends string,
     TOutput extends readonly any[],
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn?: never;
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: (
       flowInput: TFlowInput,
@@ -929,13 +929,13 @@ export class Flow<
     Deps extends Extract<keyof Steps, string>,
     TOutput extends readonly any[],
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn: [Deps, ...Deps[]];
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
             whenUnmet?: TWhenUnmet;
@@ -945,7 +945,7 @@ export class Flow<
           > & { whenUnmet?: TWhenUnmet })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: (
       deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
@@ -997,18 +997,18 @@ export class Flow<
         ) => Json | Promise<Json>
       : never,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: THandler
   ): Flow<
@@ -1041,13 +1041,13 @@ export class Flow<
         ) => Json | Promise<Json>
       : never,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
-    TRetries extends RetriesExhaustedMode | undefined = undefined
+    TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         array: TArrayDep;
-        retriesExhausted?: TRetries;
+        whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<{ [K in TArrayDep]: Steps[K]['output'] }> & {
             whenUnmet?: TWhenUnmet;
@@ -1057,7 +1057,7 @@ export class Flow<
           })
         | WithoutCondition
       ) &
-        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
     handler: THandler
   ): Flow<
@@ -1113,8 +1113,8 @@ export class Flow<
     if (opts.if !== undefined) options.if = opts.if;
     if (opts.ifNot !== undefined) options.ifNot = opts.ifNot;
     if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
-    if (opts.retriesExhausted !== undefined)
-      options.retriesExhausted = opts.retriesExhausted;
+    if (opts.whenExhausted !== undefined)
+      options.whenExhausted = opts.whenExhausted;
 
     // Validate runtime options
     validateRuntimeOptions(options, { optional: true });

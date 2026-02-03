@@ -1,10 +1,10 @@
--- Test: fail_task with when_failed='fail' (default) marks run as failed
+-- Test: fail_task with when_exhausted='fail' (default) marks run as failed
 -- This is the current behavior and should remain unchanged
 begin;
 select plan(3);
 select pgflow_tests.reset_db();
 
--- SETUP: Create a flow with default when_failed='fail' (0 retries so it fails immediately)
+-- SETUP: Create a flow with default when_exhausted='fail' (0 retries so it fails immediately)
 select pgflow.create_flow('test_flow');
 select pgflow.add_step('test_flow', 'step_a', max_attempts => 0);
 
@@ -30,7 +30,7 @@ select is(
 select is(
   (select status from pgflow.runs where flow_slug = 'test_flow'),
   'failed',
-  'Run should be marked as failed when when_failed=fail (default)'
+  'Run should be marked as failed when when_exhausted=fail (default)'
 );
 
 select finish();

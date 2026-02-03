@@ -80,8 +80,8 @@ function formatRuntimeOptions(
     parts.push(`when_unmet => '${options.whenUnmet}'`);
   }
 
-  if ('retriesExhausted' in options && options.retriesExhausted !== undefined) {
-    parts.push(`when_failed => '${options.retriesExhausted}'`);
+  if ('whenExhausted' in options && options.whenExhausted !== undefined) {
+    parts.push(`when_exhausted => '${options.whenExhausted}'`);
   }
 
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';

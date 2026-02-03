@@ -10,7 +10,7 @@ select is(
       'new_flow',
       '{
         "steps": [
-          {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"}
+          {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail"}
         ]
       }'::jsonb
     ) as result

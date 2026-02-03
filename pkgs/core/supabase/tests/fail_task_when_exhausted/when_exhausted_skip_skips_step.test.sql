@@ -1,11 +1,11 @@
--- Test: fail_task with when_failed='skip' skips the step and continues run
+-- Test: fail_task with when_exhausted='skip' skips the step and continues run
 begin;
 select plan(5);
 select pgflow_tests.reset_db();
 
--- SETUP: Create a flow with when_failed='skip' (0 retries so it fails immediately)
+-- SETUP: Create a flow with when_exhausted='skip' (0 retries so it fails immediately)
 select pgflow.create_flow('test_flow');
-select pgflow.add_step('test_flow', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('test_flow', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 select pgflow.add_step('test_flow', 'step_b');  -- Independent step to verify run continues
 
 -- Start flow and fail step_a's task
@@ -23,7 +23,7 @@ select is(
 select is(
   (select status from pgflow.step_states where flow_slug = 'test_flow' and step_slug = 'step_a'),
   'skipped',
-  'Step should be marked as skipped when when_failed=skip'
+  'Step should be marked as skipped when when_exhausted=skip'
 );
 
 -- TEST 3: Skip reason should indicate handler failure
@@ -37,7 +37,7 @@ select is(
 select isnt(
   (select status from pgflow.runs where flow_slug = 'test_flow'),
   'failed',
-  'Run should NOT be marked as failed when when_failed=skip'
+  'Run should NOT be marked as failed when when_exhausted=skip'
 );
 
 -- TEST 5: Error message should be preserved in step_states

@@ -1,4 +1,4 @@
-import { AnyFlow, WhenUnmetMode, RetriesExhaustedMode, Json } from './dsl.js';
+import { AnyFlow, WhenUnmetMode, WhenExhaustedMode, Json } from './dsl.js';
 
 // ========================
 // SHAPE TYPE DEFINITIONS
@@ -9,9 +9,7 @@ import { AnyFlow, WhenUnmetMode, RetriesExhaustedMode, Json } from './dsl.js';
  * - { defined: false } means no pattern (don't check)
  * - { defined: true, value: Json } means pattern is set (check against value)
  */
-export type InputPattern =
-  | { defined: false }
-  | { defined: true; value: Json };
+export type InputPattern = { defined: false } | { defined: true; value: Json };
 
 /**
  * Step-level options that can be included in the shape for creation,
@@ -41,7 +39,7 @@ export interface FlowShapeOptions {
  * shape comparison. Options can be tuned at runtime via SQL without
  * requiring recompilation. See: /deploy/tune-flow-config/
  *
- * `whenUnmet`, `whenFailed`, and pattern fields ARE structural - they affect
+ * `whenUnmet`, `whenExhausted`, and pattern fields ARE structural - they affect
  * DAG execution semantics and must match between worker and database.
  */
 export interface StepShape {
@@ -49,7 +47,7 @@ export interface StepShape {
   stepType: 'single' | 'map';
   dependencies: string[]; // sorted alphabetically for deterministic comparison
   whenUnmet: WhenUnmetMode;
-  whenFailed: RetriesExhaustedMode;
+  whenExhausted: WhenExhaustedMode;
   requiredInputPattern: InputPattern;
   forbiddenInputPattern: InputPattern;
   options?: StepShapeOptions;
@@ -125,7 +123,7 @@ export function extractFlowShape(flow: AnyFlow): FlowShape {
       dependencies: [...stepDef.dependencies].sort(),
       // Condition modes are structural - they affect DAG execution semantics
       whenUnmet: stepDef.options.whenUnmet ?? 'skip',
-      whenFailed: stepDef.options.retriesExhausted ?? 'fail',
+      whenExhausted: stepDef.options.whenExhausted ?? 'fail',
       // Input patterns use explicit wrapper to avoid null vs JSON-null ambiguity
       requiredInputPattern:
         stepDef.options.if !== undefined
@@ -262,9 +260,9 @@ function compareSteps(
     );
   }
 
-  if (a.whenFailed !== b.whenFailed) {
+  if (a.whenExhausted !== b.whenExhausted) {
     differences.push(
-      `Step at index ${index}: whenFailed differs '${a.whenFailed}' vs '${b.whenFailed}'`
+      `Step at index ${index}: whenExhausted differs '${a.whenExhausted}' vs '${b.whenExhausted}'`
     );
   }
 
