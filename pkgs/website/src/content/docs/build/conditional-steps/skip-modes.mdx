@@ -69,17 +69,18 @@ The default behavior for `whenUnmet`. The step is marked as skipped, but the run
   if: { includeEnrichment: true },
   // whenUnmet: 'skip' is the default
 }, async (input) => {
-  return await fetchEnrichment(input.run.id);
+  return await fetchEnrichment(input.id);
 })
 .step({
   slug: 'processResults',
   dependsOn: ['enrichData'],
-}, async (input) => {
+}, async (input, ctx) => {
   // TypeScript knows enrichData may be undefined
   if (input.enrichData) {
     return processWithEnrichment(input.enrichData);
   }
-  return processBasic(input.run);
+  const flowInput = await ctx.flowInput;
+  return processBasic(flowInput);
 })
 ```
 
@@ -236,7 +237,7 @@ When a step is skipped, pgflow records why in the `skip_reason` field:
 | -------------------- | ------------------------------------------------- |
 | `condition_unmet`    | Step's `if` or `ifNot` condition wasn't satisfied |
 | `dependency_skipped` | A dependency was skipped with `skip-cascade`      |
-| `handler_failed`     | Handler failed with `whenExhausted: 'skip'`    |
+| `handler_failed`     | Handler failed with `whenExhausted: 'skip'`       |
 
 Query skipped steps:
 

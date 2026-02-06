@@ -116,6 +116,43 @@ BEGIN
           failed_at = now()
       WHERE pgflow.runs.run_id = cascade_resolve_conditions.run_id;
 
+      PERFORM realtime.send(
+        jsonb_build_object(
+          'event_type', 'step:failed',
+          'run_id', cascade_resolve_conditions.run_id,
+          'step_slug', v_first_fail.step_slug,
+          'status', 'failed',
+          'error_message', 'Condition not met',
+          'failed_at', now()
+        ),
+        concat('step:', v_first_fail.step_slug, ':failed'),
+        concat('pgflow:run:', cascade_resolve_conditions.run_id),
+        false
+      );
+
+      PERFORM realtime.send(
+        jsonb_build_object(
+          'event_type', 'run:failed',
+          'run_id', cascade_resolve_conditions.run_id,
+          'flow_slug', v_first_fail.flow_slug,
+          'status', 'failed',
+          'error_message', 'Condition not met',
+          'failed_at', now()
+        ),
+        'run:failed',
+        concat('pgflow:run:', cascade_resolve_conditions.run_id),
+        false
+      );
+
+      PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+      FROM pgflow.step_tasks st
+      JOIN pgflow.runs r ON st.run_id = r.run_id
+      WHERE st.run_id = cascade_resolve_conditions.run_id
+        AND st.status IN ('queued', 'started')
+        AND st.message_id IS NOT NULL
+      GROUP BY r.flow_slug
+      HAVING COUNT(st.message_id) > 0;
+
       RETURN false;
     END IF;
 
@@ -180,6 +217,7 @@ BEGIN
       FROM unmet_skip_steps uss
       WHERE ss.run_id = cascade_resolve_conditions.run_id
         AND ss.step_slug = uss.step_slug
+        AND ss.status = 'created'
       RETURNING
         ss.*,
         realtime.send(
