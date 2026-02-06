@@ -197,21 +197,30 @@ BEGIN
           false
         ) AS _broadcast_result
     ),
-    -- NEW: Update dependent steps (decrement remaining_deps, set initial_tasks=0 for maps)
+    -- NEW: Update dependent steps (decrement remaining_deps by count of skipped parents, set initial_tasks=0 for maps)
+    skipped_parent_counts AS (
+      -- Count how many skipped parents each child has
+      SELECT
+        dep.step_slug AS child_step_slug,
+        dep.flow_slug AS child_flow_slug,
+        COUNT(*) AS skipped_parent_count
+      FROM skipped_steps parent
+      JOIN pgflow.deps dep ON dep.flow_slug = parent.flow_slug AND dep.dep_slug = parent.step_slug
+      GROUP BY dep.step_slug, dep.flow_slug
+    ),
     dependent_updates AS (
       UPDATE pgflow.step_states child_state
-      SET remaining_deps = child_state.remaining_deps - 1,
+      SET remaining_deps = child_state.remaining_deps - spc.skipped_parent_count,
           -- If child is a map step and this skipped step is its only dependency,
           -- set initial_tasks = 0 (skipped dep = empty array)
           initial_tasks = CASE
             WHEN child_step.step_type = 'map' AND child_step.deps_count = 1 THEN 0
             ELSE child_state.initial_tasks
           END
-      FROM skipped_steps parent
-      JOIN pgflow.deps dep ON dep.flow_slug = parent.flow_slug AND dep.dep_slug = parent.step_slug
-      JOIN pgflow.steps child_step ON child_step.flow_slug = dep.flow_slug AND child_step.step_slug = dep.step_slug
+      FROM skipped_parent_counts spc
+      JOIN pgflow.steps child_step ON child_step.flow_slug = spc.child_flow_slug AND child_step.step_slug = spc.child_step_slug
       WHERE child_state.run_id = cascade_resolve_conditions.run_id
-        AND child_state.step_slug = dep.step_slug
+        AND child_state.step_slug = spc.child_step_slug
     ),
     run_update AS (
       UPDATE pgflow.runs r
