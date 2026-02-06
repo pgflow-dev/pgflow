@@ -19,10 +19,10 @@ pgflow lets you skip steps based on input patterns or when handlers fail.
 
 pgflow provides two ways to skip steps:
 
-| Feature                   | When Evaluated   | Purpose                          |
-| ------------------------- | ---------------- | -------------------------------- |
-| `if`/`ifNot` conditions   | Before step runs | Route based on input data        |
-| `whenExhausted` option | After step fails | Recover gracefully from failures |
+| Feature                 | When Evaluated   | Purpose                          |
+| ----------------------- | ---------------- | -------------------------------- |
+| `if`/`ifNot` conditions | Before step runs | Route based on input data        |
+| `whenExhausted` option  | After step fails | Recover gracefully from failures |
 
 Both use the same three modes: `fail`, `skip`, and `skip-cascade`.
 
@@ -38,7 +38,7 @@ When a condition is unmet or a step fails, you control what happens:
 
 | Mode           | Behavior                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------- |
-| `fail`         | Step fails, entire run fails (default for `whenExhausted`)                                   |
+| `fail`         | Step fails, entire run fails (default for `whenExhausted`)                                      |
 | `skip`         | Step marked as skipped, run continues, dependents receive `undefined` (default for `whenUnmet`) |
 | `skip-cascade` | Step AND all downstream dependents skipped, run continues                                       |
 
@@ -53,7 +53,7 @@ new Flow<{ userId: string; plan: 'free' | 'premium' }>({
   slug: 'userOnboarding',
 })
   .step({ slug: 'createAccount' }, async (input) => {
-    return { accountId: await createUser(input.run.userId) };
+    return { accountId: await createUser(input.userId) };
   })
   .step(
     {
@@ -99,12 +99,13 @@ pgflow's type system tracks which steps may be skipped:
 .step({
   slug: 'processResults',
   dependsOn: ['optionalEnrichment'],
-}, async (input) => {
+}, async (input, ctx) => {
   // TypeScript knows this may be undefined
   if (input.optionalEnrichment) {
     return processWithEnrichment(input.optionalEnrichment);
   }
-  return processBasic(input.run);
+  const flowInput = await ctx.flowInput;
+  return processBasic(flowInput);
 })
 ```
 

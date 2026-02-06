@@ -146,8 +146,12 @@ IF v_dependent_map_slug IS NOT NULL THEN
     AND st.task_index = complete_task.task_index
     AND st.message_id IS NOT NULL;
 
-  -- Return empty result
-  RETURN QUERY SELECT * FROM pgflow.step_tasks WHERE false;
+  -- Return the failed task row (API contract: always return task row)
+  RETURN QUERY
+  SELECT * FROM pgflow.step_tasks st
+  WHERE st.run_id = complete_task.run_id
+    AND st.step_slug = complete_task.step_slug
+    AND st.task_index = complete_task.task_index;
   RETURN;
 END IF;
 
