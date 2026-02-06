@@ -273,8 +273,8 @@ BEGIN
       timeout => (v_step_options->>'timeout')::int,
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
-      when_unmet => v_step->>'whenUnmet',
-      when_exhausted => v_step->>'whenExhausted',
+      when_unmet => COALESCE(v_step->>'whenUnmet', 'skip'),
+      when_exhausted => COALESCE(v_step->>'whenExhausted', 'fail'),
       required_input_pattern => CASE
         WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
         THEN v_step->'requiredInputPattern'->'value'
@@ -532,6 +532,43 @@ BEGIN
       SET status = 'failed',
           failed_at = now()
       WHERE pgflow.runs.run_id = cascade_resolve_conditions.run_id;
+
+      PERFORM realtime.send(
+        jsonb_build_object(
+          'event_type', 'step:failed',
+          'run_id', cascade_resolve_conditions.run_id,
+          'step_slug', v_first_fail.step_slug,
+          'status', 'failed',
+          'error_message', 'Condition not met',
+          'failed_at', now()
+        ),
+        concat('step:', v_first_fail.step_slug, ':failed'),
+        concat('pgflow:run:', cascade_resolve_conditions.run_id),
+        false
+      );
+
+      PERFORM realtime.send(
+        jsonb_build_object(
+          'event_type', 'run:failed',
+          'run_id', cascade_resolve_conditions.run_id,
+          'flow_slug', v_first_fail.flow_slug,
+          'status', 'failed',
+          'error_message', 'Condition not met',
+          'failed_at', now()
+        ),
+        'run:failed',
+        concat('pgflow:run:', cascade_resolve_conditions.run_id),
+        false
+      );
+
+      PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+      FROM pgflow.step_tasks st
+      JOIN pgflow.runs r ON st.run_id = r.run_id
+      WHERE st.run_id = cascade_resolve_conditions.run_id
+        AND st.status IN ('queued', 'started')
+        AND st.message_id IS NOT NULL
+      GROUP BY r.flow_slug
+      HAVING COUNT(st.message_id) > 0;
 
       RETURN false;
     END IF;
@@ -1315,45 +1352,42 @@ maybe_fail_step AS (
   WHERE pgflow.step_states.run_id = fail_task.run_id
     AND pgflow.step_states.step_slug = fail_task.step_slug
   RETURNING pgflow.step_states.*
+),
+run_update AS (
+  -- Update run status: only fail when when_exhausted='fail' and step was failed
+  UPDATE pgflow.runs
+  SET status = CASE
+               WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
+               ELSE status
+               END,
+      failed_at = CASE
+                  WHEN (select status from maybe_fail_step) = 'failed' THEN now()
+                  ELSE NULL
+                  END,
+      -- Decrement remaining_steps when step was skipped (not failed, run continues)
+      remaining_steps = CASE
+                        WHEN (select status from maybe_fail_step) = 'skipped' THEN pgflow.runs.remaining_steps - 1
+                        ELSE pgflow.runs.remaining_steps
+                        END
+  WHERE pgflow.runs.run_id = fail_task.run_id
+  RETURNING pgflow.runs.status
 )
- -- Update run status: only fail when when_exhausted='fail' and step was failed
-UPDATE pgflow.runs
-SET status = CASE
-              WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
-              ELSE status
-              END,
-    failed_at = CASE
-                WHEN (select status from maybe_fail_step) = 'failed' THEN now()
-                ELSE NULL
-                END,
-    -- Decrement remaining_steps when step was skipped (not failed, run continues)
-    remaining_steps = CASE
-                      WHEN (select status from maybe_fail_step) = 'skipped' THEN pgflow.runs.remaining_steps - 1
-                      ELSE pgflow.runs.remaining_steps
-                      END
-WHERE pgflow.runs.run_id = fail_task.run_id
-RETURNING (status = 'failed') INTO v_run_failed;
+SELECT
+  COALESCE((SELECT status = 'failed' FROM run_update), false),
+  COALESCE((SELECT status = 'failed' FROM maybe_fail_step), false),
+  COALESCE((SELECT status = 'skipped' FROM maybe_fail_step), false),
+  COALESCE((SELECT is_exhausted FROM task_status), false)
+INTO v_run_failed, v_step_failed, v_step_skipped, v_task_exhausted;
 
- -- Capture when_exhausted mode and check if step was skipped for later processing
+ -- Capture when_exhausted mode for later skip handling
  SELECT s.when_exhausted INTO v_when_exhausted
  FROM pgflow.steps s
 JOIN pgflow.runs r ON r.flow_slug = s.flow_slug
-WHERE r.run_id = fail_task.run_id
-  AND s.step_slug = fail_task.step_slug;
-
-SELECT (status = 'skipped') INTO v_step_skipped
-FROM pgflow.step_states
-WHERE pgflow.step_states.run_id = fail_task.run_id
-  AND pgflow.step_states.step_slug = fail_task.step_slug;
-
--- Check if step failed by querying the step_states table
-SELECT (status = 'failed') INTO v_step_failed 
-FROM pgflow.step_states 
-WHERE pgflow.step_states.run_id = fail_task.run_id 
-  AND pgflow.step_states.step_slug = fail_task.step_slug;
+ WHERE r.run_id = fail_task.run_id
+   AND s.step_slug = fail_task.step_slug;
 
 -- Send broadcast event for step failure if the step was failed
-IF v_step_failed THEN
+IF v_task_exhausted AND v_step_failed THEN
   PERFORM realtime.send(
     jsonb_build_object(
       'event_type', 'step:failed',
@@ -1369,8 +1403,8 @@ IF v_step_failed THEN
   );
 END IF;
 
- -- Handle step skipping (when_exhausted = 'skip' or 'skip-cascade')
- IF v_step_skipped THEN
+-- Handle step skipping (when_exhausted = 'skip' or 'skip-cascade')
+ IF v_task_exhausted AND v_step_skipped THEN
   -- Send broadcast event for step skipped
   PERFORM realtime.send(
     jsonb_build_object(
@@ -1412,11 +1446,11 @@ END IF;
       AND dep.dep_slug = fail_task.step_slug
       AND child_state.step_slug = dep.step_slug;
 
-    -- Start any steps that became ready after decrementing remaining_deps
-    PERFORM pgflow.start_ready_steps(fail_task.run_id);
-
     -- Auto-complete taskless steps (e.g., map steps with initial_tasks=0 from skipped dep)
     PERFORM pgflow.cascade_complete_taskless_steps(fail_task.run_id);
+
+    -- Start steps that became ready after taskless completion propagation
+    PERFORM pgflow.start_ready_steps(fail_task.run_id);
   END IF;
 
   -- Try to complete the run (remaining_steps may now be 0)
