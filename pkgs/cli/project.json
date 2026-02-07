@@ -61,7 +61,7 @@
     "serve:functions:e2e": {
       "executor": "nx:run-commands",
       "continuous": true,
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "edge-worker:build"],
       "local": true,
       "cache": false,
       "options": {
