@@ -48,8 +48,8 @@ BEGIN
       timeout => (v_step_options->>'timeout')::int,
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
-      when_unmet => v_step->>'whenUnmet',
-      when_exhausted => v_step->>'whenExhausted',
+      when_unmet => COALESCE(v_step->>'whenUnmet', 'skip'),
+      when_exhausted => COALESCE(v_step->>'whenExhausted', 'fail'),
       required_input_pattern => CASE
         WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
         THEN v_step->'requiredInputPattern'->'value'

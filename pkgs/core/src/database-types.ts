@@ -406,6 +406,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _archive_task_message: {
+        Args: { p_run_id: string; p_step_slug: string; p_task_index: number }
+        Returns: undefined
+      }
       _cascade_force_skip_steps: {
         Args: { run_id: string; skip_reason: string; step_slug: string }
         Returns: number
