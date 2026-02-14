@@ -46,11 +46,11 @@ select is(
   'Run should be failed on TYPE_VIOLATION regardless of when_exhausted setting'
 );
 
--- TEST 4: step_b should NOT be skipped (run failed before cascade could happen)
-select isnt(
+-- TEST 4: step_b should be in 'created' state (run failed before cascade could happen)
+select is(
   (select status from pgflow.step_states where flow_slug = 'test_flow' and step_slug = 'step_b'),
-  'skipped',
-  'step_b should not be skipped - run failed before any cascade'
+  'created',
+  'step_b should be created - run failed before any cascade'
 );
 
 select finish();

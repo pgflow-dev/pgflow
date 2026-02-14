@@ -40,6 +40,30 @@ WHERE pgflow.step_states.run_id = complete_task.run_id
   AND pgflow.step_states.step_slug = complete_task.step_slug
 FOR UPDATE;
 
+-- ==========================================
+-- GUARD: Late callback - step not started
+-- ==========================================
+-- If the step is not in 'started' state, this is a late callback.
+-- Do not mutate step_states or runs, archive message, return task row.
+IF v_step_record.status != 'started' THEN
+  -- Archive the task message if present (prevents stuck work)
+  PERFORM pgmq.archive(
+    v_run_record.flow_slug,
+    st.message_id
+  )
+  FROM pgflow.step_tasks st
+  WHERE st.run_id = complete_task.run_id
+    AND st.step_slug = complete_task.step_slug
+    AND st.task_index = complete_task.task_index
+    AND st.message_id IS NOT NULL;
+  -- Return the current task row without any mutations
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+    WHERE pgflow.step_tasks.run_id = complete_task.run_id
+      AND pgflow.step_tasks.step_slug = complete_task.step_slug
+      AND pgflow.step_tasks.task_index = complete_task.task_index;
+  RETURN;
+END IF;
+
 -- Check for type violations AFTER acquiring locks
 SELECT child_step.step_slug INTO v_dependent_map_slug
 FROM pgflow.deps dependency

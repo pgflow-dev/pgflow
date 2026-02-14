@@ -31,7 +31,21 @@ with run as (
 )
 select run_id into temporary run_ids from run;
 
-select pgflow_tests.poll_and_fail('replayed_skip_idempotent');
+with started as (
+  select * from pgflow_tests.read_and_start('replayed_skip_idempotent', qty => 10)
+),
+target as (
+  select run_id, step_slug, task_index
+  from started
+  where step_slug = 'a'
+  limit 1
+)
+select pgflow.fail_task(
+  (select run_id from target),
+  (select step_slug from target),
+  (select task_index from target),
+  (select step_slug from target) || ' FAILED'
+);
 
 select is(
   (

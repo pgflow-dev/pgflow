@@ -37,7 +37,7 @@ with ordered_events as (
   select
     inserted_at,
     payload->>'step_slug' as step_slug,
-    row_number() over (order by inserted_at) as event_order
+    row_number() over (order by inserted_at, payload->>'step_slug') as event_order
   from realtime.messages
   where payload->>'event_type' = 'step:skipped'
     and payload->>'run_id' = (select run_id::text from run_ids)
