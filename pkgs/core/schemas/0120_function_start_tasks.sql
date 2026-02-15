@@ -20,8 +20,14 @@ as $$
     where task.flow_slug = start_tasks.flow_slug
       and task.message_id = any(msg_ids)
       and task.status = 'queued'
-      -- MVP: Don't start tasks on failed runs
-      and r.status != 'failed'
+      and r.status = 'started'
+      and exists (
+        select 1
+        from pgflow.step_states ss
+        where ss.run_id = task.run_id
+          and ss.step_slug = task.step_slug
+          and ss.status = 'started'
+      )
   ),
   start_tasks_update as (
     update pgflow.step_tasks
