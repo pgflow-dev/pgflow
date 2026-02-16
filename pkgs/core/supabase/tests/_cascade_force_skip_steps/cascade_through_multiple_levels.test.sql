@@ -1,7 +1,7 @@
 -- Test: _cascade_force_skip_steps - Cascade through multiple DAG levels
 -- Verifies skipping A cascades through A -> B -> C chain
 begin;
-select plan(8);
+select plan(9);
 
 -- Reset database and create a flow: A -> B -> C
 select pgflow_tests.reset_db();
@@ -17,10 +17,14 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (should cascade to step_b and step_c)
-select pgflow._cascade_force_skip_steps(
-  (select run_id from run_ids),
-  'step_a',
-  'handler_failed'
+select is(
+  (select pgflow._cascade_force_skip_steps(
+    (select run_id from run_ids),
+    'step_a',
+    'handler_failed'
+  )),
+  3::int,
+  'Should return count of 3 skipped steps (step_a + step_b + step_c)'
 );
 
 -- Test 1: step_a should be skipped with handler_failed reason

@@ -1,7 +1,7 @@
 -- Test: _cascade_force_skip_steps - Cascade to single dependent
 -- Verifies skipping a step cascades to its direct dependent
 begin;
-select plan(7);
+select plan(8);
 
 -- Reset database and create a flow: A -> B
 select pgflow_tests.reset_db();
@@ -16,10 +16,14 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (should cascade to step_b)
-select pgflow._cascade_force_skip_steps(
-  (select run_id from run_ids),
-  'step_a',
-  'condition_unmet'
+select is(
+  (select pgflow._cascade_force_skip_steps(
+    (select run_id from run_ids),
+    'step_a',
+    'condition_unmet'
+  )),
+  2::int,
+  'Should return count of 2 skipped steps (step_a + step_b)'
 );
 
 -- Test 1: step_a should be skipped

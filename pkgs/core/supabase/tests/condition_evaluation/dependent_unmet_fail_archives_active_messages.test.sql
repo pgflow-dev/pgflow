@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 
 select pgflow_tests.reset_db();
 
@@ -25,6 +25,15 @@ with run as (
   from pgflow.start_flow('dependent_fail_archive', '{}'::jsonb)
 )
 select run_id into temporary run_ids from run;
+
+-- Capture active message IDs before failure
+create temporary table pre_failure_msgs as
+select msg_id from pgmq.q_dependent_fail_archive;
+
+select ok(
+  (select count(*) > 0 from pre_failure_msgs),
+  'should have active messages before failure'
+);
 
 with started as (
   select * from pgflow_tests.read_and_start('dependent_fail_archive', qty => 10)
@@ -72,15 +81,19 @@ select is(
   'run failure should archive all active queue messages'
 );
 
-select ok(
+-- Verify specific messages were archived
+select is(
   (
-    select count(*)
-    from pgmq.a_dependent_fail_archive
-  ) >= 2,
-  'archive queue should contain completed and run-failure archived messages'
+    select count(*)::int
+    from pgmq.a_dependent_fail_archive a
+    join pre_failure_msgs p on a.msg_id = p.msg_id
+  ),
+  (select count(*)::int from pre_failure_msgs),
+  'previously active messages should be in archive'
 );
 
 drop table if exists run_ids;
+drop table if exists pre_failure_msgs;
 
 select finish();
 rollback;
