@@ -38,7 +38,5 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "postinstall": "chmod +x dist/index.js || true"
-  }
+  "scripts": {}
 }
