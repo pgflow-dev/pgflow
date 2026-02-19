@@ -26,6 +26,12 @@ create table pgflow.steps (
   opt_start_delay int,
   required_input_pattern jsonb,  -- JSON pattern for @> containment check (if)
   forbidden_input_pattern jsonb,  -- JSON pattern for NOT @> containment check (ifNot)
+  constraint required_input_pattern_is_object check (
+    required_input_pattern is null or jsonb_typeof(required_input_pattern) = 'object'
+  ),
+  constraint forbidden_input_pattern_is_object check (
+    forbidden_input_pattern is null or jsonb_typeof(forbidden_input_pattern) = 'object'
+  ),
   when_unmet text not null default 'skip',  -- What to do when condition not met (skip is natural default)
   when_exhausted text not null default 'fail',  -- What to do when handler fails after retries
   created_at timestamptz not null default now(),
