@@ -108,19 +108,10 @@ BEGIN
     WHERE r.run_id = _cascade_force_skip_steps.run_id
       AND skipped_count.count > 0
   )
-  SELECT COUNT(*) INTO v_total_skipped FROM skipped;
-
-  -- Archive queued/started task messages for all steps that were just skipped
-  -- (query step_states since CTE state is no longer accessible)
-  PERFORM pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id))
-  FROM pgflow.step_tasks st
-  JOIN pgflow.step_states ss ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug
-  WHERE st.run_id = _cascade_force_skip_steps.run_id
-    AND st.status IN ('queued', 'started')
-    AND st.message_id IS NOT NULL
-    AND ss.status = 'skipped'
-    AND ss.skipped_at >= now() - interval '1 second'  -- Only recently skipped
-  HAVING COUNT(st.message_id) > 0;
+  SELECT skipped_count.count
+  INTO v_total_skipped
+  FROM (SELECT COUNT(*) AS count FROM skipped) skipped_count
+  LEFT JOIN archived_messages ON true;
 
   RETURN v_total_skipped;
 END;

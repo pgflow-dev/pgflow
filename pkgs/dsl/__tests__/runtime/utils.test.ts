@@ -6,6 +6,7 @@ describe('validateSlug', () => {
     expect(() => validateSlug('valid_slug')).not.toThrowError();
     expect(() => validateSlug('valid_slug_123')).not.toThrowError();
     expect(() => validateSlug('validSlug123')).not.toThrowError();
+    expect(() => validateSlug('_valid_slug')).not.toThrowError();
   });
 
   it('rejects slugs that start with numbers', () => {
@@ -14,33 +15,34 @@ describe('validateSlug', () => {
     );
   });
 
-  it('rejects slugs that start with underscores', () => {
-    expect(() => validateSlug('_invalid')).toThrowError(
-      `Slug '_invalid' cannot start with an underscore`
+  it('rejects empty slugs', () => {
+    expect(() => validateSlug('')).toThrowError(`Slug cannot be empty`);
+  });
+
+  it('rejects reserved words', () => {
+    expect(() => validateSlug('run')).toThrowError(
+      `Slug 'run' is reserved and cannot be used`
     );
   });
 
-  it('rejects slugs containing spaces', () => {
+  it('rejects slugs containing invalid characters', () => {
     expect(() => validateSlug('invalid slug')).toThrowError(
-      `Slug 'invalid slug' cannot contain spaces`
+      `Slug 'invalid slug' can only contain letters, numbers, and underscores`
     );
-  });
-
-  it('rejects slugs containing special characters', () => {
     expect(() => validateSlug('invalid/slug')).toThrowError(
-      `Slug 'invalid/slug' cannot contain special characters like /, :, ?, #, -`
+      `Slug 'invalid/slug' can only contain letters, numbers, and underscores`
     );
     expect(() => validateSlug('invalid:slug')).toThrowError(
-      `Slug 'invalid:slug' cannot contain special characters like /, :, ?, #, -`
+      `Slug 'invalid:slug' can only contain letters, numbers, and underscores`
     );
     expect(() => validateSlug('invalid?slug')).toThrowError(
-      `Slug 'invalid?slug' cannot contain special characters like /, :, ?, #, -`
+      `Slug 'invalid?slug' can only contain letters, numbers, and underscores`
     );
     expect(() => validateSlug('invalid#slug')).toThrowError(
-      `Slug 'invalid#slug' cannot contain special characters like /, :, ?, #, -`
+      `Slug 'invalid#slug' can only contain letters, numbers, and underscores`
     );
     expect(() => validateSlug('invalid-slug')).toThrowError(
-      `Slug 'invalid-slug' cannot contain special characters like /, :, ?, #, -`
+      `Slug 'invalid-slug' can only contain letters, numbers, and underscores`
     );
   });
 

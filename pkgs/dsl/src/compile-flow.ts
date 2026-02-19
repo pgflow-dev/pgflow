@@ -9,10 +9,13 @@ import { AnyFlow, RuntimeOptions, StepRuntimeOptions } from './dsl.js';
  */
 export function compileFlow(flow: AnyFlow): string[] {
   const statements: string[] = [];
+  const escapedFlowSlug = escapeSqlLiteral(flow.slug);
 
   // Create the flow
   const flowOptions = formatRuntimeOptions(flow.options);
-  statements.push(`SELECT pgflow.create_flow('${flow.slug}'${flowOptions});`);
+  statements.push(
+    `SELECT pgflow.create_flow('${escapedFlowSlug}'${flowOptions});`
+  );
 
   // Add steps in the order they were defined
   for (const stepSlug of flow.stepOrder) {
@@ -22,7 +25,9 @@ export function compileFlow(flow: AnyFlow): string[] {
     // Format dependencies array if it exists
     let depsClause = '';
     if (step.dependencies.length > 0) {
-      const depsArray = step.dependencies.map((dep) => `'${dep}'`).join(', ');
+      const depsArray = step.dependencies
+        .map((dep) => `'${escapeSqlLiteral(dep)}'`)
+        .join(', ');
       depsClause = `, ARRAY[${depsArray}]`;
     }
 
@@ -33,7 +38,9 @@ export function compileFlow(flow: AnyFlow): string[] {
     }
 
     statements.push(
-      `SELECT pgflow.add_step('${flow.slug}', '${step.slug}'${depsClause}${stepOptions}${stepTypeClause});`
+      `SELECT pgflow.add_step('${escapedFlowSlug}', '${escapeSqlLiteral(
+        step.slug
+      )}'${depsClause}${stepOptions}${stepTypeClause});`
     );
   }
 
@@ -65,24 +72,28 @@ function formatRuntimeOptions(
   }
 
   if ('if' in options && options.if !== undefined) {
-    // Serialize JSON pattern and escape for SQL
     const jsonStr = JSON.stringify(options.if);
-    parts.push(`required_input_pattern => '${jsonStr}'`);
+    parts.push(`required_input_pattern => '${escapeSqlLiteral(jsonStr)}'`);
   }
 
   if ('ifNot' in options && options.ifNot !== undefined) {
-    // Serialize JSON pattern and escape for SQL
     const jsonStr = JSON.stringify(options.ifNot);
-    parts.push(`forbidden_input_pattern => '${jsonStr}'`);
+    parts.push(`forbidden_input_pattern => '${escapeSqlLiteral(jsonStr)}'`);
   }
 
   if ('whenUnmet' in options && options.whenUnmet !== undefined) {
-    parts.push(`when_unmet => '${options.whenUnmet}'`);
+    parts.push(`when_unmet => '${escapeSqlLiteral(options.whenUnmet)}'`);
   }
 
   if ('whenExhausted' in options && options.whenExhausted !== undefined) {
-    parts.push(`when_exhausted => '${options.whenExhausted}'`);
+    parts.push(
+      `when_exhausted => '${escapeSqlLiteral(options.whenExhausted)}'`
+    );
   }
 
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';
+}
+
+function escapeSqlLiteral(value: string): string {
+  return value.replace(/'/g, "''");
 }
