@@ -430,19 +430,10 @@ BEGIN
     WHERE r.run_id = _cascade_force_skip_steps.run_id
       AND skipped_count.count > 0
   )
-  SELECT COUNT(*) INTO v_total_skipped FROM skipped;
-
-  -- Archive queued/started task messages for all steps that were just skipped
-  -- (query step_states since CTE state is no longer accessible)
-  PERFORM pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id))
-  FROM pgflow.step_tasks st
-  JOIN pgflow.step_states ss ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug
-  WHERE st.run_id = _cascade_force_skip_steps.run_id
-    AND st.status IN ('queued', 'started')
-    AND st.message_id IS NOT NULL
-    AND ss.status = 'skipped'
-    AND ss.skipped_at >= now() - interval '1 second'  -- Only recently skipped
-  HAVING COUNT(st.message_id) > 0;
+  SELECT skipped_count.count
+  INTO v_total_skipped
+  FROM (SELECT COUNT(*) AS count FROM skipped) skipped_count
+  LEFT JOIN archived_messages ON true;
 
   RETURN v_total_skipped;
 END;
@@ -532,7 +523,11 @@ BEGIN
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     )
-    SELECT flow_slug, step_slug, required_input_pattern, forbidden_input_pattern
+    SELECT
+      flow_slug,
+      step_slug,
+      required_input_pattern,
+      forbidden_input_pattern
     INTO v_first_fail
     FROM condition_evaluations
     WHERE NOT condition_met AND when_unmet = 'fail'
@@ -1327,19 +1322,17 @@ IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id
   RETURN;
 END IF;
 
--- Late callback guard: if step is not 'started', don't mutate step/run state
--- Capture previous status BEFORE any CTE updates (for transition-based decrement)
-SELECT ss.status INTO v_prev_step_status
-FROM pgflow.step_states ss
+-- Late callback guard: lock run + step rows and use current step status
+-- under lock so concurrent fail_task calls cannot read stale status.
+SELECT ss.status, r.flow_slug INTO v_prev_step_status, v_flow_slug
+FROM pgflow.runs r
+JOIN pgflow.step_states ss ON ss.run_id = r.run_id
 WHERE ss.run_id = fail_task.run_id
-  AND ss.step_slug = fail_task.step_slug;
+  AND ss.step_slug = fail_task.step_slug
+FOR UPDATE OF r, ss;
 
 IF v_prev_step_status IS NOT NULL AND v_prev_step_status != 'started' THEN
   -- Archive the task message if present
-  SELECT r.flow_slug INTO v_flow_slug
-  FROM pgflow.runs r
-  WHERE r.run_id = fail_task.run_id;
-  
   PERFORM pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id))
   FROM pgflow.step_tasks st
   WHERE st.run_id = fail_task.run_id
@@ -1355,18 +1348,7 @@ IF v_prev_step_status IS NOT NULL AND v_prev_step_status != 'started' THEN
   RETURN;
 END IF;
 
-WITH run_lock AS (
-  SELECT * FROM pgflow.runs
-  WHERE pgflow.runs.run_id = fail_task.run_id
-  FOR UPDATE
-),
-step_lock AS (
-  SELECT * FROM pgflow.step_states
-  WHERE pgflow.step_states.run_id = fail_task.run_id
-    AND pgflow.step_states.step_slug = fail_task.step_slug
-  FOR UPDATE
-),
-flow_info AS (
+WITH flow_info AS (
   SELECT r.flow_slug
   FROM pgflow.runs r
   WHERE r.run_id = fail_task.run_id

@@ -152,8 +152,8 @@ describe('if option typing in step methods', () => {
     it('should reject invalid keys in if', () => {
       type FlowInput = { userId: string; role: string };
 
-      // @ts-expect-error - 'invalidKey' does not exist on FlowInput
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        // @ts-expect-error - 'invalidKey' does not exist on FlowInput
         { slug: 'check', if: { invalidKey: 'value' } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
@@ -163,8 +163,8 @@ describe('if option typing in step methods', () => {
     it('should reject wrong value types in if', () => {
       type FlowInput = { userId: string; role: string };
 
-      // @ts-expect-error - role should be string, not number
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        // @ts-expect-error - role should be string, not number
         { slug: 'check', if: { role: 123 } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
@@ -337,8 +337,8 @@ describe('ifNot option typing in step methods', () => {
     it('should reject invalid keys in ifNot', () => {
       type FlowInput = { userId: string; role: string };
 
-      // @ts-expect-error - 'invalidKey' does not exist on FlowInput
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        // @ts-expect-error - 'invalidKey' does not exist on FlowInput
         { slug: 'check', ifNot: { invalidKey: 'value' } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
@@ -348,8 +348,8 @@ describe('ifNot option typing in step methods', () => {
     it('should reject wrong value types in ifNot', () => {
       type FlowInput = { userId: string; role: string };
 
-      // @ts-expect-error - role should be string, not number
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        // @ts-expect-error - role should be string, not number
         { slug: 'check', ifNot: { role: 123 } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
@@ -520,6 +520,17 @@ describe('whenUnmet requires if or ifNot', () => {
 
       expectTypeOf(flow).toBeObject();
     });
+
+    it('should infer omitted whenUnmet as skip when condition is present', () => {
+      const flow = new Flow<{ active: boolean }>({ slug: 'test_flow' })
+        .step({ slug: 'conditioned', if: { active: true } }, () => 'ok')
+        .step({ slug: 'consumer', dependsOn: ['conditioned'] }, (deps) => {
+          expectTypeOf(deps).toEqualTypeOf<{ conditioned?: string }>();
+          return deps.conditioned ?? 'fallback';
+        });
+
+      expectTypeOf(flow).toBeObject();
+    });
   });
 
   describe('array method', () => {
@@ -563,8 +574,8 @@ describe('whenUnmet requires if or ifNot', () => {
         () => ({ done: true })
       );
 
-      // @ts-expect-error - whenUnmet requires if or ifNot
       flow.step(
+        // @ts-expect-error - whenUnmet requires if or ifNot
         { slug: 'second', dependsOn: ['first'], whenUnmet: 'skip' },
         // Handler typed as any to suppress cascading error from failed overload
         (deps: any) => deps.first.done

@@ -93,7 +93,11 @@ BEGIN
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     )
-    SELECT flow_slug, step_slug, required_input_pattern, forbidden_input_pattern
+    SELECT
+      flow_slug,
+      step_slug,
+      required_input_pattern,
+      forbidden_input_pattern
     INTO v_first_fail
     FROM condition_evaluations
     WHERE NOT condition_met AND when_unmet = 'fail'
