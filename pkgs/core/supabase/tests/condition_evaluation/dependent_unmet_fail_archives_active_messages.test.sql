@@ -26,13 +26,20 @@ with run as (
 )
 select run_id into temporary run_ids from run;
 
-select pgflow_tests.read_and_start('dependent_fail_archive');
-
+with started as (
+  select * from pgflow_tests.read_and_start('dependent_fail_archive', qty => 10)
+),
+target as (
+  select run_id, step_slug, task_index
+  from started
+  where step_slug = 'first'
+  limit 1
+)
 select pgflow.complete_task(
-  run_id => (select run_id from run_ids),
-  step_slug => 'first',
-  task_index => 0,
-  output => '{"ok": false}'::jsonb
+  (select run_id from target),
+  (select step_slug from target),
+  (select task_index from target),
+  '{"ok": false}'::jsonb
 );
 
 select is(

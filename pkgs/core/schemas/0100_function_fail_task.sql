@@ -14,8 +14,10 @@ DECLARE
   v_step_failed boolean;
   v_step_skipped boolean;
   v_when_exhausted text;
-  v_task_exhausted boolean;  -- True if task has exhausted retries
-  v_flow_slug_for_deps text;  -- Used for decrementing remaining_deps on plain skip
+  v_task_exhausted boolean;
+  v_flow_slug_for_deps text;
+  v_prev_step_status text;
+  v_flow_slug text;
 begin
 
 -- If run is already failed, no retries allowed
@@ -40,6 +42,34 @@ IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id
   GROUP BY r.flow_slug
   HAVING COUNT(st.message_id) > 0;
 
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+  WHERE pgflow.step_tasks.run_id = fail_task.run_id
+    AND pgflow.step_tasks.step_slug = fail_task.step_slug
+    AND pgflow.step_tasks.task_index = fail_task.task_index;
+  RETURN;
+END IF;
+
+-- Late callback guard: if step is not 'started', don't mutate step/run state
+-- Capture previous status BEFORE any CTE updates (for transition-based decrement)
+SELECT ss.status INTO v_prev_step_status
+FROM pgflow.step_states ss
+WHERE ss.run_id = fail_task.run_id
+  AND ss.step_slug = fail_task.step_slug;
+
+IF v_prev_step_status IS NOT NULL AND v_prev_step_status != 'started' THEN
+  -- Archive the task message if present
+  SELECT r.flow_slug INTO v_flow_slug
+  FROM pgflow.runs r
+  WHERE r.run_id = fail_task.run_id;
+  
+  PERFORM pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id))
+  FROM pgflow.step_tasks st
+  WHERE st.run_id = fail_task.run_id
+    AND st.step_slug = fail_task.step_slug
+    AND st.task_index = fail_task.task_index
+    AND st.message_id IS NOT NULL
+  HAVING COUNT(st.message_id) > 0;
+  
   RETURN QUERY SELECT * FROM pgflow.step_tasks
   WHERE pgflow.step_tasks.run_id = fail_task.run_id
     AND pgflow.step_tasks.step_slug = fail_task.step_slug
@@ -152,9 +182,13 @@ run_update AS (
                   WHEN (select status from maybe_fail_step) = 'failed' THEN now()
                   ELSE NULL
                   END,
-      -- Decrement remaining_steps when step was skipped (not failed, run continues)
+      -- Decrement remaining_steps only on FIRST transition to skipped
+      -- (not when step was already skipped and a second task fails)
+      -- Uses PL/pgSQL variable captured before CTE chain
       remaining_steps = CASE
-                        WHEN (select status from maybe_fail_step) = 'skipped' THEN pgflow.runs.remaining_steps - 1
+                        WHEN (select status from maybe_fail_step) = 'skipped'
+                             AND v_prev_step_status != 'skipped'
+                        THEN pgflow.runs.remaining_steps - 1
                         ELSE pgflow.runs.remaining_steps
                         END
   WHERE pgflow.runs.run_id = fail_task.run_id
@@ -193,6 +227,17 @@ END IF;
 
 -- Handle step skipping (when_exhausted = 'skip' or 'skip-cascade')
  IF v_task_exhausted AND v_step_skipped THEN
+  -- Archive all queued/started sibling task messages for this step
+  PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+  FROM pgflow.step_tasks st
+  JOIN pgflow.runs r ON st.run_id = r.run_id
+  WHERE st.run_id = fail_task.run_id
+    AND st.step_slug = fail_task.step_slug
+    AND st.status IN ('queued', 'started')
+    AND st.message_id IS NOT NULL
+  GROUP BY r.flow_slug
+  HAVING COUNT(st.message_id) > 0;
+
   -- Send broadcast event for step skipped
   PERFORM realtime.send(
     jsonb_build_object(

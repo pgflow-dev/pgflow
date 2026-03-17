@@ -10,7 +10,21 @@ select pgflow.add_step('test_flow', 'step_b');  -- Independent step to verify ru
 
 -- Start flow and fail step_a's task
 select pgflow.start_flow('test_flow', '{}'::jsonb);
-select pgflow_tests.poll_and_fail('test_flow');
+with started as (
+  select * from pgflow_tests.read_and_start('test_flow', qty => 10)
+),
+target as (
+  select run_id, step_slug, task_index
+  from started
+  where step_slug = 'step_a'
+  limit 1
+)
+select pgflow.fail_task(
+  (select run_id from target),
+  (select step_slug from target),
+  (select task_index from target),
+  (select step_slug from target) || ' FAILED'
+);
 
 -- TEST 1: Task should be failed (it still failed, but skip mode affects step/run)
 select is(
