@@ -1,7 +1,7 @@
 -- Test: _cascade_force_skip_steps - Single step skip (base case)
 -- Verifies the function can skip a single step without dependencies
 begin;
-select plan(5);
+select plan(6);
 
 -- Reset database and create a simple flow with no dependencies
 select pgflow_tests.reset_db();
@@ -24,10 +24,14 @@ select is(
 );
 
 -- Skip step_a
-select pgflow._cascade_force_skip_steps(
-  (select run_id from run_ids),
-  'step_a',
-  'condition_unmet'
+select is(
+  (select pgflow._cascade_force_skip_steps(
+    (select run_id from run_ids),
+    'step_a',
+    'condition_unmet'
+  )),
+  1::int,
+  'Should return count of 1 skipped step'
 );
 
 -- Test 2: step_a should now have status 'skipped'
