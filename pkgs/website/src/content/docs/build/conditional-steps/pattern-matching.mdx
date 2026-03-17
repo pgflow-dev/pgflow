@@ -60,8 +60,8 @@ new Flow<Input>({ slug: 'onboarding' }).step(
     whenUnmet: 'skip',
   },
   async (input) => {
-    // input.run.plan is guaranteed to be 'premium' here
-    return await enablePremiumFeatures(input.run.userId);
+    // input.plan is guaranteed to be 'premium' here
+    return await enablePremiumFeatures(input.userId);
   }
 );
 ```
@@ -73,7 +73,7 @@ For dependent steps, the pattern matches against an object containing all depend
 ```typescript
 new Flow<{ url: string }>({ slug: 'contentPipeline' })
   .step({ slug: 'analyze' }, async (input) => {
-    const result = await analyzeContent(input.run.url);
+    const result = await analyzeContent(input.url);
     return { needsModeration: result.flagged, content: result.text };
   })
   .step(
