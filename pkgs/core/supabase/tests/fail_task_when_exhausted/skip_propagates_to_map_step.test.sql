@@ -1,11 +1,11 @@
--- Test: when_failed='skip' propagates correctly to map step dependent
+-- Test: when_exhausted='skip' propagates correctly to map step dependent
 --
 -- This mirrors the behavior of when_unmet='skip' for conditions:
 -- - Map step with skipped dependency gets initial_tasks=0
 -- - Map step auto-completes with output=[]
 --
 -- Flow structure:
---   producer (when_failed='skip', max_attempts=0) → map_consumer (map step)
+--   producer (when_exhausted='skip', max_attempts=0) → map_consumer (map step)
 --
 -- Expected behavior:
 --   1. producer fails and gets skipped
@@ -20,7 +20,7 @@ select pgflow_tests.reset_db();
 
 -- Create flow with producer -> map_consumer
 select pgflow.create_flow('map_skip_test');
-select pgflow.add_step('map_skip_test', 'producer', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('map_skip_test', 'producer', max_attempts => 0, when_exhausted => 'skip');
 -- Map consumer: step_type='map' handles empty array from skipped producer
 select pgflow.add_step('map_skip_test', 'map_consumer', array['producer'], step_type => 'map');
 

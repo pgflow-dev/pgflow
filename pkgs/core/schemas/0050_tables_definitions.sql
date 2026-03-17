@@ -27,7 +27,7 @@ create table pgflow.steps (
   required_input_pattern jsonb,  -- JSON pattern for @> containment check (if)
   forbidden_input_pattern jsonb,  -- JSON pattern for NOT @> containment check (ifNot)
   when_unmet text not null default 'skip',  -- What to do when condition not met (skip is natural default)
-  when_failed text not null default 'fail',  -- What to do when handler fails after retries
+  when_exhausted text not null default 'fail',  -- What to do when handler fails after retries
   created_at timestamptz not null default now(),
   primary key (flow_slug, step_slug),
   unique (flow_slug, step_index),  -- Ensure step_index is unique within a flow
@@ -38,7 +38,7 @@ create table pgflow.steps (
   constraint opt_timeout_is_positive check (opt_timeout is null or opt_timeout > 0),
   constraint opt_start_delay_is_nonnegative check (opt_start_delay is null or opt_start_delay >= 0),
   constraint when_unmet_is_valid check (when_unmet in ('fail', 'skip', 'skip-cascade')),
-  constraint when_failed_is_valid check (when_failed in ('fail', 'skip', 'skip-cascade'))
+  constraint when_exhausted_is_valid check (when_exhausted in ('fail', 'skip', 'skip-cascade'))
 );
 
 -- Dependencies table - stores relationships between steps

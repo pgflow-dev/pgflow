@@ -4,7 +4,7 @@ import { describe, it, expectTypeOf } from 'vitest';
 /**
  * Type tests for skippable step dependencies
  *
- * When a step has `whenUnmet: 'skip' | 'skip-cascade'` or `retriesExhausted: 'skip' | 'skip-cascade'`,
+ * When a step has `whenUnmet: 'skip' | 'skip-cascade'` or `whenExhausted: 'skip' | 'skip-cascade'`,
  * it may not execute. Dependent steps should receive that step's output as an optional key.
  */
 
@@ -84,10 +84,10 @@ describe('skippable deps type safety', () => {
     });
   });
 
-  describe('core skippability - retriesExhausted', () => {
-    it('step with retriesExhausted: skip makes output optional for dependents', () => {
+  describe('core skippability - whenExhausted', () => {
+    it('step with whenExhausted: skip makes output optional for dependents', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'risky', retriesExhausted: 'skip' }, (input) => ({
+        .step({ slug: 'risky', whenExhausted: 'skip' }, (input) => ({
           result: input.value * 2,
         }))
         .step({ slug: 'dependent', dependsOn: ['risky'] }, (deps) => {
@@ -103,11 +103,11 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with retriesExhausted: skip-cascade keeps output required (cascade skips dependents)', () => {
+    it('step with whenExhausted: skip-cascade keeps output required (cascade skips dependents)', () => {
       // skip-cascade means if the step is skipped, its dependents are ALSO skipped
       // So if the dependent handler runs at all, the parent must have succeeded
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'risky', retriesExhausted: 'skip-cascade' }, (input) => ({
+        .step({ slug: 'risky', whenExhausted: 'skip-cascade' }, (input) => ({
           result: input.value * 2,
         }))
         .step({ slug: 'dependent', dependsOn: ['risky'] }, (deps) => {
@@ -122,9 +122,9 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with retriesExhausted: fail keeps output required', () => {
+    it('step with whenExhausted: fail keeps output required', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'risky', retriesExhausted: 'fail' }, (input) => ({
+        .step({ slug: 'risky', whenExhausted: 'fail' }, (input) => ({
           result: input.value * 2,
         }))
         .step({ slug: 'dependent', dependsOn: ['risky'] }, (deps) => {
@@ -169,8 +169,8 @@ describe('skippable deps type safety', () => {
 
     it('all deps skippable: all optional', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'skip1', retriesExhausted: 'skip' }, () => ({ a: 1 }))
-        .step({ slug: 'skip2', retriesExhausted: 'skip' }, () => ({ b: 2 }))
+        .step({ slug: 'skip1', whenExhausted: 'skip' }, () => ({ a: 1 }))
+        .step({ slug: 'skip2', whenExhausted: 'skip' }, () => ({ b: 2 }))
         .step({ slug: 'dependent', dependsOn: ['skip1', 'skip2'] }, (deps) => {
           expectTypeOf(deps.skip1).toEqualTypeOf<{ a: number } | undefined>();
           expectTypeOf(deps.skip2).toEqualTypeOf<{ b: number } | undefined>();
@@ -205,7 +205,7 @@ describe('skippable deps type safety', () => {
   describe('chains and graphs', () => {
     it('chain A(skip) -> B -> C: A optional in B, B required in C', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'a', retriesExhausted: 'skip' }, () => ({ aVal: 1 }))
+        .step({ slug: 'a', whenExhausted: 'skip' }, () => ({ aVal: 1 }))
         .step({ slug: 'b', dependsOn: ['a'] }, (deps) => {
           expectTypeOf(deps.a).toEqualTypeOf<{ aVal: number } | undefined>();
           return { bVal: 2 };
@@ -225,7 +225,7 @@ describe('skippable deps type safety', () => {
 
     it('diamond: A(skip) -> B, A -> C, B+C -> D: A optional in B and C', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'a', retriesExhausted: 'skip' }, () => ({ aVal: 1 }))
+        .step({ slug: 'a', whenExhausted: 'skip' }, () => ({ aVal: 1 }))
         .step({ slug: 'b', dependsOn: ['a'] }, (deps) => {
           expectTypeOf(deps.a).toEqualTypeOf<{ aVal: number } | undefined>();
           return { bVal: 2 };
@@ -259,7 +259,7 @@ describe('skippable deps type safety', () => {
       // If A is skipped, B is also skipped (cascade), so B never runs with undefined A
       // Therefore B should see A as required, not optional
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'a', retriesExhausted: 'skip-cascade' }, () => ({
+        .step({ slug: 'a', whenExhausted: 'skip-cascade' }, () => ({
           aVal: 1,
         }))
         .step({ slug: 'b', dependsOn: ['a'] }, (deps) => {
@@ -284,7 +284,7 @@ describe('skippable deps type safety', () => {
   describe('edge cases', () => {
     it('root step with skip: valid config, no dependents affected (no deps)', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' }).step(
-        { slug: 'root', retriesExhausted: 'skip' },
+        { slug: 'root', whenExhausted: 'skip' },
         (input) => ({ result: input.value })
       );
 
@@ -295,7 +295,7 @@ describe('skippable deps type safety', () => {
 
     it('map step with skip: entire output array is optional type', () => {
       const flow = new Flow<string[]>({ slug: 'test' })
-        .map({ slug: 'process', retriesExhausted: 'skip' }, (item) =>
+        .map({ slug: 'process', whenExhausted: 'skip' }, (item) =>
           item.toUpperCase()
         )
         .step({ slug: 'aggregate', dependsOn: ['process'] }, (deps) => {
@@ -311,7 +311,7 @@ describe('skippable deps type safety', () => {
 
     it('array step with skip: entire output array is optional type', () => {
       const flow = new Flow<{ count: number }>({ slug: 'test' })
-        .array({ slug: 'generate', retriesExhausted: 'skip' }, (input) =>
+        .array({ slug: 'generate', whenExhausted: 'skip' }, (input) =>
           Array(input.count)
             .fill(0)
             .map((_, i) => i)
@@ -327,14 +327,14 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('both whenUnmet and retriesExhausted set: still skippable', () => {
+    it('both whenUnmet and whenExhausted set: still skippable', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
           {
             slug: 'both',
             if: { value: 42 },
             whenUnmet: 'skip',
-            retriesExhausted: 'skip',
+            whenExhausted: 'skip',
           },
           () => ({ result: 1 })
         )
@@ -355,7 +355,7 @@ describe('skippable deps type safety', () => {
   describe('type inference and narrowing', () => {
     it('cannot access property on optional dep without null check', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'skippable', retriesExhausted: 'skip' }, () => ({
+        .step({ slug: 'skippable', whenExhausted: 'skip' }, () => ({
           foo: 'bar',
         }))
         .step({ slug: 'dependent', dependsOn: ['skippable'] }, (deps) => {
@@ -374,7 +374,7 @@ describe('skippable deps type safety', () => {
 
     it('type narrowing works after existence check', () => {
       new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'skippable', retriesExhausted: 'skip' }, () => ({
+        .step({ slug: 'skippable', whenExhausted: 'skip' }, () => ({
           foo: 'bar',
         }))
         .step({ slug: 'dependent', dependsOn: ['skippable'] }, (deps) => {
@@ -388,7 +388,7 @@ describe('skippable deps type safety', () => {
 
     it('handler receives correctly typed deps object', () => {
       new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'skip1', retriesExhausted: 'skip' }, () => ({ a: 1 }))
+        .step({ slug: 'skip1', whenExhausted: 'skip' }, () => ({ a: 1 }))
         .step({ slug: 'req1' }, () => ({ b: 'str' }))
         .step({ slug: 'dependent', dependsOn: ['skip1', 'req1'] }, (deps) => {
           // Handler parameter should have correct mixed optionality
@@ -405,7 +405,7 @@ describe('skippable deps type safety', () => {
     it('StepOutput returns output type (not metadata)', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'normal' }, () => ({ result: 42 }))
-        .step({ slug: 'skippable', retriesExhausted: 'skip' }, () => ({
+        .step({ slug: 'skippable', whenExhausted: 'skip' }, () => ({
           other: 'str',
         }));
 
@@ -420,7 +420,7 @@ describe('skippable deps type safety', () => {
     it('keyof ExtractFlowSteps still returns slug union', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'a' }, () => 1)
-        .step({ slug: 'b', retriesExhausted: 'skip' }, () => 2)
+        .step({ slug: 'b', whenExhausted: 'skip' }, () => 2)
         .step({ slug: 'c', dependsOn: ['a', 'b'] }, () => 3);
 
       type StepSlugs = keyof import('../../src/index.js').ExtractFlowSteps<
@@ -433,7 +433,7 @@ describe('skippable deps type safety', () => {
   describe('dependent map with skippable array source', () => {
     it('dependent map on skippable array: deps should be optional', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .array({ slug: 'items', retriesExhausted: 'skip' }, () => [1, 2, 3])
+        .array({ slug: 'items', whenExhausted: 'skip' }, () => [1, 2, 3])
         .map({ slug: 'double', array: 'items' }, (item) => item * 2)
         .step({ slug: 'sum', dependsOn: ['double'] }, (deps) => {
           // The map step itself doesn't have skip, but its source does
@@ -459,7 +459,7 @@ describe('skippable deps compile-time errors', () => {
   describe('direct property access on optional deps', () => {
     it('should reject direct property access on skippable dep without null check', () => {
       new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'maybeSkipped', retriesExhausted: 'skip' }, () => ({
+        .step({ slug: 'maybeSkipped', whenExhausted: 'skip' }, () => ({
           data: 'result',
         }))
         .step({ slug: 'consumer', dependsOn: ['maybeSkipped'] }, (deps) => {
@@ -497,10 +497,10 @@ describe('skippable deps compile-time errors', () => {
         });
     });
 
-    it('should ALLOW direct property access with retriesExhausted: skip-cascade (cascade skips dependents)', () => {
+    it('should ALLOW direct property access with whenExhausted: skip-cascade (cascade skips dependents)', () => {
       // With skip-cascade, if the dependent runs, the parent must have succeeded
       new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'risky', retriesExhausted: 'skip-cascade' }, () => ({
+        .step({ slug: 'risky', whenExhausted: 'skip-cascade' }, () => ({
           status: 'ok',
         }))
         .step({ slug: 'next', dependsOn: ['risky'] }, (deps) => {
@@ -515,7 +515,7 @@ describe('skippable deps compile-time errors', () => {
     it('should allow direct access on required dep but reject on optional', () => {
       new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'required' }, () => ({ reqData: 'always' }))
-        .step({ slug: 'optional', retriesExhausted: 'skip' }, () => ({
+        .step({ slug: 'optional', whenExhausted: 'skip' }, () => ({
           optData: 'maybe',
         }))
         .step(
@@ -536,7 +536,7 @@ describe('skippable deps compile-time errors', () => {
   describe('array and map steps with skip modes', () => {
     it('should reject direct access on skippable array step output', () => {
       new Flow<{ items: string[] }>({ slug: 'test' })
-        .array({ slug: 'processed', retriesExhausted: 'skip' }, (input) =>
+        .array({ slug: 'processed', whenExhausted: 'skip' }, (input) =>
           input.items.map((s) => s.toUpperCase())
         )
         .step({ slug: 'consumer', dependsOn: ['processed'] }, (deps) => {
@@ -549,7 +549,7 @@ describe('skippable deps compile-time errors', () => {
     it('should reject direct access on skippable map step output', () => {
       new Flow<string[]>({ slug: 'test' })
         .map(
-          { slug: 'doubled', retriesExhausted: 'skip' },
+          { slug: 'doubled', whenExhausted: 'skip' },
           (item) => item + item
         )
         .step({ slug: 'consumer', dependsOn: ['doubled'] }, (deps) => {

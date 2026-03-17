@@ -13,9 +13,9 @@ select is(
   pgflow._get_flow_shape('test_flow'),
   '{
     "steps": [
-      {"slug": "step_with_if", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}},
-      {"slug": "step_with_ifnot", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": true, "value": {"type": "deleted"}}},
-      {"slug": "step_with_both", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": true, "value": {"type": "archived"}}}
+      {"slug": "step_with_if", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "step_with_ifnot", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": true, "value": {"type": "deleted"}}},
+      {"slug": "step_with_both", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": true, "value": {"type": "archived"}}}
     ]
   }'::jsonb,
   'Should return correct shape with pattern conditions'

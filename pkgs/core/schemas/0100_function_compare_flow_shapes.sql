@@ -121,15 +121,15 @@ BEGIN
         );
       END IF;
 
-      -- Compare whenFailed (structural - affects DAG execution semantics)
-      IF v_local_step->>'whenFailed' != v_db_step->>'whenFailed' THEN
+      -- Compare whenExhausted (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenExhausted' != v_db_step->>'whenExhausted' THEN
         v_differences := array_append(
           v_differences,
           format(
-            $$Step at index %s: whenFailed differs '%s' vs '%s'$$,
+            $$Step at index %s: whenExhausted differs '%s' vs '%s'$$,
             v_idx,
-            v_local_step->>'whenFailed',
-            v_db_step->>'whenFailed'
+            v_local_step->>'whenExhausted',
+            v_db_step->>'whenExhausted'
           )
         );
       END IF;
