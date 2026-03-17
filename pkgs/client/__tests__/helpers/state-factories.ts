@@ -22,7 +22,9 @@ export function createRunRow(overrides: Partial<RunRow> = {}): RunRow {
   };
 }
 
-export function createStepStateRow(overrides: Partial<StepStateRow> = {}): StepStateRow {
+export function createStepStateRow(
+  overrides: Partial<StepStateRow> = {}
+): StepStateRow {
   return {
     run_id: '123e4567-e89b-12d3-a456-426614174000',
     step_slug: 'test-step',
@@ -30,16 +32,22 @@ export function createStepStateRow(overrides: Partial<StepStateRow> = {}): StepS
     started_at: null,
     completed_at: null,
     failed_at: null,
+    skipped_at: null,
     error_message: null,
+    skip_reason: null,
     created_at: new Date().toISOString(),
     flow_slug: 'test-flow',
     remaining_deps: 0,
     remaining_tasks: 1,
+    initial_tasks: null,
+    output: null,
     ...overrides,
   };
 }
 
-export function createFlowRun(overrides: Partial<Parameters<typeof FlowRun['constructor']>[0]> = {}): FlowRun {
+export function createFlowRun(
+  overrides: Partial<Parameters<(typeof FlowRun)['constructor']>[0]> = {}
+): FlowRun {
   return new FlowRun({
     run_id: '123e4567-e89b-12d3-a456-426614174000',
     flow_slug: 'test-flow',
@@ -56,7 +64,9 @@ export function createFlowRun(overrides: Partial<Parameters<typeof FlowRun['cons
   });
 }
 
-export function createFlowStep(overrides: Partial<Parameters<typeof FlowStep['constructor']>[0]> = {}): FlowStep {
+export function createFlowStep(
+  overrides: Partial<Parameters<(typeof FlowStep)['constructor']>[0]> = {}
+): FlowStep {
   return new FlowStep({
     run_id: '123e4567-e89b-12d3-a456-426614174000',
     step_slug: 'test-step' as any,
@@ -67,6 +77,8 @@ export function createFlowStep(overrides: Partial<Parameters<typeof FlowStep['co
     started_at: null,
     completed_at: null,
     failed_at: null,
+    skipped_at: null,
+    skip_reason: null,
     ...overrides,
   });
 }
@@ -79,7 +91,7 @@ export function createRunInState(
   overrides: Partial<RunRow> = {}
 ): RunRow {
   const baseRun = createRunRow(overrides);
-  
+
   switch (status) {
     case 'started':
       return {
@@ -87,7 +99,7 @@ export function createRunInState(
         status: 'started',
         started_at: new Date().toISOString(),
       };
-      
+
     case 'completed':
       return {
         ...baseRun,
@@ -97,7 +109,7 @@ export function createRunInState(
         output: { result: 'success' } as Json,
         remaining_steps: 0,
       };
-      
+
     case 'failed':
       return {
         ...baseRun,
@@ -112,22 +124,22 @@ export function createRunInState(
  * Creates a step in a specific state with appropriate timestamps and fields
  */
 export function createStepInState(
-  status: 'created' | 'started' | 'completed' | 'failed',
+  status: 'created' | 'started' | 'completed' | 'failed' | 'skipped',
   overrides: Partial<StepStateRow> = {}
 ): StepStateRow {
   const baseStep = createStepStateRow(overrides);
-  
+
   switch (status) {
     case 'created':
       return baseStep;
-      
+
     case 'started':
       return {
         ...baseStep,
         status: 'started',
         started_at: new Date().toISOString(),
       };
-      
+
     case 'completed':
       return {
         ...baseStep,
@@ -135,7 +147,7 @@ export function createStepInState(
         started_at: new Date(Date.now() - 30000).toISOString(),
         completed_at: new Date().toISOString(),
       };
-      
+
     case 'failed':
       return {
         ...baseStep,
@@ -144,21 +156,31 @@ export function createStepInState(
         failed_at: new Date().toISOString(),
         error_message: 'Step failed',
       };
+
+    case 'skipped':
+      return {
+        ...baseStep,
+        status: 'skipped',
+        skipped_at: new Date().toISOString(),
+        skip_reason: 'condition_unmet',
+      };
   }
 }
 
 /**
  * Creates a complete flow run state with multiple steps
  */
-export function createCompleteFlowState(options: {
-  runId?: string;
-  flowSlug?: string;
-  runStatus?: 'started' | 'completed' | 'failed';
-  steps?: Array<{
-    stepSlug: string;
-    status: 'created' | 'started' | 'completed' | 'failed';
-  }>;
-} = {}): { run: RunRow; steps: StepStateRow[] } {
+export function createCompleteFlowState(
+  options: {
+    runId?: string;
+    flowSlug?: string;
+    runStatus?: 'started' | 'completed' | 'failed';
+    steps?: Array<{
+      stepSlug: string;
+      status: 'created' | 'started' | 'completed' | 'failed' | 'skipped';
+    }>;
+  } = {}
+): { run: RunRow; steps: StepStateRow[] } {
   const {
     runId = '123e4567-e89b-12d3-a456-426614174000',
     flowSlug = 'test-flow',
@@ -168,13 +190,13 @@ export function createCompleteFlowState(options: {
       { stepSlug: 'step-2', status: 'created' },
     ],
   } = options;
-  
+
   const run = createRunInState(runStatus, {
     run_id: runId,
     flow_slug: flowSlug,
-    remaining_steps: steps.filter(s => s.status !== 'completed').length,
+    remaining_steps: steps.filter((s) => s.status !== 'completed').length,
   });
-  
+
   const stepStates = steps.map(({ stepSlug, status }) =>
     createStepInState(status, {
       run_id: runId,
@@ -182,6 +204,6 @@ export function createCompleteFlowState(options: {
       step_slug: stepSlug,
     })
   );
-  
+
   return { run, steps: stepStates };
 }
