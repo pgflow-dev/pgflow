@@ -15,8 +15,8 @@ select is(
       'existing_flow',
       '{
         "steps": [
-          {"slug": "first", "stepType": "single", "dependencies": []},
-          {"slug": "second", "stepType": "single", "dependencies": ["first"]}
+          {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+          {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
         ]
       }'::jsonb
     ) as result
@@ -33,8 +33,8 @@ select is(
       'existing_flow',
       '{
         "steps": [
-          {"slug": "first", "stepType": "single", "dependencies": []},
-          {"slug": "second", "stepType": "single", "dependencies": ["first"]}
+          {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+          {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
         ]
       }'::jsonb
     ) as result

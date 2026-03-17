@@ -22,7 +22,19 @@ as $$
                 AND dep.step_slug = step.step_slug
             ),
             '[]'::jsonb
-          )
+          ),
+          'whenUnmet', step.when_unmet,
+          'whenFailed', step.when_failed,
+          'requiredInputPattern', CASE
+            WHEN step.required_input_pattern IS NULL
+            THEN '{"defined": false}'::jsonb
+            ELSE jsonb_build_object('defined', true, 'value', step.required_input_pattern)
+          END,
+          'forbiddenInputPattern', CASE
+            WHEN step.forbidden_input_pattern IS NULL
+            THEN '{"defined": false}'::jsonb
+            ELSE jsonb_build_object('defined', true, 'value', step.forbidden_input_pattern)
+          END
         )
         ORDER BY step.step_index
       ),

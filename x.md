@@ -1,0 +1,1 @@
+please go through all the docs we have updated in this PR and make sure that we are adhering to the writing-pgflow-flows skill - there is no input.run anymore, but flowInput. and dependent steps need to await ctx.flowInput as they dont have the access to it directly anymore, input.run is no longer available
