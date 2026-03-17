@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(7);
 
 select pgflow_tests.reset_db();
 
@@ -80,6 +80,19 @@ select is(
   ),
   'failed',
   'run:failed payload should include failed status'
+);
+
+select is(
+  (
+    select payload->>'error_message'
+    from pgflow_tests.get_realtime_message(
+      event_type => 'step:failed',
+      run_id => (select run_id from run_ids),
+      step_slug => 'guarded'
+    )
+  ),
+  'Condition not met',
+  'step:failed payload should use stable condition error message'
 );
 
 drop table if exists run_ids;

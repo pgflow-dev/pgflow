@@ -1,5 +1,5 @@
 begin;
-select plan(5);
+select plan(6);
 
 select pgflow_tests.reset_db();
 
@@ -90,6 +90,17 @@ select is(
   ),
   (select count(*)::int from pre_failure_msgs),
   'previously active messages should be in archive'
+);
+
+select is(
+  (
+    select error_message
+    from pgflow.step_states
+    where run_id = (select run_id from run_ids)
+      and step_slug = 'checker'
+  ),
+  'Condition not met',
+  'checker failure should use stable condition error message'
 );
 
 drop table if exists run_ids;

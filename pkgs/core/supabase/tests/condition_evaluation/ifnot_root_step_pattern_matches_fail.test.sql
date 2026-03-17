@@ -30,12 +30,12 @@ select is(
   'Step with matched ifNot pattern and whenUnmet=fail should be failed'
 );
 
--- Test 2: Error message should indicate condition not met
+-- Test 2: Error message should remain stable and minimal
 select is(
   (select error_message from pgflow.step_states
    where run_id = (select run_id from run_ids) and step_slug = 'no_admin_step'),
   'Condition not met',
-  'Error message should indicate condition not met'
+  'Error message should use stable condition error message'
 );
 
 -- Test 3: No task should be created for failed step

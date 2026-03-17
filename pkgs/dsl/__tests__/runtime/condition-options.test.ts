@@ -149,6 +149,24 @@ describe('Condition Options', () => {
       );
       expect(statements[2]).toContain("when_unmet => 'skip'");
     });
+
+    it('should escape apostrophes in required_input_pattern', () => {
+      const flow = new Flow({ slug: 'test_flow' }).step(
+        {
+          slug: 'step1',
+          if: { note: "O'Reilly" },
+          whenUnmet: 'skip',
+        },
+        () => 'result'
+      );
+
+      const statements = compileFlow(flow);
+
+      expect(statements).toHaveLength(2);
+      expect(statements[1]).toContain(
+        'required_input_pattern => \'{"note":"O\'\'Reilly"}\''
+      );
+    });
   });
 
   describe('whenUnmet validation', () => {
@@ -283,6 +301,24 @@ describe('Condition Options', () => {
         'forbidden_input_pattern => \'{"first":{"error":true}}\''
       );
       expect(statements[2]).toContain("when_unmet => 'skip'");
+    });
+
+    it('should escape apostrophes in forbidden_input_pattern', () => {
+      const flow = new Flow({ slug: 'test_flow' }).step(
+        {
+          slug: 'step1',
+          ifNot: { note: "Don't run" },
+          whenUnmet: 'skip',
+        },
+        () => 'result'
+      );
+
+      const statements = compileFlow(flow);
+
+      expect(statements).toHaveLength(2);
+      expect(statements[1]).toContain(
+        'forbidden_input_pattern => \'{"note":"Don\'\'t run"}\''
+      );
     });
   });
 });

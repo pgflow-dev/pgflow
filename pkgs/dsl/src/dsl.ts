@@ -688,13 +688,13 @@ export class Flow<
       : Simplify<
           {
             [K in StepDependencies[SlugType][number] as K extends keyof Steps
-              ? Steps[K]['skippable'] extends true
+              ? Steps[K]['skippable'] extends 'skip'
                 ? never
                 : K
               : never]: K extends keyof Steps ? Steps[K]['output'] : never;
           } & {
             [K in StepDependencies[SlugType][number] as K extends keyof Steps
-              ? Steps[K]['skippable'] extends true
+              ? Steps[K]['skippable'] extends 'skip'
                 ? K
                 : never
               : never]?: K extends keyof Steps ? Steps[K]['output'] : never;
@@ -713,13 +713,41 @@ export class Flow<
     return this.stepDefinitions[slug as string];
   }
 
-  // Overload 1: Root step (no dependsOn) - receives flowInput directly
-  // if is typed as ContainmentPattern<TFlowInput>
-  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
+  // Overload 1: Root step without conditions
   step<
     Slug extends string,
     TOutput,
-    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
+    TRetries extends WhenExhaustedMode | undefined = undefined
+  >(
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn?: never;
+        whenExhausted?: TRetries;
+      } & WithoutCondition &
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
+    >,
+    handler: (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TRetries extends 'skip' | 'skip-cascade' ? TRetries : false
+      >;
+    },
+    StepDependencies & { [K in Slug]: [] },
+    TEnv
+  >;
+
+  // Overload 2: Root step with condition and omitted whenUnmet defaults to 'skip'
+  step<
+    Slug extends string,
+    TOutput,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -728,9 +756,40 @@ export class Flow<
         dependsOn?: never;
         whenExhausted?: TRetries;
       } & (
-        | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
-        | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
-        | WithoutCondition
+        | (WithIfCondition<TFlowInput> & { whenUnmet?: undefined })
+        | (WithIfNotCondition<TFlowInput> & { whenUnmet?: undefined })
+      ) &
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
+    >,
+    handler: (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & {
+      [K in Slug]: StepMeta<Awaited<TOutput>, 'skip'>;
+    },
+    StepDependencies & { [K in Slug]: [] },
+    TEnv
+  >;
+
+  // Overload 3: Root step with explicit whenUnmet
+  step<
+    Slug extends string,
+    TOutput,
+    TWhenUnmet extends WhenUnmetMode,
+    TRetries extends WhenExhaustedMode | undefined = undefined
+  >(
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn?: never;
+        whenExhausted?: TRetries;
+      } & (
+        | (WithIfCondition<TFlowInput> & { whenUnmet: TWhenUnmet })
+        | (WithIfNotCondition<TFlowInput> & { whenUnmet: TWhenUnmet })
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
@@ -755,16 +814,43 @@ export class Flow<
     TEnv
   >;
 
-  // Overload 2: Dependent step (with dependsOn) - receives deps, flowInput via context
-  // if is typed as ContainmentPattern<DepsObject>
-  // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
-  // Handler receives deps with correct optionality based on upstream steps' skippability
-  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
+  // Overload 4: Dependent step without conditions
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput,
-    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
+    TRetries extends WhenExhaustedMode | undefined = undefined
+  >(
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn: [Deps, ...Deps[]];
+        whenExhausted?: TRetries;
+      } & WithoutCondition &
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
+    >,
+    handler: (
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TRetries extends 'skip' | 'skip-cascade' ? TRetries : false
+      >;
+    },
+    StepDependencies & { [K in Slug]: Deps[] },
+    TEnv
+  >;
+
+  // Overload 5: Dependent step with condition and omitted whenUnmet defaults to 'skip'
+  step<
+    Slug extends string,
+    Deps extends Extract<keyof Steps, string>,
+    TOutput,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -774,12 +860,50 @@ export class Flow<
         whenExhausted?: TRetries;
       } & (
         | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
-            whenUnmet?: TWhenUnmet;
+            whenUnmet?: undefined;
           })
         | (WithIfNotCondition<
             Simplify<DepsWithOptionalSkippable<Steps, Deps>>
-          > & { whenUnmet?: TWhenUnmet })
-        | WithoutCondition
+          > & {
+            whenUnmet?: undefined;
+          })
+      ) &
+        Omit<BaseStepRuntimeOptions, 'whenExhausted'>
+    >,
+    handler: (
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & {
+      [K in Slug]: StepMeta<Awaited<TOutput>, 'skip'>;
+    },
+    StepDependencies & { [K in Slug]: Deps[] },
+    TEnv
+  >;
+
+  // Overload 6: Dependent step with explicit whenUnmet
+  step<
+    Slug extends string,
+    Deps extends Extract<keyof Steps, string>,
+    TOutput,
+    TWhenUnmet extends WhenUnmetMode,
+    TRetries extends WhenExhaustedMode | undefined = undefined
+  >(
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn: [Deps, ...Deps[]];
+        whenExhausted?: TRetries;
+      } & (
+        | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
+            whenUnmet: TWhenUnmet;
+          })
+        | (WithIfNotCondition<
+            Simplify<DepsWithOptionalSkippable<Steps, Deps>>
+          > & { whenUnmet: TWhenUnmet })
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,

@@ -1,34 +1,34 @@
 /**
  * Validates a slug string according to the following rules:
  * - Cannot start with a number
- * - Cannot start with an underscore
- * - Cannot contain spaces
- * - Cannot contain special characters like /, :, ?, #
+ * - Cannot be empty
+ * - Cannot use reserved words
+ * - Must contain only letters, numbers, and underscores
  * - Cannot be longer than 128 characters
  *
  * @param slug The slug string to validate
  * @throws Error if the slug is invalid
  */
 export function validateSlug(slug: string): void {
+  if (slug.length === 0) {
+    throw new Error('Slug cannot be empty');
+  }
+
   if (slug.length > 128) {
     throw new Error(`Slug '${slug}' cannot be longer than 128 characters`);
+  }
+
+  if (slug === 'run') {
+    throw new Error(`Slug 'run' is reserved and cannot be used`);
   }
 
   if (/^\d/.test(slug)) {
     throw new Error(`Slug '${slug}' cannot start with a number`);
   }
 
-  if (/^_/.test(slug)) {
-    throw new Error(`Slug '${slug}' cannot start with an underscore`);
-  }
-
-  if (/\s/.test(slug)) {
-    throw new Error(`Slug '${slug}' cannot contain spaces`);
-  }
-
-  if (/[/:#\-?]/.test(slug)) {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(slug)) {
     throw new Error(
-      `Slug '${slug}' cannot contain special characters like /, :, ?, #, -`
+      `Slug '${slug}' can only contain letters, numbers, and underscores`
     );
   }
 }
@@ -53,7 +53,12 @@ export interface ValidateRuntimeOptionsOpts {
  * @throws Error if any runtime option is invalid
  */
 export function validateRuntimeOptions(
-  options: { maxAttempts?: number; baseDelay?: number; timeout?: number; startDelay?: number },
+  options: {
+    maxAttempts?: number;
+    baseDelay?: number;
+    timeout?: number;
+    startDelay?: number;
+  },
   opts: ValidateRuntimeOptionsOpts = { optional: false }
 ): void {
   const { maxAttempts, baseDelay, timeout, startDelay } = options;

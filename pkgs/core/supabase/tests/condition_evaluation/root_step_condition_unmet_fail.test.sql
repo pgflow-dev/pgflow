@@ -2,7 +2,7 @@
 -- Verifies that a root step with unmet condition and whenUnmet='fail'
 -- causes the run to fail immediately
 begin;
-select plan(4);
+select plan(5);
 
 -- Reset database
 select pgflow_tests.reset_db();
@@ -30,11 +30,12 @@ select is(
   'Step with unmet condition and whenUnmet=fail should be failed'
 );
 
--- Test 2: error_message should indicate condition unmet
-select ok(
+-- Test 2: error_message should remain stable and minimal
+select is(
   (select error_message from pgflow.step_states
-   where run_id = (select run_id from run_ids) and step_slug = 'checked_step') ILIKE '%condition%',
-  'Failed step should have error message about condition'
+   where run_id = (select run_id from run_ids) and step_slug = 'checked_step'),
+  'Condition not met',
+  'Failed step should use stable condition error message'
 );
 
 -- Test 3: No task should be created
@@ -50,6 +51,19 @@ select is(
   (select status from pgflow.runs where run_id = (select run_id from run_ids)),
   'failed',
   'Run should fail when step condition fails with fail mode'
+);
+
+-- Test 5: Run-level error event should use same stable message
+select is(
+  (
+    select payload->>'error_message'
+    from pgflow_tests.get_realtime_message(
+      event_type => 'run:failed',
+      run_id => (select run_id from run_ids)
+    )
+  ),
+  'Condition not met',
+  'Run failed event should use stable condition error message'
 );
 
 -- Clean up
