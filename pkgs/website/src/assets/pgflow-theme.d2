@@ -69,7 +69,7 @@ classes: {
     style.stroke: "#e85c5c"
   }
 
-  # Step state classes (created, started, completed, failed)
+  # Step state classes (created, started, completed, failed, skipped)
   step_created: {
     style.fill: "#95a0a3"
     style.stroke: "#4a5759"
@@ -85,6 +85,11 @@ classes: {
   step_failed: {
     style.fill: "#a33636"
     style.stroke: "#e85c5c"
+  }
+  step_skipped: {
+    style.fill: "#4a5759"
+    style.stroke: "#6b7a7d"
+    style.stroke-dash: 3
   }
 
   # Task state classes (queued, completed, failed)

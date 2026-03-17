@@ -1,0 +1,135 @@
+---
+title: Graceful Failure
+description: Handle step failures gracefully with retriesExhausted option.
+sidebar:
+  order: 26
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+The `retriesExhausted` option controls what happens when a step fails after exhausting all retry attempts. Instead of failing the entire run, you can skip the step and continue.
+
+## Quick Example
+
+```typescript
+.step({
+  slug: 'sendWelcomeEmail',
+  maxAttempts: 3,
+  retriesExhausted: 'skip',  // If email fails 3x, skip and continue
+}, async (input) => {
+  return await sendEmail(input.run.email);
+})
+.step({
+  slug: 'createAccount',
+  dependsOn: ['sendWelcomeEmail'],
+}, async (input) => {
+  // Runs even if email failed - input.sendWelcomeEmail may be undefined
+  const emailSent = input.sendWelcomeEmail !== undefined;
+  return { accountId: await createUser(input.run), emailSent };
+})
+```
+
+## Options
+
+| Mode           | Behavior                                   |
+| -------------- | ------------------------------------------ |
+| `fail`         | Step fails, run fails (default)            |
+| `skip`         | Step skipped, dependents get `undefined`   |
+| `skip-cascade` | Step AND all downstream dependents skipped |
+
+<Aside type="tip">
+  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  analytics, or enrichment that shouldn't block your core business logic.
+</Aside>
+
+## TYPE_VIOLATION Exception
+
+Programming errors always fail the run, regardless of `retriesExhausted`:
+
+```typescript
+// This ALWAYS fails the run, even with retriesExhausted: 'skip'
+.step({
+  slug: 'fetchItems',
+  retriesExhausted: 'skip',
+}, () => "not an array")  // Returns string instead of array!
+.map({
+  slug: 'processItems',
+  array: 'fetchItems',    // Expects array, gets string
+}, (item) => item * 2)
+```
+
+<Aside type="caution">
+  TYPE_VIOLATION errors (wrong type for map steps) are bugs in your code, not
+  runtime conditions. Fix the handler or add input validation.
+</Aside>
+
+## Skip Reason
+
+When `retriesExhausted: 'skip'` triggers, the step gets `skip_reason: 'handler_failed'` with the original error preserved in `error_message`.
+
+```sql
+SELECT step_slug, error_message, skip_reason
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id'
+  AND skip_reason = 'handler_failed';
+```
+
+## Combining with Conditions
+
+You can use `retriesExhausted` together with `if` conditions for maximum flexibility:
+
+```typescript
+.step({
+  slug: 'enrichFromAPI',
+  if: { includeEnrichment: true },   // Only attempt if requested
+  maxAttempts: 3,
+  retriesExhausted: 'skip',          // If API fails, continue anyway
+}, async (input) => {
+  return await externalAPI.enrich(input.run.id);
+})
+```
+
+This step:
+
+1. Skips immediately if `includeEnrichment` is false (condition unmet)
+2. Retries up to 3 times if the API fails
+3. Skips gracefully if all retries fail (instead of failing the run)
+
+## Best Practices
+
+**Do use `retriesExhausted: 'skip'` for:**
+
+- Notification steps (email, SMS, push)
+- Analytics and tracking events
+- Optional enrichment from external APIs
+- Logging and audit trails
+
+**Don't use for:**
+
+- Core business logic that must succeed
+- Steps that produce data required by downstream steps
+- Payment processing or other critical operations
+- Steps where silent failure would cause data inconsistency
+
+<Aside type="caution">
+  If a skipped step's output is required by downstream logic, those steps will
+  receive `undefined`. Make sure downstream handlers can handle this case, or
+  use `skip-cascade` instead.
+</Aside>
+
+## Learn More
+
+For comprehensive coverage of skip behavior, type safety implications, and when to use each mode, see the [Skip Modes](/build/conditional-steps/skip-modes/) guide.
+
+<CardGrid>
+  <LinkCard
+    title="Skip Modes"
+    href="/build/conditional-steps/skip-modes/"
+    description="Detailed guide to fail, skip, and skip-cascade behaviors"
+  />
+  <LinkCard
+    title="Retrying Steps"
+    href="/build/retrying-steps/"
+    description="Configure retry policies and understand failure types"
+  />
+</CardGrid>
