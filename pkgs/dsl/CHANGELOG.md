@@ -1,5 +1,12 @@
 # @pgflow/dsl
 
+## 0.14.1
+
+### Patch Changes
+
+- f41d0f1: Enforce JSON-compatible step outputs at .step() construction time
+- f41d0f1: Make skippable leaf step keys optional in ExtractFlowOutput type
+
 ## 0.14.0
 
 ### Minor Changes

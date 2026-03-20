@@ -1,5 +1,15 @@
 # @pgflow/edge-worker
 
+## 0.14.1
+
+### Patch Changes
+
+- f41d0f1: Make skippable leaf step keys optional in ExtractFlowOutput type
+- Updated dependencies [f41d0f1]
+- Updated dependencies [f41d0f1]
+  - @pgflow/dsl@0.14.1
+  - @pgflow/core@0.14.1
+
 ## 0.14.0
 
 ### Patch Changes
