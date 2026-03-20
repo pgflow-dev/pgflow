@@ -112,13 +112,16 @@ describe('ExtractFlowOutput utility type', () => {
       .step({ slug: 'step3', dependsOn: ['step1'] }, (deps) => ({
         value: deps.step1.value - 1,
       }))
-      .step({ slug: 'step4', dependsOn: ['step2', 'step3'] }, async (deps, ctx) => {
-        const flowInput = await ctx.flowInput;
-        return {
-          sum: deps.step2.value + deps.step3.value,
-          original: flowInput.input,
-        };
-      });
+      .step(
+        { slug: 'step4', dependsOn: ['step2', 'step3'] },
+        async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          return {
+            sum: deps.step2.value + deps.step3.value,
+            original: flowInput.input,
+          };
+        }
+      );
 
     type FlowOutput = ExtractFlowOutput<typeof complexFlow>;
 
@@ -137,5 +140,123 @@ describe('ExtractFlowOutput utility type', () => {
       step2: unknown;
       step3: unknown;
     }>();
+  });
+
+  it('makes skippable leaf steps optional in flow output', () => {
+    const skippableLeafFlow = new Flow<{ input: string }>({
+      slug: 'skippable_leaf_flow',
+    })
+      .step({ slug: 'prepare' }, (flowInput) => ({ text: flowInput.input }))
+      .step(
+        {
+          slug: 'leaf_optional',
+          dependsOn: ['prepare'],
+          if: { prepare: { text: 'run' } },
+          whenUnmet: 'skip',
+        },
+        (deps) => ({ value: deps.prepare.text.toUpperCase() })
+      );
+
+    type FlowOutput = ExtractFlowOutput<typeof skippableLeafFlow>;
+
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      leaf_optional?: StepOutput<typeof skippableLeafFlow, 'leaf_optional'>;
+    }>();
+
+    expectTypeOf<{
+      leaf_optional?: StepOutput<typeof skippableLeafFlow, 'leaf_optional'>;
+    }>().toMatchTypeOf<FlowOutput>();
+  });
+
+  it('keeps non-skippable leaf steps required in flow output', () => {
+    const requiredLeafFlow = new Flow<{ input: string }>({
+      slug: 'required_leaf_flow',
+    }).step({ slug: 'leaf_required' }, (flowInput) => ({
+      value: flowInput.input.length,
+    }));
+
+    type FlowOutput = ExtractFlowOutput<typeof requiredLeafFlow>;
+
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      leaf_required: StepOutput<typeof requiredLeafFlow, 'leaf_required'>;
+    }>();
+
+    expectTypeOf<{
+      leaf_required: StepOutput<typeof requiredLeafFlow, 'leaf_required'>;
+    }>().toMatchTypeOf<FlowOutput>();
+  });
+
+  it('supports mixed required and skippable leaf outputs', () => {
+    const mixedLeafFlow = new Flow<{ input: string }>({
+      slug: 'mixed_leaf_flow',
+    })
+      .step({ slug: 'prepare' }, (flowInput) => ({ text: flowInput.input }))
+      .step({ slug: 'required_leaf', dependsOn: ['prepare'] }, (deps) => ({
+        value: deps.prepare.text.length,
+      }))
+      .step(
+        {
+          slug: 'optional_leaf',
+          dependsOn: ['prepare'],
+          if: { prepare: { text: 'run' } },
+          whenUnmet: 'skip-cascade',
+        },
+        (deps) => ({ value: deps.prepare.text.toUpperCase() })
+      );
+
+    type FlowOutput = ExtractFlowOutput<typeof mixedLeafFlow>;
+
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      required_leaf: StepOutput<typeof mixedLeafFlow, 'required_leaf'>;
+      optional_leaf?: StepOutput<typeof mixedLeafFlow, 'optional_leaf'>;
+    }>();
+
+    expectTypeOf<{
+      required_leaf: StepOutput<typeof mixedLeafFlow, 'required_leaf'>;
+      optional_leaf?: StepOutput<typeof mixedLeafFlow, 'optional_leaf'>;
+    }>().toMatchTypeOf<FlowOutput>();
+  });
+
+  it('preserves optional inner keys for required leaf outputs', () => {
+    const requiredOptionalInnerFlow = new Flow<{ input: string }>({
+      slug: 'required_optional_inner_flow',
+    }).step({ slug: 'leaf_required' }, (): { entryId?: string } =>
+      Math.random() > 0.5 ? { entryId: 'entry-1' } : {}
+    );
+
+    type FlowOutput = ExtractFlowOutput<typeof requiredOptionalInnerFlow>;
+
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      leaf_required: { entryId?: string };
+    }>();
+    expectTypeOf<{
+      leaf_required: { entryId?: string };
+    }>().toMatchTypeOf<FlowOutput>();
+  });
+
+  it('supports optional outer key with optional inner keys for skippable leaves', () => {
+    const skippableOptionalInnerFlow = new Flow<{ input: string }>({
+      slug: 'skippable_optional_inner_flow',
+    })
+      .step({ slug: 'prepare' }, (flowInput) => ({ text: flowInput.input }))
+      .step(
+        {
+          slug: 'leaf_optional',
+          dependsOn: ['prepare'],
+          if: { prepare: { text: 'run' } },
+          whenUnmet: 'skip',
+        },
+        (): { meta?: { tag: string } } =>
+          Math.random() > 0.5 ? { meta: { tag: 'ok' } } : {}
+      );
+
+    type FlowOutput = ExtractFlowOutput<typeof skippableOptionalInnerFlow>;
+
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      leaf_optional?: { meta?: { tag: string } };
+    }>();
+    expectTypeOf<{
+      leaf_optional?: { meta?: { tag: string } };
+    }>().toMatchTypeOf<FlowOutput>();
   });
 });

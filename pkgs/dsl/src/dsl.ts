@@ -40,6 +40,25 @@ type AwaitedReturn<T> = T extends (...args: any[]) => Promise<infer R>
   ? R
   : never;
 
+type JsonCompatible<T> = T extends string | number | boolean | null
+  ? T
+  : T extends readonly [any, ...any[]]
+  ? { [K in keyof T]: JsonCompatible<Exclude<T[K], undefined>> }
+  : T extends readonly (infer U)[]
+  ? JsonCompatible<U>[]
+  : T extends (...args: any[]) => any
+  ? never
+  : T extends object
+  ? { [K in keyof T]: JsonCompatible<Exclude<T[K], undefined>> }
+  : never;
+
+type EnforceJsonOutput<THandler extends (...args: any[]) => any> = THandler &
+  ((
+    ...args: Parameters<THandler>
+  ) =>
+    | JsonCompatible<AwaitedReturn<THandler>>
+    | Promise<JsonCompatible<AwaitedReturn<THandler>>>);
+
 // ========================
 // ENVIRONMENT TYPE SYSTEM
 // ========================
@@ -144,8 +163,16 @@ export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
 >
   ? {
       [K in keyof ExtractFlowLeafSteps<TFlow> as K extends string
-        ? K
+        ? GetSkippableMode<TFlow, K> extends false
+          ? K
+          : never
         : never]: StepOutput<TFlow, K & string>;
+    } & {
+      [K in keyof ExtractFlowLeafSteps<TFlow> as K extends string
+        ? GetSkippableMode<TFlow, K> extends false
+          ? never
+          : K
+        : never]?: StepOutput<TFlow, K & string>;
     }
   : never;
 
@@ -716,7 +743,10 @@ export class Flow<
   // Overload 1: Root step without conditions
   step<
     Slug extends string,
-    TOutput,
+    THandler extends (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -727,16 +757,13 @@ export class Flow<
       } & WithoutCondition &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      flowInput: TFlowInput,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<AwaitedReturn<THandler>>,
         TRetries extends 'skip' | 'skip-cascade' ? TRetries : false
       >;
     },
@@ -747,7 +774,10 @@ export class Flow<
   // Overload 2: Root step with condition and omitted whenUnmet defaults to 'skip'
   step<
     Slug extends string,
-    TOutput,
+    THandler extends (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -761,15 +791,12 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      flowInput: TFlowInput,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
-      [K in Slug]: StepMeta<Awaited<TOutput>, 'skip'>;
+      [K in Slug]: StepMeta<JsonCompatible<AwaitedReturn<THandler>>, 'skip'>;
     },
     StepDependencies & { [K in Slug]: [] },
     TEnv
@@ -778,7 +805,10 @@ export class Flow<
   // Overload 3: Root step with explicit whenUnmet
   step<
     Slug extends string,
-    TOutput,
+    THandler extends (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TWhenUnmet extends WhenUnmetMode,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
@@ -793,16 +823,13 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      flowInput: TFlowInput,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<AwaitedReturn<THandler>>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
@@ -818,7 +845,10 @@ export class Flow<
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
-    TOutput,
+    THandler extends (
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -829,16 +859,13 @@ export class Flow<
       } & WithoutCondition &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<AwaitedReturn<THandler>>,
         TRetries extends 'skip' | 'skip-cascade' ? TRetries : false
       >;
     },
@@ -850,7 +877,10 @@ export class Flow<
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
-    TOutput,
+    THandler extends (
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
@@ -870,15 +900,12 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
-      [K in Slug]: StepMeta<Awaited<TOutput>, 'skip'>;
+      [K in Slug]: StepMeta<JsonCompatible<AwaitedReturn<THandler>>, 'skip'>;
     },
     StepDependencies & { [K in Slug]: Deps[] },
     TEnv
@@ -888,7 +915,10 @@ export class Flow<
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
-    TOutput,
+    THandler extends (
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => any,
     TWhenUnmet extends WhenUnmetMode,
     TRetries extends WhenExhaustedMode | undefined = undefined
   >(
@@ -907,16 +937,13 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: (
-      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
-      context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<AwaitedReturn<THandler>>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
@@ -1026,13 +1053,13 @@ export class Flow<
     handler: (
       flowInput: TFlowInput,
       context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    ) => JsonCompatible<TOutput> | Promise<JsonCompatible<TOutput>>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<Awaited<TOutput>>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
@@ -1074,13 +1101,13 @@ export class Flow<
     handler: (
       deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
       context: FlowContext<TEnv, TFlowInput> & TContext
-    ) => TOutput | Promise<TOutput>
+    ) => JsonCompatible<TOutput> | Promise<JsonCompatible<TOutput>>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        Awaited<TOutput>,
+        JsonCompatible<Awaited<TOutput>>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
@@ -1115,10 +1142,7 @@ export class Flow<
   map<
     Slug extends string,
     THandler extends TFlowInput extends readonly (infer Item)[]
-      ? (
-          item: Item,
-          context: FlowContext<TEnv, TFlowInput> & TContext
-        ) => Json | Promise<Json>
+      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => any
       : never,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends WhenExhaustedMode | undefined = undefined
@@ -1134,13 +1158,13 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: THandler
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        AwaitedReturn<THandler>[],
+        JsonCompatible<AwaitedReturn<THandler>>[],
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
@@ -1159,10 +1183,7 @@ export class Flow<
     Slug extends string,
     TArrayDep extends Extract<keyof Steps, string>,
     THandler extends Steps[TArrayDep]['output'] extends readonly (infer Item)[]
-      ? (
-          item: Item,
-          context: FlowContext<TEnv, TFlowInput> & TContext
-        ) => Json | Promise<Json>
+      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => any
       : never,
     TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends WhenExhaustedMode | undefined = undefined
@@ -1183,13 +1204,13 @@ export class Flow<
       ) &
         Omit<BaseStepRuntimeOptions, 'whenExhausted'>
     >,
-    handler: THandler
+    handler: EnforceJsonOutput<THandler>
   ): Flow<
     TFlowInput,
     TContext,
     Steps & {
       [K in Slug]: StepMeta<
-        AwaitedReturn<THandler>[],
+        JsonCompatible<AwaitedReturn<THandler>>[],
         TWhenUnmet extends 'skip' | 'skip-cascade'
           ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
