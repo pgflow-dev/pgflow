@@ -1,4 +1,8 @@
-import { Flow, type StepInput, type ExtractFlowContext } from '../../src/index.js';
+import {
+  Flow,
+  type StepInput,
+  type ExtractFlowContext,
+} from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('.array() method type constraints', () => {
@@ -9,7 +13,10 @@ describe('.array() method type constraints', () => {
         .array({ slug: 'objects' }, () => [{ id: 1 }, { id: 2 }])
         .array({ slug: 'strings' }, () => ['a', 'b', 'c'])
         .array({ slug: 'empty' }, () => [])
-        .array({ slug: 'nested' }, () => [[1, 2], [3, 4]]);
+        .array({ slug: 'nested' }, () => [
+          [1, 2],
+          [3, 4],
+        ]);
     });
 
     it('should accept handlers that return Promise<Array>', () => {
@@ -42,12 +49,30 @@ describe('.array() method type constraints', () => {
         // @ts-expect-error - should reject Promise<null>
         .array({ slug: 'invalid_async_null' }, async () => null);
     });
+
+    it('should reject non-JSON array element shapes', () => {
+      new Flow<Record<string, never>>({ slug: 'test_json' })
+        // @ts-expect-error - undefined element is not Json
+        .array({ slug: 'invalid_undefined_element' }, () => [undefined])
+        // @ts-expect-error - function element is not Json
+        .array({ slug: 'invalid_function_element' }, () => [() => 'x'])
+        // @ts-expect-error - symbol element is not Json
+        .array({ slug: 'invalid_symbol_element' }, () => [Symbol('x')])
+        // @ts-expect-error - object property with undefined is not Json
+        .array({ slug: 'invalid_object_property' }, () => [
+          { id: 1, maybe: undefined as string | undefined },
+        ]);
+    });
   });
 
   describe('type inference', () => {
     it('should provide correct input types for dependent steps', () => {
       new Flow<{ count: number }>({ slug: 'test' })
-        .array({ slug: 'items' }, (flowInput) => Array(flowInput.count).fill(0).map((_, i) => i))
+        .array({ slug: 'items' }, (flowInput) =>
+          Array(flowInput.count)
+            .fill(0)
+            .map((_, i) => i)
+        )
         .step({ slug: 'process', dependsOn: ['items'] }, (deps) => {
           expectTypeOf(deps).toMatchTypeOf<{
             items: number[];
@@ -58,10 +83,18 @@ describe('.array() method type constraints', () => {
 
     it('should correctly infer element types from arrays', () => {
       new Flow<{ userId: string }>({ slug: 'test' })
-        .array({ slug: 'users' }, () => [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }])
+        .array({ slug: 'users' }, () => [
+          { id: 1, name: 'John' },
+          { id: 2, name: 'Jane' },
+        ])
         .step({ slug: 'count_users', dependsOn: ['users'] }, (deps) => {
-          expectTypeOf(deps.users).toEqualTypeOf<{ id: number; name: string }[]>();
-          expectTypeOf(deps.users[0]).toMatchTypeOf<{ id: number; name: string }>();
+          expectTypeOf(deps.users).toEqualTypeOf<
+            { id: number; name: string }[]
+          >();
+          expectTypeOf(deps.users[0]).toMatchTypeOf<{
+            id: number;
+            name: string;
+          }>();
           return deps.users.length;
         });
     });
@@ -69,7 +102,13 @@ describe('.array() method type constraints', () => {
     it('should handle complex nested array types', () => {
       new Flow<{ depth: number }>({ slug: 'test' })
         .array({ slug: 'matrix' }, (flowInput) =>
-          Array(flowInput.depth).fill(0).map(() => Array(3).fill(0).map(() => ({ value: Math.random() })))
+          Array(flowInput.depth)
+            .fill(0)
+            .map(() =>
+              Array(3)
+                .fill(0)
+                .map(() => ({ value: Math.random() }))
+            )
         )
         .step({ slug: 'flatten', dependsOn: ['matrix'] }, (deps) => {
           expectTypeOf(deps.matrix).toEqualTypeOf<{ value: number }[][]>();
@@ -83,12 +122,14 @@ describe('.array() method type constraints', () => {
       new Flow<{ url: string }>({ slug: 'test' })
         .array({ slug: 'data' }, async (flowInput) => {
           // Simulate async data fetching
-          await new Promise(resolve => setTimeout(resolve, 1));
+          await new Promise((resolve) => setTimeout(resolve, 1));
           return [{ url: flowInput.url, status: 200 }];
         })
         .step({ slug: 'validate', dependsOn: ['data'] }, (deps) => {
-          expectTypeOf(deps.data).toEqualTypeOf<{ url: string; status: number }[]>();
-          return deps.data.every(item => item.status === 200);
+          expectTypeOf(deps.data).toEqualTypeOf<
+            { url: string; status: number }[]
+          >();
+          return deps.data.every((item) => item.status === 200);
         });
     });
   });
@@ -119,34 +160,49 @@ describe('.array() method type constraints', () => {
 
     it('should correctly type multi-dependency array steps', () => {
       new Flow<{ base: number }>({ slug: 'test' })
-        .array({ slug: 'numbers' }, (flowInput) => [flowInput.base, flowInput.base + 1])
+        .array({ slug: 'numbers' }, (flowInput) => [
+          flowInput.base,
+          flowInput.base + 1,
+        ])
         .array({ slug: 'letters' }, () => ['a', 'b'])
-        .array({ slug: 'combined', dependsOn: ['numbers', 'letters'] }, (deps) => {
-          expectTypeOf(deps).toMatchTypeOf<{
-            numbers: number[];
-            letters: string[];
-          }>();
+        .array(
+          { slug: 'combined', dependsOn: ['numbers', 'letters'] },
+          (deps) => {
+            expectTypeOf(deps).toMatchTypeOf<{
+              numbers: number[];
+              letters: string[];
+            }>();
 
-          return deps.numbers.map((num, i) => ({
-            number: num,
-            letter: deps.letters[i] || 'z'
-          }));
-        });
+            return deps.numbers.map((num, i) => ({
+              number: num,
+              letter: deps.letters[i] || 'z',
+            }));
+          }
+        );
     });
   });
 
   describe('context typing', () => {
     it('should provide custom context via Flow type parameter', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const flow = new Flow<{ id: number }, { api: { get: (id: number) => Promise<any> } }>({ slug: 'test' })
-        .array({ slug: 'fetch_data' }, (flowInput, context) => {
+      const flow = new Flow<
+        { id: number },
+        { api: { get: (id: number) => Promise<any> } }
+      >({ slug: 'test' }).array(
+        { slug: 'fetch_data' },
+        (flowInput, context) => {
           // No handler annotation needed! Type parameter provides context
-          expectTypeOf(context.api).toEqualTypeOf<{ get: (id: number) => Promise<any> }>();
-          expectTypeOf(context.env).toEqualTypeOf<Record<string, string | undefined>>();
+          expectTypeOf(context.api).toEqualTypeOf<{
+            get: (id: number) => Promise<any>;
+          }>();
+          expectTypeOf(context.env).toEqualTypeOf<
+            Record<string, string | undefined>
+          >();
           expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();
 
           return [{ id: flowInput.id, data: 'mock' }];
-        });
+        }
+      );
 
       // ExtractFlowContext should include FlowContext & custom resources
       type FlowCtx = ExtractFlowContext<typeof flow>;
@@ -160,10 +216,15 @@ describe('.array() method type constraints', () => {
     });
 
     it('should share custom context across array and regular steps', () => {
-      const flow = new Flow<{ count: number }, { generator: () => number; processor: (items: number[]) => string }>({ slug: 'test' })
+      const flow = new Flow<
+        { count: number },
+        { generator: () => number; processor: (items: number[]) => string }
+      >({ slug: 'test' })
         .array({ slug: 'items' }, (flowInput, context) => {
           // All steps get the same context automatically
-          return Array(flowInput.count).fill(0).map(() => context.generator());
+          return Array(flowInput.count)
+            .fill(0)
+            .map(() => context.generator());
         })
         .step({ slug: 'process' }, (flowInput, context) => {
           return context.processor([1, 2, 3]);
@@ -184,14 +245,23 @@ describe('.array() method type constraints', () => {
   describe('handler signature validation', () => {
     it('should correctly type array step handlers when using getStepDefinition', () => {
       const flow = new Flow<{ size: number }>({ slug: 'test' })
-        .array({ slug: 'data' }, (flowInput, _context) => Array(flowInput.size).fill(0).map((_, i) => ({ index: i })))
-        .step({ slug: 'dependent', dependsOn: ['data'] }, (deps, _context) => deps.data.length);
+        .array({ slug: 'data' }, (flowInput, _context) =>
+          Array(flowInput.size)
+            .fill(0)
+            .map((_, i) => ({ index: i }))
+        )
+        .step(
+          { slug: 'dependent', dependsOn: ['data'] },
+          (deps, _context) => deps.data.length
+        );
 
       const arrayStep = flow.getStepDefinition('data');
 
       // Test array step handler type - root steps receive flowInput directly (no run key)
       expectTypeOf(arrayStep.handler).toBeFunction();
-      expectTypeOf(arrayStep.handler).parameter(0).toMatchTypeOf<{ size: number }>();
+      expectTypeOf(arrayStep.handler)
+        .parameter(0)
+        .toMatchTypeOf<{ size: number }>();
       expectTypeOf(arrayStep.handler).returns.toMatchTypeOf<
         { index: number }[] | Promise<{ index: number }[]>
       >();
