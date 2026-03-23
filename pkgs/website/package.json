@@ -23,6 +23,7 @@
     "astro": "^5.7.14",
     "astro-d2": "^0.8.0",
     "astro-robots-txt": "^1.0.0",
+    "micromatch": "^4.0.8",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sharp": "^0.33.5",
@@ -35,6 +36,7 @@
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@types/micromatch": "^4.0.10",
     "prettier-plugin-astro": "^0.14.1",
     "wrangler": "^4.20.3"
   }
