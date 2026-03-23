@@ -22,15 +22,17 @@ export class ReadWithPollPoller<TPayload extends Json> {
     this.logger = logger;
   }
 
-  async poll(): Promise<PgmqMessageRecord<TPayload>[]> {
+  async poll(limit?: number): Promise<PgmqMessageRecord<TPayload>[]> {
     if (this.isAborted()) {
       this.logger.debug('Polling aborted, returning empty array');
       return [];
     }
 
-    this.logger.debug(`Polling queue '${this.queue.queueName}' with batch size ${this.config.batchSize}`);
+    const batchSize = limit ?? this.config.batchSize;
+
+    this.logger.debug(`Polling queue '${this.queue.queueName}' with batch size ${batchSize}`);
     const messages = await this.queue.readWithPoll(
-      this.config.batchSize,
+      batchSize,
       this.config.visibilityTimeout,
       this.config.maxPollSeconds,
       this.config.pollIntervalMs

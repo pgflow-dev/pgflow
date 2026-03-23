@@ -13,6 +13,13 @@ import {
   assertAllStepsCompleted,
 } from './_testHelpers.ts';
 
+const SlotRefillFlow = new Flow<Array<{ id: string; delayMs: number }>>({
+  slug: 'test_slot_refill_map_flow',
+}).map({ slug: 'process' }, async (item) => {
+  await delay(item.delayMs);
+  return item.id;
+});
+
 // Test 1: Root map - flow input is array, map processes each element
 const RootMapFlow = new Flow<number[]>({ slug: 'test_root_map_flow' })
   .map({ slug: 'double' }, async (num) => {
@@ -208,6 +215,68 @@ Deno.test(
         'Run output should show empty results'
       );
 
+    } finally {
+      await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'map worker refills a freed slot before the slowest task in the previous batch finishes',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    const worker = startWorker(sql, SlotRefillFlow, {
+      maxConcurrent: 2,
+      batchSize: 2,
+      maxPollSeconds: 1,
+      pollIntervalMs: 100,
+    });
+
+    try {
+      await createRootMapFlow(sql, 'test_slot_refill_map_flow', 'process');
+
+      const flowRun = await startFlow(sql, SlotRefillFlow, [
+        { id: 'slow', delayMs: 1000 },
+        { id: 'fast', delayMs: 50 },
+        { id: 'refill', delayMs: 50 },
+      ]);
+
+      await waitForRunCompletion(sql, flowRun.run_id);
+
+      const taskTimes = await sql<
+        { output: string; started_at: string | null; completed_at: string | null }[]
+      >`
+        SELECT output #>> '{}' AS output, started_at::text, completed_at::text
+        FROM pgflow.step_tasks
+        WHERE run_id = ${flowRun.run_id}
+          AND step_slug = 'process'
+      `;
+
+      const timings = new Map(
+        taskTimes.map((task) => [task.output, task])
+      );
+
+      const slow = timings.get('slow');
+      const fast = timings.get('fast');
+      const refill = timings.get('refill');
+
+      assertEquals(!!slow?.started_at, true);
+      assertEquals(!!fast?.completed_at, true);
+      assertEquals(!!refill?.started_at, true);
+
+      assertEquals(
+        new Date(refill!.started_at!).getTime() >=
+          new Date(fast!.completed_at!).getTime(),
+        true,
+        'refill task should wait for a free slot'
+      );
+      assertEquals(
+        new Date(refill!.started_at!).getTime() <
+          new Date(slow!.completed_at!).getTime(),
+        true,
+        'refill task should start before the slow task from the previous batch finishes'
+      );
     } finally {
       await worker.stop();
     }

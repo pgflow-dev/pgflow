@@ -6,6 +6,7 @@ export class Worker {
   private lifecycle: ILifecycle;
   private logger: Logger;
   private abortController = new AbortController();
+  private readonly requestShutdown?: () => void;
 
   private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
@@ -16,12 +17,14 @@ export class Worker {
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
     sql: postgres.Sql,
-    logger: Logger
+    logger: Logger,
+    requestShutdown?: () => void
   ) {
     this.sql = sql;
     this.lifecycle = lifecycle;
     this.batchProcessor = batchProcessor;
     this.logger = logger;
+    this.requestShutdown = requestShutdown;
   }
 
   startOnlyOnce(workerBootstrap: WorkerBootstrap) {
@@ -74,6 +77,7 @@ export class Worker {
     try {
       // Signal deprecation (which includes "Stopped accepting new messages")
       this.logDeprecation();
+      this.requestShutdown?.();
       this.abortController.abort();
 
       try {

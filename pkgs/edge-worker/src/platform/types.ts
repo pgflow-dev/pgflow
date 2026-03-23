@@ -78,6 +78,11 @@ export interface PlatformAdapter<TResources extends Record<string, unknown> = Re
   stopWorker(): Promise<void>;
 
   /**
+   * Trigger the shared shutdown signal used by pollers, executors, and contexts.
+   */
+  requestShutdown(): void;
+
+  /**
    * Get the connection string for the database
    * Returns undefined if sql was provided directly via config
    */

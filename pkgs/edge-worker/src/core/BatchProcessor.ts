@@ -18,8 +18,14 @@ export class BatchProcessor<TMessage extends IMessage> {
   }
 
   async processBatch() {
+    const availableSlots = this.executionController.availableSlots;
+    if (availableSlots <= 0) {
+      await this.executionController.waitForSlot();
+      return;
+    }
+
     this.logger.polling();
-    const messageRecords = await this.poller.poll();
+    const messageRecords = await this.poller.poll(availableSlots);
 
     if (this.signal.aborted) {
       this.logger.info('Discarding messageRecords because worker is stopping');
@@ -28,10 +34,16 @@ export class BatchProcessor<TMessage extends IMessage> {
 
     this.logger.taskCount(messageRecords.length);
 
-    const startPromises = messageRecords.map((message) =>
-      this.executionController.start(message)
-    );
-    await Promise.all(startPromises);
+    for (const message of messageRecords) {
+      try {
+        void this.executionController.start(message).catch(() => {
+          // ExecutionController already logs task failures; swallow here so
+          // refilling the next slot does not produce unhandled rejections.
+        });
+      } catch (error) {
+        this.logger.error('Failed to schedule task execution', error);
+      }
+    }
   }
 
   async awaitCompletion() {

@@ -16,6 +16,99 @@ async function sleepFor1s() {
 }
 
 Deno.test(
+  'refills a freed slot before the slowest task in the previous batch finishes',
+  withTransaction(async (sql) => {
+    const taskTimes = new Map<
+      string,
+      { startedAt?: number; finishedAt?: number }
+    >();
+
+    const worker = createQueueWorker(
+      async (rawPayload: { id: string; delayMs: number } | string) => {
+        const payload = typeof rawPayload === 'string'
+          ? JSON.parse(rawPayload) as { id: string; delayMs: number }
+          : rawPayload;
+        const timing = taskTimes.get(payload.id) ?? {};
+        timing.startedAt = Date.now();
+        taskTimes.set(payload.id, timing);
+
+        await delay(payload.delayMs);
+
+        timing.finishedAt = Date.now();
+        taskTimes.set(payload.id, timing);
+      },
+      {
+        sql,
+        maxConcurrent: 2,
+        batchSize: 2,
+        maxPollSeconds: 1,
+        visibilityTimeout: 5,
+        queueName: QUEUE_NAME,
+      },
+      createFakeLogger,
+      createTestPlatformAdapter(sql)
+    );
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test',
+        workerId: crypto.randomUUID(),
+      });
+      await waitForQueue(sql, QUEUE_NAME);
+
+      await sql`
+        SELECT pgmq.send_batch(
+          ${QUEUE_NAME},
+          ARRAY[
+            ${JSON.stringify({ id: 'slow', delayMs: 1000 })}::jsonb,
+            ${JSON.stringify({ id: 'fast', delayMs: 50 })}::jsonb,
+            ${JSON.stringify({ id: 'refill', delayMs: 50 })}::jsonb
+          ]
+        )
+      `;
+
+      await waitFor(
+        () => {
+          const slow = taskTimes.get('slow');
+          const fast = taskTimes.get('fast');
+          const refill = taskTimes.get('refill');
+
+          return taskTimes.size === 3 && slow?.finishedAt && fast?.finishedAt && refill?.finishedAt
+            ? { slow, fast, refill }
+            : false;
+        },
+        {
+          timeoutMs: 5000,
+          pollIntervalMs: 20,
+          description: 'all queue tasks to finish',
+        }
+      );
+
+      const slow = taskTimes.get('slow')!;
+      const fast = taskTimes.get('fast')!;
+      const refill = taskTimes.get('refill')!;
+
+      assertEquals(typeof slow.startedAt, 'number');
+      assertEquals(typeof fast.startedAt, 'number');
+      assertEquals(typeof refill.startedAt, 'number');
+
+      assertEquals(
+        (refill.startedAt as number) >= (fast.finishedAt as number),
+        true,
+        'refill task should not start before a slot is freed'
+      );
+      assertEquals(
+        (refill.startedAt as number) < (slow.finishedAt as number),
+        true,
+        'refill task should start before the slow task from the previous batch finishes'
+      );
+    } finally {
+      await worker.stop();
+    }
+  })
+);
+
+Deno.test(
   'maxConcurrent option is respected',
   withTransaction(async (sql) => {
     const worker = createQueueWorker(

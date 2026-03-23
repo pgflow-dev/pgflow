@@ -204,5 +204,11 @@ export function createFlowWorker<
   );
 
   // Return Worker
-  return new Worker(batchProcessor, lifecycle, sql, createLogger('Worker'));
+  return new Worker(
+    batchProcessor,
+    lifecycle,
+    sql,
+    createLogger('Worker'),
+    () => platformAdapter.requestShutdown()
+  );
 }

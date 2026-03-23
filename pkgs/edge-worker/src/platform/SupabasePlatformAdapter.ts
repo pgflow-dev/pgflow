@@ -104,15 +104,17 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   }
 
   async stopWorker(): Promise<void> {
-    // Trigger shutdown signal
-    this.abortController.abort();
-
-    // Cleanup resources
-    await this._platformResources.sql.end();
+    this.requestShutdown();
 
     if (this.worker) {
       await this.worker.stop();
     }
+
+    await this._platformResources.sql.end();
+  }
+
+  requestShutdown(): void {
+    this.abortController.abort();
   }
 
   createLogger(module: string): Logger {

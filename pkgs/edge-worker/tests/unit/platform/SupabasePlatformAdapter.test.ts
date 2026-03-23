@@ -337,3 +337,35 @@ Deno.test({
     assertEquals(adapter.shutdownSignal.aborted, true);
   },
 });
+
+Deno.test({
+  name: 'stopWorker drains worker before closing sql',
+  sanitizeResources: false,
+  fn: async () => {
+    const callOrder: string[] = [];
+    const deps = createMockDeps();
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+
+    (adapter as unknown as { worker: Worker | null }).worker = {
+      startOnlyOnce: () => {},
+      stop: () => {
+        callOrder.push('worker.stop');
+        return Promise.resolve();
+      },
+    } as unknown as Worker;
+
+    const sql = adapter.sql as unknown as { end: () => Promise<void> };
+    sql.end = () => {
+      callOrder.push('sql.end');
+      return Promise.resolve();
+    };
+
+    adapter.shutdownSignal.addEventListener('abort', () => {
+      callOrder.push('abort');
+    }, { once: true });
+
+    await adapter.stopWorker();
+
+    assertEquals(callOrder, ['abort', 'worker.stop', 'sql.end']);
+  },
+});
