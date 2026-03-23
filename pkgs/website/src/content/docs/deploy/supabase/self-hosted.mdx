@@ -1,0 +1,136 @@
+---
+title: Self-Hosted Supabase
+description: Deploy pgflow on self-hosted Supabase instances running on your own infrastructure
+sidebar:
+  order: 50
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+:::note[Acknowledgments]
+This guide is based on community feedback in [GitHub Issue #616](https://github.com/pgflow-dev/pgflow/issues/616).
+:::
+
+This guide covers running pgflow on self-hosted Supabase instances. Self-hosted deployments differ from Supabase.com in several ways this guide addresses.
+
+## Requirements
+
+Before running pgflow on self-hosted Supabase, ensure you have:
+
+- **pgmq 1.5.0+** - Required for pgflow. May require upgrading your Supabase Postgres image.
+- **Connection pooler enabled** - Supavisor must be running and accessible to Edge Functions.
+- **Manual pgflow setup** - Since the Supabase CLI doesn't work with self-hosted, follow the [Manual Installation guide](/reference/manual-installation/) to set up migrations and functions.
+
+## Upgrade Postgres Image
+
+The default Supabase docker image may ship with an older pgmq version. If you see errors related to missing `pgmq` functions after installing pgflow migrations, upgrade your Postgres image.
+
+In your `docker/docker-compose.yml`, update the `db` service image:
+
+```yaml
+db:
+  image: supabase/postgres:15.14.1.098
+```
+
+<Aside type="tip">
+  A known working version for the 15.x branch is `15.14.1.098`. PostgreSQL 17 is
+  also supported (v17.6.1.100 or later).
+</Aside>
+
+After updating, restart your containers:
+
+```bash frame="none"
+docker compose down
+docker compose up -d
+```
+
+## Database Connection
+
+Self-hosted Supabase does not auto-configure `EDGE_WORKER_DB_URL`. You must set this environment variable explicitly on your Edge Functions.
+
+The connection string format for self-hosted Supabase:
+
+```bash frame="none"
+EDGE_WORKER_DB_URL=postgresql://postgres.${POOLER_TENANT_ID}:${POSTGRES_PASSWORD}@supavisor:${POOLER_PROXY_PORT_TRANSACTION}/postgres
+```
+
+Where:
+
+- `POOLER_TENANT_ID` - Your pooler tenant ID (set in your `.env` file)
+- `POSTGRES_PASSWORD` - Your Postgres password
+- `POOLER_PROXY_PORT_TRANSACTION` - The transaction pooler port (default: `6543`)
+
+<Aside type="note">
+  The hostname is `supavisor` (not `pooler` which is used by the Supabase CLI
+  local development environment).
+</Aside>
+
+Set this environment variable in your Edge Function deployment configuration. See [Database Connection](/deploy/database-connection/) for all connection options including SSL configuration.
+
+## Function Deployment
+
+The Supabase CLI is designed for Supabase.com and local development. For self-hosted deployments, deploy Edge Functions manually:
+
+<Steps>
+1. Copy your function directories to `./volumes/functions/` in your Supabase project
+
+2. Mount the volumes in your `docker-compose.yml` under the `functions` service
+
+3. Ensure your flows are also accessible (either in the functions volume or a separate mounted volume)
+
+4. Restart the Edge Functions container
+</Steps>
+
+### Docker Compose Changes
+
+Apply these changes to your `docker/docker-compose.yml`:
+
+```diff
+--- a/docker-compose.yaml
++++ b/docker-compose.yaml
+@@ -420,6 +420,7 @@ services:
+     restart: unless-stopped
+     volumes:
+       - ./volumes/functions:/home/deno/functions:Z
++      - ./volumes/flows:/home/deno/flows:Z
+       - deno-cache:/root/.cache/deno
+     depends_on:
+       kong:
+@@ -438,6 +439,8 @@ services:
+       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+       # TODO: Allow configuring VERIFY_JWT per function.
+       VERIFY_JWT: "${FUNCTIONS_VERIFY_JWT}"
++      # Allow pgflow workers to resolve pg connections via supavisor
++      EDGE_WORKER_DB_URL: postgresql://postgres.${POOLER_TENANT_ID}:${POSTGRES_PASSWORD}@supavisor:${POOLER_PROXY_PORT_TRANSACTION}/postgres
+     command:
+       [
+@@ -495,7 +498,7 @@ services:
+   # Comment out everything below this point if you are using an external Postgres database
+   db:
+     container_name: supabase-db
+-    image: supabase/postgres:15.8.1.085
++    image: supabase/postgres:15.14.1.098
+     restart: unless-stopped
+```
+
+Key changes:
+
+- **flows volume** - Mount your flows directory so Edge Functions can access them
+- **EDGE_WORKER_DB_URL** - Set the database connection string for pgflow workers
+- **postgres image** - Upgrade to a version with pgmq 1.5.0+
+
+## Running Migrations
+
+When applying pgflow migrations to a self-hosted database, you may need to bypass SSL verification:
+
+```bash frame="none"
+PGSSLMODE=disable npx supabase migrations up --db-url $DB_URL
+```
+
+Where `DB_URL` is your direct Postgres connection string (not the pooler URL).
+
+## See Also
+
+- [Database Connection](/deploy/database-connection/) - Connection configuration options
+- [Database SSL](/deploy/database-ssl/) - SSL configuration for production
+- [Update pgflow](/deploy/update-pgflow/) - Upgrading pgflow on self-hosted
