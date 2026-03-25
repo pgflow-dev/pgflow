@@ -5,11 +5,24 @@ sidebar:
   order: 0
 ---
 
-import { Steps, LinkButton, Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import {
+  Steps,
+  LinkButton,
+  Card,
+  CardGrid,
+  LinkCard,
+  Aside,
+} from '@astrojs/starlight/components';
 
 This guide walks you through deploying pgflow workers to Supabase.com. Workers run as Edge Functions that poll for tasks, execute your flow handlers, and report results back to the database.
 
 Before starting, ensure you have completed [Getting Started](/get-started/installation/) and have a Supabase project linked to your local environment.
+
+<Aside type="tip" title="Self-hosted Supabase?">
+  Running Supabase on your own infrastructure? See the [Self-Hosted Supabase
+  guide](/deploy/supabase/self-hosted/) for specific setup instructions
+  including Postgres image upgrades and database connection configuration.
+</Aside>
 
 ## Deployment Overview
 

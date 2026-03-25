@@ -5,19 +5,19 @@ sidebar:
   order: 100
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside, Steps } from '@astrojs/starlight/components';
 
-This guide explains how to manually set up pgflow and Edge Worker without using the automatic installer. While we recommend using the `pgflow install` command for most users, this manual approach can be helpful in certain scenarios:
+This guide explains how to manually set up pgflow without using the automatic installer. This manual approach is required for self-hosted Supabase deployments since the Supabase CLI only works with Supabase.com and local development.
 
-- When you need more control over the installation process
-- When troubleshooting installation issues
-- When integrating with custom deployment pipelines
-- When you want to understand what happens behind the scenes
+This guide is also helpful when:
 
-<Aside type="caution" title="Prerequisites">
-- Supabase CLI version **2.50.3** or higher (check with `supabase -v`)
-- A local Supabase project set up
-- Basic understanding of Supabase configuration
+- Troubleshooting installation issues
+- Integrating with custom deployment pipelines
+- You want to understand what happens behind the scenes
+
+<Aside type="note" title="Prerequisites">
+  - Access to your self-hosted Supabase deployment via direct database
+  connection - Basic understanding of your Supabase configuration
 </Aside>
 
 ## Manual Installation Steps
@@ -38,6 +38,7 @@ To manually install the required migration files:
 Copy files from the extracted archive's `pkgs/core/supabase/migrations/*.sql` to your project's `supabase/migrations/` folder.
 
 **Important:** Rename each migration file with a timestamp that comes after your latest existing migration. The format is `YYYYMMDDHHmmss_originalname.sql`. For example, if your latest migration is `20250101120000_create_users.sql`, rename the pgflow migrations to:
+
 - `20250101120001_001_install_pgmq.sql`
 - `20250101120002_002_create_pgflow_schema.sql`
 - etc.
@@ -46,11 +47,14 @@ This ensures pgflow migrations run after your existing migrations in the correct
 
 **Apply the migrations**
 
-After copying the migration files, apply them:
+After copying the migration files, apply them using your direct database connection:
 
 ```bash frame="none"
-npx supabase migration up
+psql $DATABASE_URL -f supabase/migrations/your_timestamp_001_install_pgmq.sql
+psql $DATABASE_URL -f supabase/migrations/your_timestamp_002_create_pgflow_schema.sql
 ```
+
+Or use your preferred database migration tool.
 
 :::note
 The installation process is exactly the same whether you're using Edge Worker or pgflow, as pgflow builds on top of Edge Worker and the migration files include everything needed for both.
@@ -86,16 +90,16 @@ Function early termination. This will change in the future.
 Change the Edge Runtime policy to `per_worker` to enable
 Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally)).
 
-  ```diff lang="toml"
-    [edge_runtime]
-    enabled = true
-    # Configure one of the supported request policies: `oneshot`, `per_worker`.
-    # Use `oneshot` for hot reload, or `per_worker` for load testing.
-  - policy = "oneshot"
-  + policy = "per_worker"
-    # Port to attach the Chrome inspector for debugging edge functions.
-    inspector_port = 8083
-  ```
+```diff lang="toml"
+  [edge_runtime]
+  enabled = true
+  # Configure one of the supported request policies: `oneshot`, `per_worker`.
+  # Use `oneshot` for hot reload, or `per_worker` for load testing.
+- policy = "oneshot"
++ policy = "per_worker"
+  # Port to attach the Chrome inspector for debugging edge functions.
+  inspector_port = 8083
+```
 
 ### 4. Create flows directory
 
@@ -137,49 +141,9 @@ Create `supabase/flows/index.ts` to export your flows:
 export { GreetUser } from './greet-user.ts';
 ```
 
-### 5. Create Control Plane edge function
+### 5. Create example worker
 
-The Control Plane is an edge function that registers and serves your flows.
-
-Create the directory:
-
-```bash frame="none"
-mkdir -p supabase/functions/pgflow
-```
-
-Create `supabase/functions/pgflow/index.ts`:
-
-```typescript title="supabase/functions/pgflow/index.ts"
-import { ControlPlane } from '@pgflow/edge-worker';
-import * as flows from '../../flows/index.ts';
-
-ControlPlane.serve(flows);
-```
-
-Create `supabase/functions/pgflow/deno.json` with the pgflow package imports (replace `VERSION` with your desired version):
-
-```json title="supabase/functions/pgflow/deno.json"
-{
-  "imports": {
-    "@pgflow/core": "npm:@pgflow/core@VERSION",
-    "@pgflow/core/": "npm:@pgflow/core@VERSION/",
-    "@pgflow/dsl": "npm:@pgflow/dsl@VERSION",
-    "@pgflow/dsl/": "npm:@pgflow/dsl@VERSION/",
-    "@pgflow/dsl/supabase": "npm:@pgflow/dsl@VERSION/supabase",
-    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@VERSION",
-    "@pgflow/edge-worker/": "jsr:@pgflow/edge-worker@VERSION/",
-    "@pgflow/edge-worker/_internal": "jsr:@pgflow/edge-worker@VERSION/_internal"
-  }
-}
-```
-
-:::tip[Finding the latest version]
-Check the [pgflow releases page](https://github.com/pgflow-dev/pgflow/releases) for the latest version number.
-:::
-
-### 6. Create example worker
-
-The worker executes the tasks defined in your flows.
+The worker executes the tasks defined in your flows. Workers use auto-compilation to build flows from files in the mounted flows directory.
 
 Create the directory:
 
@@ -195,6 +159,8 @@ import { GreetUser } from '../../flows/greet-user.ts';
 
 EdgeWorker.start(GreetUser);
 ```
+
+The worker imports your flow directly and uses auto-compilation to build it at startup.
 
 Create `supabase/functions/greet-user-worker/deno.json` with the same imports (replace `VERSION` with your desired version):
 
@@ -213,13 +179,16 @@ Create `supabase/functions/greet-user-worker/deno.json` with the same imports (r
 }
 ```
 
-### 7. Restart Supabase
+:::tip[Finding the latest version]
+Check the [pgflow releases page](https://github.com/pgflow-dev/pgflow/releases) for the latest version number.
+:::
 
-To apply the changes, restart Supabase:
+### 6. Restart Edge Runtime
+
+To apply the changes, restart your Edge Functions container:
 
 ```bash frame="none"
-npx supabase stop
-npx supabase start
+docker compose restart functions
 ```
 
 ## What gets installed
@@ -227,19 +196,22 @@ npx supabase start
 When following these steps, the installation sets up:
 
 **Database (via migrations):**
+
 - `pgflow` schema with tables for flows, execution state, and worker management
 - `pgmq` schema for message queuing
 - SQL functions for worker lifecycle management and flow operations
 
 **Configuration:**
+
 - Connection pooler enabled with transaction mode
 - Edge runtime policy set to `per_worker`
 
 **Edge Functions:**
-- Control Plane (`supabase/functions/pgflow/`) - registers and serves your flows
-- Example worker (`supabase/functions/greet-user-worker/`) - executes flow tasks
+
+- Example worker (`supabase/functions/greet-user-worker/`) - executes flow tasks with auto-compilation
 
 **Flow definitions:**
+
 - Flows directory (`supabase/flows/`) with example GreetUser flow
 
 ## What's the difference?
@@ -250,10 +222,10 @@ The manual installation process performs the same steps as the automatic `pgflow
 2. Updates your `config.toml` file (pooler + edge runtime settings)
 3. Copies the migration files with proper timestamps
 4. Creates the flows directory with example flow
-5. Creates the Control Plane edge function
-6. Creates the example worker edge function
+5. Creates the example worker edge function
 
 The automatic installer also:
+
 - Checks if each component is already installed to avoid duplicates
 - Creates backups before modifying existing files
 - Uses the current pgflow version for package imports
