@@ -1,30 +1,33 @@
-import type postgres from 'postgres';
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
 import type { Logger } from '../platform/types.js';
+
+export interface WorkerOptions {
+  requestShutdown?: () => void;
+  cleanup?: () => Promise<void>;
+}
 
 export class Worker {
   private lifecycle: ILifecycle;
   private logger: Logger;
   private abortController = new AbortController();
   private readonly requestShutdown?: () => void;
+  private readonly cleanup?: () => Promise<void>;
 
   private batchProcessor: IBatchProcessor;
-  private sql: postgres.Sql;
   private mainLoopPromise: Promise<void> | undefined;
   private deprecationLogged = false;
 
   constructor(
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
-    sql: postgres.Sql,
     logger: Logger,
-    requestShutdown?: () => void
+    options: WorkerOptions = {}
   ) {
-    this.sql = sql;
     this.lifecycle = lifecycle;
     this.batchProcessor = batchProcessor;
     this.logger = logger;
-    this.requestShutdown = requestShutdown;
+    this.requestShutdown = options.requestShutdown;
+    this.cleanup = options.cleanup;
   }
 
   startOnlyOnce(workerBootstrap: WorkerBootstrap) {
@@ -96,8 +99,10 @@ export class Worker {
 
       this.lifecycle.acknowledgeStop();
 
-      this.logger.debug('-> Closing SQL connection...');
-      await this.sql.end();
+      if (this.cleanup) {
+        this.logger.debug('-> Running worker cleanup...');
+        await this.cleanup();
+      }
 
       // Signal graceful stop complete
       this.logger.shutdown('stopped');

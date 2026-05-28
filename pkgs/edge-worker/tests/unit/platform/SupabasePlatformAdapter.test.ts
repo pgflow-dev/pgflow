@@ -369,3 +369,35 @@ Deno.test({
     assertEquals(callOrder, ['abort', 'worker.stop', 'sql.end']);
   },
 });
+
+Deno.test({
+  name: 'stopWorker closes sql when worker stop rejects',
+  sanitizeResources: false,
+  fn: async () => {
+    const callOrder: string[] = [];
+    const deps = createMockDeps();
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+
+    (adapter as unknown as { worker: Worker | null }).worker = {
+      startOnlyOnce: () => {},
+      stop: () => {
+        callOrder.push('worker.stop');
+        return Promise.reject(new Error('stop failed'));
+      },
+    } as unknown as Worker;
+
+    const sql = adapter.sql as unknown as { end: () => Promise<void> };
+    sql.end = () => {
+      callOrder.push('sql.end');
+      return Promise.resolve();
+    };
+
+    try {
+      await adapter.stopWorker();
+    } catch {
+      // expected: the original worker.stop error should still reject
+    }
+
+    assertEquals(callOrder, ['worker.stop', 'sql.end']);
+  },
+});

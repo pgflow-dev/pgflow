@@ -106,11 +106,13 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   async stopWorker(): Promise<void> {
     this.requestShutdown();
 
-    if (this.worker) {
-      await this.worker.stop();
+    try {
+      if (this.worker) {
+        await this.worker.stop();
+      }
+    } finally {
+      await this._platformResources.sql.end();
     }
-
-    await this._platformResources.sql.end();
   }
 
   requestShutdown(): void {

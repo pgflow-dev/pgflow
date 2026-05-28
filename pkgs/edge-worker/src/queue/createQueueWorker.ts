@@ -135,6 +135,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
   const abortSignal = platformAdapter.shutdownSignal;
 
   // Use provided SQL connection if available, otherwise create one from connection string
+  const ownsSql = !config.sql;
   const sql =
     config.sql ||
     postgres(config.connectionString || '', {
@@ -221,8 +222,10 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
   return new Worker(
     batchProcessor,
     lifecycle,
-    sql,
     createLogger('Worker'),
-    () => platformAdapter.requestShutdown()
+    {
+      requestShutdown: platformAdapter.requestShutdown?.bind(platformAdapter),
+      cleanup: ownsSql ? () => sql.end() : undefined,
+    }
   );
 }

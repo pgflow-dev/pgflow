@@ -43,7 +43,9 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     }
 
     const workerId = this.getWorkerId();
-    const batchSize = limit ?? this.config.batchSize;
+    const batchSize = limit === undefined
+      ? this.config.batchSize
+      : Math.min(this.config.batchSize, limit);
     this.logger.debug(
       `Two-phase polling for flow tasks with batch size ${batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
     );
