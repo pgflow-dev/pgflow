@@ -41,11 +41,6 @@ function createMockBatchProcessor(): IBatchProcessor {
   };
 }
 
-// Mock SQL connection
-const mockSql = {
-  end: async () => {},
-} as never;
-
 const workerBootstrap: WorkerBootstrap = {
   edgeFunctionName: 'test-function',
   workerId: 'test-worker-id',
@@ -54,7 +49,7 @@ const workerBootstrap: WorkerBootstrap = {
 Deno.test('Worker.startOnlyOnce - starts worker when in Created state', async () => {
   const lifecycle = createMockLifecycle('created');
   const batchProcessor = createMockBatchProcessor();
-  const worker = new Worker(batchProcessor, lifecycle, mockSql as never, logger);
+  const worker = new Worker(batchProcessor, lifecycle, logger);
 
   worker.startOnlyOnce(workerBootstrap);
 
@@ -71,7 +66,7 @@ Deno.test('Worker.startOnlyOnce - starts worker when in Created state', async ()
 Deno.test('Worker.startOnlyOnce - ignores request when in Starting state', async () => {
   const lifecycle = createMockLifecycle('starting');
   const batchProcessor = createMockBatchProcessor();
-  const worker = new Worker(batchProcessor, lifecycle, mockSql as never, logger);
+  const worker = new Worker(batchProcessor, lifecycle, logger);
 
   worker.startOnlyOnce(workerBootstrap);
 
@@ -88,7 +83,7 @@ Deno.test('Worker.startOnlyOnce - ignores request when in Starting state', async
 Deno.test('Worker.startOnlyOnce - ignores request when in Running state', async () => {
   const lifecycle = createMockLifecycle('running');
   const batchProcessor = createMockBatchProcessor();
-  const worker = new Worker(batchProcessor, lifecycle, mockSql as never, logger);
+  const worker = new Worker(batchProcessor, lifecycle, logger);
 
   worker.startOnlyOnce(workerBootstrap);
 
@@ -105,7 +100,7 @@ Deno.test('Worker.startOnlyOnce - ignores request when in Running state', async 
 Deno.test('Worker.startOnlyOnce - ignores request when in Stopping state', async () => {
   const lifecycle = createMockLifecycle('stopping');
   const batchProcessor = createMockBatchProcessor();
-  const worker = new Worker(batchProcessor, lifecycle, mockSql as never, logger);
+  const worker = new Worker(batchProcessor, lifecycle, logger);
 
   worker.startOnlyOnce(workerBootstrap);
 
@@ -122,7 +117,7 @@ Deno.test('Worker.startOnlyOnce - ignores request when in Stopping state', async
 Deno.test('Worker.startOnlyOnce - ignores request when in Stopped state', async () => {
   const lifecycle = createMockLifecycle('stopped');
   const batchProcessor = createMockBatchProcessor();
-  const worker = new Worker(batchProcessor, lifecycle, mockSql as never, logger);
+  const worker = new Worker(batchProcessor, lifecycle, logger);
 
   worker.startOnlyOnce(workerBootstrap);
 

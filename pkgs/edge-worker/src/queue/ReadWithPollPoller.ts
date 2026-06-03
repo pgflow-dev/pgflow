@@ -28,7 +28,9 @@ export class ReadWithPollPoller<TPayload extends Json> {
       return [];
     }
 
-    const batchSize = limit ?? this.config.batchSize;
+    const batchSize = limit === undefined
+      ? this.config.batchSize
+      : Math.min(this.config.batchSize, limit);
 
     this.logger.debug(`Polling queue '${this.queue.queueName}' with batch size ${batchSize}`);
     const messages = await this.queue.readWithPoll(

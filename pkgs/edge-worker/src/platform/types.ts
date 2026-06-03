@@ -80,7 +80,7 @@ export interface PlatformAdapter<TResources extends Record<string, unknown> = Re
   /**
    * Trigger the shared shutdown signal used by pollers, executors, and contexts.
    */
-  requestShutdown(): void;
+  requestShutdown?(): void;
 
   /**
    * Get the connection string for the database

@@ -81,6 +81,7 @@ export function createFlowWorker<
     );
   }
 
+  const ownsSql = !config.sql;
   const sql =
     config.sql ||
     postgres(config.connectionString as string, {
@@ -207,8 +208,10 @@ export function createFlowWorker<
   return new Worker(
     batchProcessor,
     lifecycle,
-    sql,
     createLogger('Worker'),
-    () => platformAdapter.requestShutdown()
+    {
+      requestShutdown: platformAdapter.requestShutdown?.bind(platformAdapter),
+      cleanup: ownsSql ? () => sql.end() : undefined,
+    }
   );
 }
