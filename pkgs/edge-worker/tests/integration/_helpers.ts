@@ -43,6 +43,7 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
     get platformResources() { return platformResources; },
     get connectionString() { return integrationConfig.dbUrl; },
     get isLocalEnvironment() { return false; },
+    requestShutdown() { abortController.abort(); },
     async startWorker(_createWorkerFn: CreateWorkerFn) {},
     async stopWorker() {},
   };

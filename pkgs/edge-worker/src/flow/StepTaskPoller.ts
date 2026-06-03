@@ -36,15 +36,16 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     this.logger = logger;
   }
 
-  async poll(): Promise<StepTaskWithMessage<TFlow>[]> {
+  async poll(limit?: number): Promise<StepTaskWithMessage<TFlow>[]> {
     if (this.isAborted()) {
       this.logger.debug('Polling aborted, returning empty array');
       return [];
     }
 
     const workerId = this.getWorkerId();
+    const batchSize = limit ?? this.config.batchSize;
     this.logger.debug(
-      `Two-phase polling for flow tasks with batch size ${this.config.batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
+      `Two-phase polling for flow tasks with batch size ${batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
     );
 
     try {
@@ -52,7 +53,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       const messages = await this.adapter.readMessages(
         this.config.queueName,
         this.config.visibilityTimeout ?? 2,
-        this.config.batchSize,
+        batchSize,
         this.config.maxPollSeconds,
         this.config.pollIntervalMs
       );

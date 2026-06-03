@@ -7,7 +7,7 @@ export type { Json } from '@pgflow/core';
 export type Supplier<T> = () => T;
 
 export interface IPoller<IMessage> {
-  poll(): Promise<IMessage[]>;
+  poll(limit?: number): Promise<IMessage[]>;
 }
 
 export interface IExecutor {

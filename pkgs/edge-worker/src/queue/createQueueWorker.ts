@@ -218,5 +218,11 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     createLogger('BatchProcessor')
   );
 
-  return new Worker(batchProcessor, lifecycle, sql, createLogger('Worker'));
+  return new Worker(
+    batchProcessor,
+    lifecycle,
+    sql,
+    createLogger('Worker'),
+    () => platformAdapter.requestShutdown()
+  );
 }
