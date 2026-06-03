@@ -1,5 +1,16 @@
 # @pgflow/edge-worker
 
+## 0.14.2
+
+### Patch Changes
+
+- 277ed74: Fix slot-aware backpressure and shutdown handling in the edge worker.
+
+  Fixes #114
+
+  - @pgflow/core@0.14.2
+  - @pgflow/dsl@0.14.2
+
 ## 0.14.1
 
 ### Patch Changes
