@@ -21,8 +21,14 @@ Edge Worker processes messages from a PostgreSQL queue and executes handler func
 import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
 ```
 
-> [!WARNING]
-> Always import from JSR.io using the `jsr:` prefix. Never install from npm.
+## Package Registries
+
+`@pgflow/edge-worker` is published to both registries:
+
+- Use JSR for Supabase Edge Functions and Deno deployments.
+- Use npm for Node and Bun long-running process deployments.
+
+Supabase Edge Functions remain the primary deployment path. Node and Bun process hosting is intended for Railway, Docker, and similar hosts that run workers as normal long-running processes.
 
 For database setup, see [pgflow installation docs](https://pgflow.dev/getting-started/install-pgflow/).
 

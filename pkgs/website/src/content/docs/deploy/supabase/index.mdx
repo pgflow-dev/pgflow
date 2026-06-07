@@ -24,6 +24,13 @@ Before starting, ensure you have completed [Getting Started](/get-started/instal
   including Postgres image upgrades and database connection configuration.
 </Aside>
 
+<Aside type="note" title="Running workers outside Supabase?">
+  For Railway, Docker, or other long-running process hosts, use the [Node/Bun
+  process worker deployment guide](/deploy/node-bun-process-workers/) instead.
+  Process workers are tracked by pgflow but are not restarted by
+  `ensure_workers()`.
+</Aside>
+
 ## Deployment Overview
 
 <Steps>

@@ -304,6 +304,10 @@ export default defineConfig({
                   autogenerate: { directory: 'deploy/supabase/' },
                 },
                 {
+                  label: 'Node/Bun Process Workers',
+                  link: '/deploy/node-bun-process-workers/',
+                },
+                {
                   label: 'Workers',
                   items: [
                     {
