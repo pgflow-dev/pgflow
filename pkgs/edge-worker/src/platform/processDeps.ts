@@ -21,7 +21,7 @@ type CryptoLike = {
 
 export function getProcessDeps(): ProcessDeps {
   const processLike = (globalThis as { process?: ProcessLike }).process;
-  const cryptoLike = globalThis.crypto as CryptoLike | undefined;
+  const cryptoLike = (globalThis as { crypto?: CryptoLike }).crypto;
 
   if (!processLike?.env || !processLike.on || !processLike.exit || !cryptoLike?.randomUUID) {
     throw new Error('Process runtime is not available');
