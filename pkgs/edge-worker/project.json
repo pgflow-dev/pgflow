@@ -152,6 +152,14 @@
         "cwd": "pkgs/edge-worker"
       }
     },
+    "smoke:bun": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "bun run scripts/smoke-bun-dist.ts",
+        "cwd": "pkgs/edge-worker"
+      }
+    },
     "test:integration": {
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
