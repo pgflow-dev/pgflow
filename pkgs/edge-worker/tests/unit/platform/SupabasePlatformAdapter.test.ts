@@ -324,6 +324,40 @@ Deno.test({
 });
 
 Deno.test({
+  name: 'HTTP startup passes http start mode to worker bootstrap',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    let bootstrap: unknown = null;
+
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+    await adapter.startWorker(() => ({
+      startOnlyOnce: (workerBootstrap: unknown) => {
+        bootstrap = workerBootstrap;
+      },
+      stop: () => Promise.resolve(),
+    } as unknown as Worker));
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+    await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    }));
+
+    assertEquals(bootstrap, {
+      edgeFunctionName: 'functions/v1/my-worker',
+      workerId: 'test-exec-id',
+      startMode: 'http',
+    });
+  },
+});
+
+Deno.test({
   name: 'stopWorker aborts the shutdown signal',
   sanitizeResources: false,
   fn: async () => {

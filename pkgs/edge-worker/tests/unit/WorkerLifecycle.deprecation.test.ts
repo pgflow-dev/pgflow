@@ -18,6 +18,7 @@ class MockQueries extends Queries {
   public sendHeartbeatCallCount = 0;
   public nextResult: { is_deprecated: boolean } = { is_deprecated: false };
   public workerStopped = false;
+  public trackedWorkerFunctions: Array<[string, string]> = [];
 
   constructor() {
     // Pass null as sql since we'll override all methods
@@ -51,7 +52,8 @@ class MockQueries extends Queries {
     return Promise.resolve(workerRow);
   }
 
-  override trackWorkerFunction(_functionName: string): Promise<void> {
+  override trackWorkerFunction(functionName: string, startMode = 'http'): Promise<void> {
+    this.trackedWorkerFunctions.push([functionName, startMode]);
     return Promise.resolve();
   }
 
@@ -59,6 +61,27 @@ class MockQueries extends Queries {
     return Promise.resolve();
   }
 }
+
+Deno.test('WorkerLifecycle - passes process start mode to worker tracking', async () => {
+  const mockQueries = new MockQueries();
+  const mockQueue = new MockQueue('test-queue');
+  const lifecycle = new WorkerLifecycle(
+    mockQueries,
+    mockQueue,
+    logger,
+    { heartbeatInterval: 0 }
+  );
+
+  const workerBootstrap = {
+    workerId: 'test-worker-id',
+    edgeFunctionName: 'test-function',
+    startMode: 'process' as const,
+  };
+
+  await lifecycle.acknowledgeStart(workerBootstrap);
+
+  assertEquals(mockQueries.trackedWorkerFunctions, [['test-function', 'process']]);
+});
 
 // Mock Queue
 class MockQueue<T extends Json> extends Queue<T> {

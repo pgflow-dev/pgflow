@@ -1,12 +1,10 @@
--- Ensure Workers
--- Returns which worker functions should be invoked, makes HTTP requests, and updates last_invoked_at
--- Called by cron job to keep workers running
-
-create or replace function pgflow.ensure_workers()
-returns table (function_name text, invoked boolean, request_id bigint)
-language sql
-as $$
-  with
+-- Modify "worker_functions" table
+ALTER TABLE "pgflow"."worker_functions" ADD CONSTRAINT "worker_functions_start_mode_check" CHECK (start_mode = ANY (ARRAY['http'::text, 'process'::text])), ADD COLUMN "start_mode" text NOT NULL DEFAULT 'http';
+-- Set comment to column: "start_mode" on table: "worker_functions"
+COMMENT ON COLUMN "pgflow"."worker_functions"."start_mode" IS 'How this worker function is started: http workers are pinged by ensure_workers(), process workers self-start';
+-- Modify "ensure_workers" function
+CREATE OR REPLACE FUNCTION "pgflow"."ensure_workers" () RETURNS TABLE ("function_name" text, "invoked" boolean, "request_id" bigint) LANGUAGE sql AS $$
+with
     -- Detect environment
     env as (
       select pgflow.is_local() as is_local
@@ -105,12 +103,16 @@ as $$
   from updated as u
   inner join http_requests as hr on u.function_name = hr.function_name
 $$;
-
-comment on function pgflow.ensure_workers() is
-'Ensures worker functions are running by pinging them via HTTP when needed.
-In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
-In production mode: only pings functions that pass debounce AND have no alive workers.
-Debounce: skips functions pinged within their debounce interval (production only).
-Credentials: Uses Vault secrets (pgflow_auth_secret with fallback to supabase_service_role_key, supabase_project_id) or local fallbacks.
-URL is built from project_id: https://{project_id}.supabase.co/functions/v1
-Returns request_id from pg_net for each HTTP request made.';
+-- Drop "track_worker_function" function
+DROP FUNCTION "pgflow"."track_worker_function" (text);
+-- Create "track_worker_function" function
+CREATE FUNCTION "pgflow"."track_worker_function" ("function_name" text, "start_mode" text DEFAULT 'http') RETURNS void LANGUAGE sql AS $$
+insert into pgflow.worker_functions (function_name, start_mode, updated_at)
+  values (track_worker_function.function_name, track_worker_function.start_mode, clock_timestamp())
+  on conflict (function_name)
+  do update set
+    start_mode = excluded.start_mode,
+    updated_at = clock_timestamp();
+$$;
+-- Set comment to function: "track_worker_function"
+COMMENT ON FUNCTION "pgflow"."track_worker_function" (text, text) IS 'Registers an edge function for monitoring. Called by workers on startup.';

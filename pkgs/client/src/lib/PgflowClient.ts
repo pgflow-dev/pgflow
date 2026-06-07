@@ -272,6 +272,13 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       
       return flowRun;
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === `No data returned for run ${run_id}`
+      ) {
+        return null;
+      }
+
       console.error('Error getting run:', error);
       // Re-throw if it's a validation error
       if (error instanceof Error && (error.message.includes('Invalid run data') || error.message.includes('Invalid step data'))) {

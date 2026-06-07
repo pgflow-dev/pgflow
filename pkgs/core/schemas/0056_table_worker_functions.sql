@@ -3,6 +3,8 @@
 
 create table if not exists pgflow.worker_functions (
   function_name text not null primary key,
+  start_mode text not null default 'http',
+  constraint worker_functions_start_mode_check check (start_mode in ('http', 'process')),
   enabled boolean not null default true,
   debounce interval not null default '6 seconds'
   check (debounce >= '1 second'),
@@ -16,6 +18,9 @@ comment on table pgflow.worker_functions is
 
 comment on column pgflow.worker_functions.function_name is
 'Name of the Supabase Edge Function';
+
+comment on column pgflow.worker_functions.start_mode is
+'How this worker function is started: http workers are pinged by ensure_workers(), process workers self-start';
 
 comment on column pgflow.worker_functions.enabled is
 'Whether ensure_workers() should ping this function';

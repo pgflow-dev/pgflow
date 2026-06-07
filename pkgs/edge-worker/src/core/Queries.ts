@@ -1,5 +1,5 @@
 import type postgres from 'postgres';
-import type { WorkerRow } from './types.js';
+import type { WorkerRow, WorkerStartMode } from './types.js';
 import type { FlowShape, Json } from '@pgflow/dsl';
 
 export type EnsureFlowCompiledStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
@@ -81,9 +81,9 @@ export class Queries {
    * Called by workers on startup. Sets last_invoked_at to prevent cron from
    * pinging during startup (debounce).
    */
-  async trackWorkerFunction(functionName: string): Promise<void> {
+  async trackWorkerFunction(functionName: string, startMode: WorkerStartMode = 'http'): Promise<void> {
     await this.sql`
-      SELECT pgflow.track_worker_function(${functionName})
+      SELECT pgflow.track_worker_function(${functionName}, ${startMode})
     `;
   }
 

@@ -11,6 +11,7 @@ class MockQueries extends Queries {
   public ensureFlowCompiledCallCount = 0;
   public trackWorkerFunctionCallCount = 0;
   public lastTrackedFunctionName: string | null = null;
+  public lastTrackedStartMode: string | null = null;
   public lastAllowDataLoss: boolean | null = null;
 
   constructor() {
@@ -43,9 +44,10 @@ class MockQueries extends Queries {
     return Promise.resolve({ status: 'verified', differences: [] });
   }
 
-  override trackWorkerFunction(functionName: string): Promise<void> {
+  override trackWorkerFunction(functionName: string, startMode = 'http'): Promise<void> {
     this.trackWorkerFunctionCallCount++;
     this.lastTrackedFunctionName = functionName;
+    this.lastTrackedStartMode = startMode;
     return Promise.resolve();
   }
 }
@@ -259,4 +261,25 @@ Deno.test('FlowWorkerLifecycle - calls trackWorkerFunction during startup', asyn
 
   assertEquals(mockQueries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
   assertEquals(mockQueries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
+  assertEquals(mockQueries.lastTrackedStartMode, 'http', 'trackWorkerFunction should default start mode to http');
+});
+
+Deno.test('FlowWorkerLifecycle - passes process start mode during startup', async () => {
+  const mockQueries = new MockQueries();
+  const mockFlow = createMockFlow();
+  const logger = createLogger();
+
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+
+  const workerBootstrap = {
+    workerId: 'test-worker-id',
+    edgeFunctionName: 'my-edge-function',
+    startMode: 'process' as const,
+  };
+
+  await lifecycle.acknowledgeStart(workerBootstrap);
+
+  assertEquals(mockQueries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
+  assertEquals(mockQueries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
+  assertEquals(mockQueries.lastTrackedStartMode, 'process', 'trackWorkerFunction should receive process start mode');
 });

@@ -30,7 +30,8 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
     this.workerState.transitionTo(States.Starting);
 
     // Register this edge function for monitoring by ensure_workers() cron.
-    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
+    const startMode = workerBootstrap.startMode ?? 'http';
+    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
 
     this.logger.debug(`Ensuring queue '${this.queue.queueName}' exists...`);
     await this.queue.safeCreate();

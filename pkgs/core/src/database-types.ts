@@ -351,6 +351,7 @@ export type Database = {
           enabled: boolean
           function_name: string
           last_invoked_at: string | null
+          start_mode: string
           updated_at: string
         }
         Insert: {
@@ -359,6 +360,7 @@ export type Database = {
           enabled?: boolean
           function_name: string
           last_invoked_at?: string | null
+          start_mode?: string
           updated_at?: string
         }
         Update: {
@@ -367,6 +369,7 @@ export type Database = {
           enabled?: boolean
           function_name?: string
           last_invoked_at?: string | null
+          start_mode?: string
           updated_at?: string
         }
         Relationships: []
@@ -656,7 +659,7 @@ export type Database = {
         }
       }
       track_worker_function: {
-        Args: { function_name: string }
+        Args: { function_name: string; start_mode?: string }
         Returns: undefined
       }
     }

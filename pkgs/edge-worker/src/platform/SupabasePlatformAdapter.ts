@@ -234,6 +234,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         this.worker.startOnlyOnce({
           edgeFunctionName: this.edgeFunctionName,
           workerId,
+          startMode: 'http',
         });
       }
 
