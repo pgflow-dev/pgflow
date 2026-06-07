@@ -13,6 +13,7 @@ export const DOCKER_TRANSACTION_POOLER_URL =
 export interface ConnectionEnv extends Record<string, string | undefined> {
   SUPABASE_ANON_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
+  DATABASE_URL?: string;
   EDGE_WORKER_DB_URL?: string;
 }
 
@@ -29,7 +30,7 @@ export interface SqlConnectionOptions {
 
 /**
  * Resolves the connection string based on priority:
- * config.sql -> config.connectionString -> EDGE_WORKER_DB_URL -> local fallback
+ * config.sql -> config.connectionString -> DATABASE_URL -> EDGE_WORKER_DB_URL -> local fallback
  */
 export function resolveConnectionString(
   env: ConnectionEnv,
@@ -42,12 +43,13 @@ export function resolveConnectionString(
     isLocal &&
     !options?.hasSql &&
     !options?.connectionString &&
+    !env.DATABASE_URL &&
     !env.EDGE_WORKER_DB_URL
   ) {
     return DOCKER_TRANSACTION_POOLER_URL;
   }
 
-  return options?.connectionString || env.EDGE_WORKER_DB_URL;
+  return options?.connectionString || env.DATABASE_URL || env.EDGE_WORKER_DB_URL;
 }
 
 /**
@@ -60,7 +62,7 @@ export function assertConnectionAvailable(
   if (!hasSql && !connectionString) {
     throw new Error(
       'No database connection available. Provide one of: ' +
-        'config.sql, config.connectionString, or EDGE_WORKER_DB_URL environment variable.'
+        'config.sql, config.connectionString, DATABASE_URL, or EDGE_WORKER_DB_URL environment variable.'
     );
   }
 }
@@ -69,8 +71,9 @@ export function assertConnectionAvailable(
  * Resolves and creates the SQL connection based on priority:
  * 1. config.sql - User-provided SQL client (highest priority)
  * 2. config.connectionString - User-provided connection string
- * 3. EDGE_WORKER_DB_URL - Environment variable
- * 4. Local Supabase detection + Docker URL (lowest priority)
+ * 3. DATABASE_URL - Environment variable
+ * 4. EDGE_WORKER_DB_URL - Environment variable
+ * 5. Local Supabase detection + Docker URL (lowest priority)
  *
  * @throws Error if no connection source is available
  */
@@ -90,18 +93,23 @@ export function resolveSqlConnection(
     return postgres(options.connectionString, { prepare: false, max });
   }
 
-  // 3. EDGE_WORKER_DB_URL
+  // 3. DATABASE_URL
+  if (env.DATABASE_URL) {
+    return postgres(env.DATABASE_URL, { prepare: false, max });
+  }
+
+  // 4. EDGE_WORKER_DB_URL
   if (env.EDGE_WORKER_DB_URL) {
     return postgres(env.EDGE_WORKER_DB_URL, { prepare: false, max });
   }
 
-  // 4. Local Supabase detection + docker URL
+  // 5. Local Supabase detection + docker URL
   if (isLocalSupabaseEnv(env)) {
     return postgres(DOCKER_TRANSACTION_POOLER_URL, { prepare: false, max });
   }
 
   throw new Error(
     'No database connection available. Provide one of: ' +
-      'config.sql, config.connectionString, or EDGE_WORKER_DB_URL environment variable.'
+      'config.sql, config.connectionString, DATABASE_URL, or EDGE_WORKER_DB_URL environment variable.'
   );
 }

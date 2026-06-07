@@ -147,6 +147,13 @@
         "parallel": false
       }
     },
+    "test:node": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm vitest run tests/unit/platform/ProcessPlatformAdapter.test.ts",
+        "cwd": "pkgs/edge-worker"
+      }
+    },
     "test:integration": {
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
