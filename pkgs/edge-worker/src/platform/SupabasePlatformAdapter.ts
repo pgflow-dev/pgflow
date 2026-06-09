@@ -42,6 +42,8 @@ interface SupabaseEnv extends Record<string, string | undefined> {
 export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResources> {
   private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
+  private workerId: string | null = null;
+  private workerReplacementPromise: Promise<void> | null = null;
   private logger: Logger;
   private abortController: AbortController;
   private _platformResources: SupabaseResources;
@@ -183,8 +185,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       if (this.worker) {
         // Signal death to ensure_workers() cron by setting stopped_at.
         // This allows the cron to immediately ping for a replacement worker.
-        const workerId = this.validatedEnv.SB_EXECUTION_ID;
-        await this.queries.markWorkerStopped(workerId);
+        if (this.workerId) {
+          await this.queries.markWorkerStopped(this.workerId);
+        }
       }
 
       await this.stopWorker();
@@ -206,7 +209,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   }
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
-    this.deps.serve((req: Request) => {
+    this.deps.serve(async (req: Request) => {
       // Validate auth header in production (skipped in local mode)
       const authResult = validateServiceRoleAuth(req, this.validatedEnv);
       if (!authResult.valid) {
@@ -219,32 +222,63 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
       this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
-      const wasStarted = !this.worker;
-
-      if (!this.worker) {
-        this.edgeFunctionName = this.extractFunctionName(req);
-
-        const workerId = this.validatedEnv.SB_EXECUTION_ID;
-
-        this.loggingFactory.setWorkerId(workerId);
-        this.loggingFactory.setWorkerName(this.edgeFunctionName);
-
-        // Create the worker using the factory function and the logger
-        this.worker = createWorkerFn(this.loggingFactory.createLogger);
-        this.worker.startOnlyOnce({
-          edgeFunctionName: this.edgeFunctionName,
-          workerId,
-          startMode: 'http',
-        });
-      }
+      const wasStarted = await this.ensureWorkerStarted(req, createWorkerFn);
 
       return new Response(JSON.stringify({
         status: wasStarted ? 'started' : 'running',
-        workerId: this.validatedEnv.SB_EXECUTION_ID,
+        workerId: this.workerId,
         functionName: this.edgeFunctionName,
       }), {
         headers: { 'Content-Type': 'application/json' },
       });
+    });
+  }
+
+  private needsWorkerReplacement(): boolean {
+    return !this.worker || this.worker.isDeprecated || this.worker.isStopped;
+  }
+
+  private async ensureWorkerStarted(req: Request, createWorkerFn: CreateWorkerFn): Promise<boolean> {
+    while (this.needsWorkerReplacement()) {
+      if (this.workerReplacementPromise) {
+        await this.workerReplacementPromise;
+        continue;
+      }
+
+      this.workerReplacementPromise = this.replaceWorker(req, createWorkerFn);
+      try {
+        await this.workerReplacementPromise;
+        return true;
+      } finally {
+        this.workerReplacementPromise = null;
+      }
+    }
+
+    return false;
+  }
+
+  private async replaceWorker(req: Request, createWorkerFn: CreateWorkerFn): Promise<void> {
+    if (this.worker) {
+      await this.worker.stop();
+      this.abortController = new AbortController();
+    }
+
+    this.edgeFunctionName = this.extractFunctionName(req);
+
+    const workerId = this.workerId === null
+      ? this.validatedEnv.SB_EXECUTION_ID
+      : globalThis.crypto.randomUUID();
+    this.workerId = workerId;
+
+    this.loggingFactory.setWorkerId(workerId);
+    this.loggingFactory.setWorkerName(this.edgeFunctionName);
+
+    // Create the worker using the factory function and the logger
+    this.worker = createWorkerFn(this.loggingFactory.createLogger);
+    this.worker.startOnlyOnce({
+      edgeFunctionName: this.edgeFunctionName,
+      workerId,
+      startMode: 'http',
     });
   }
 

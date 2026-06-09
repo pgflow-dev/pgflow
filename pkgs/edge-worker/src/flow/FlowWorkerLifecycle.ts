@@ -166,6 +166,10 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     return this.workerState.isCreated;
   }
 
+  get isStarting() {
+    return this.workerState.isStarting;
+  }
+
   get isRunning() {
     return this.workerState.isRunning;
   }

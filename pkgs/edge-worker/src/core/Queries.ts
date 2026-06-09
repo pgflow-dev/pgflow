@@ -49,7 +49,7 @@ export class Queries {
       RETURNING (w.deprecated_at IS NOT NULL) AS is_deprecated;
     `;
 
-    return result || { is_deprecated: false };
+    return result || { is_deprecated: true };
   }
 
   async ensureFlowCompiled(

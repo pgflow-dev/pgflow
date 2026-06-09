@@ -27,7 +27,9 @@ export interface ILifecycle {
   get edgeFunctionName(): string | undefined;
   get queueName(): string;
   get isCreated(): boolean;
+  get isStarting(): boolean;
   get isRunning(): boolean;
+  get isDeprecated(): boolean;
   get isStopping(): boolean;
   get isStopped(): boolean;
 

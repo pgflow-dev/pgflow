@@ -143,7 +143,10 @@ export async function waitForSeqToIncrementBy(
   }
 }
 
-export async function waitForActiveWorker(functionName: string) {
+export async function waitForActiveWorker(
+  functionName: string,
+  options: WaitForOptions = {}
+) {
   return await waitFor(
     async () => {
       const sql = createSql();
@@ -178,6 +181,7 @@ export async function waitForActiveWorker(functionName: string) {
     },
     {
       pollIntervalMs: 300,
+      ...options,
       description: `active worker for '${functionName}'`,
     }
   );
@@ -217,9 +221,16 @@ export async function startWorker(workerName: string) {
       );
 
       if (response.ok) {
-        await waitForActiveWorker(workerName);
-        log('worker spawned!');
-        return;
+        try {
+          await waitForActiveWorker(workerName, { timeoutMs: 5000 });
+          log('worker spawned!');
+          return;
+        } catch (err) {
+          lastError = err as Error;
+          log(`Retry ${i + 1}/${maxRetries}: worker not active yet`);
+          await delay(retryDelayMs);
+          continue;
+        }
       }
 
       lastError = new Error(
@@ -317,16 +328,18 @@ export async function startWorkerWithAuth(
         JSON.stringify(body).substring(0, 200)
       );
 
-      // If we expect a specific status, return immediately (don't retry on 401/500)
-      if (expectStatus !== undefined) {
-        return { status: response.status, body };
-      }
-
       // For success case, wait for worker and return
       if (response.ok) {
-        await waitForActiveWorker(workerName);
-        log('worker spawned!');
-        return { status: response.status, body };
+        try {
+          await waitForActiveWorker(workerName, { timeoutMs: 5000 });
+          log('worker spawned!');
+          return { status: response.status, body };
+        } catch (err) {
+          lastError = err as Error;
+          log(`Retry ${i + 1}/${maxRetries}: worker not active yet`);
+          await delay(retryDelayMs);
+          continue;
+        }
       }
 
       // Retry on 404 (function not ready yet) or 502/503 (server starting)
@@ -334,6 +347,11 @@ export async function startWorkerWithAuth(
         log(`Retry ${i + 1}/${maxRetries}: ${response.status}`);
         await delay(retryDelayMs);
         continue;
+      }
+
+      // If we expect a specific status, return non-startup responses immediately.
+      if (expectStatus !== undefined) {
+        return { status: response.status, body };
       }
 
       // Return non-retryable error responses

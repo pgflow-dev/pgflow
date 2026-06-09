@@ -1,5 +1,6 @@
 import { assertEquals } from '@std/assert';
 import { Queries } from '../../src/core/Queries.ts';
+import type { WorkerRow } from '../../src/core/types.ts';
 import type { postgres } from '../sql.ts';
 
 // Mock SQL client that captures the SQL template string and values
@@ -72,4 +73,21 @@ Deno.test('Queries.markWorkerStopped - handles different UUID formats', async ()
 
   assertEquals(calls.length, 1);
   assertEquals(calls[0].values, [workerId]);
+});
+
+Deno.test('Queries.sendHeartbeat treats missing worker row as deprecated', async () => {
+  const sql = (() => Promise.resolve([])) as unknown as postgres.Sql;
+  const queries = new Queries(sql);
+  const workerRow: WorkerRow = {
+    worker_id: '00000000-0000-0000-0000-000000000001',
+    function_name: 'test_worker',
+    queue_name: 'test_worker',
+    started_at: new Date().toISOString(),
+    last_heartbeat_at: new Date().toISOString(),
+    deprecated_at: null,
+  };
+
+  const result = await queries.sendHeartbeat(workerRow);
+
+  assertEquals(result.is_deprecated, true);
 });

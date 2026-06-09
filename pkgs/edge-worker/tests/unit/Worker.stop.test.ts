@@ -22,8 +22,14 @@ function createRunningLifecycle(): ILifecycle {
     get isCreated() {
       return false;
     },
+    get isStarting() {
+      return false;
+    },
     get isRunning() {
       return !stopping && !stopped;
+    },
+    get isDeprecated() {
+      return false;
     },
     get isStopping() {
       return stopping;
