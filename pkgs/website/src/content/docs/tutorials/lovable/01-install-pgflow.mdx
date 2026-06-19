@@ -1,0 +1,73 @@
+---
+title: "Step 1: Install Control Plane"
+description: Create the pgflow Edge Function that manages workflow compilation and execution
+sidebar:
+  order: 10
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import { FileTree } from '@astrojs/starlight/components';
+
+The first step is to install the pgflow Control Plane - an Edge Function that manages your workflow definitions and compilation.
+
+## What gets created
+
+After pasting the prompt below, Lovable will create:
+
+<FileTree>
+- supabase/
+  - flows/
+    - index.ts (empty - you'll add flows here later)
+  - functions/
+    - pgflow/
+      - index.ts (the Control Plane function)
+</FileTree>
+
+## Installation prompt
+
+Copy and paste this entire prompt into Lovable:
+
+````text
+I need to install pgflow - a workflow engine for Supabase Edge Functions.
+
+Please create the following files:
+
+1. Create folder `supabase/flows/` and file `supabase/flows/index.ts` with this content:
+```ts
+// Flow definitions will be added here
+// Example: export { default as MyFlow } from './my-flow.ts';
+```
+
+2. Create Edge Function `supabase/functions/pgflow/index.ts` with this exact content:
+```ts
+import { ControlPlane } from 'jsr:@pgflow/edge-worker';
+import * as flows from '../../flows/index.ts';
+
+ControlPlane.serve(flows);
+```
+
+After creating these files, confirm that both were created successfully.
+````
+
+## What to expect
+
+<Steps>
+1. **Paste the prompt** into Lovable's chat
+2. **Wait for confirmation** that the files were created
+3. **Verify the structure** - Lovable should confirm both the `flows` folder and `pgflow` function exist
+</Steps>
+
+<Aside type="tip" title="What is the Control Plane?">
+  The Control Plane is an Edge Function that:
+  - Compiles your TypeScript flow definitions to SQL
+  - Provides HTTP endpoints for running migrations
+  - Manages vault secrets for secure worker authentication
+
+  It's the central management point for all pgflow operations in your project.
+</Aside>
+
+## Next step
+
+Once Lovable confirms the files are created, proceed to run the database migrations:
+
+[Step 2: Run Migrations →](/tutorials/lovable/02-install-migrations/)

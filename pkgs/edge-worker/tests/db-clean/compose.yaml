@@ -1,0 +1,14 @@
+services:
+  db:
+    # Same image as regular test DB
+    image: jumski/atlas-postgres-pgflow:latest
+    ports:
+      - '5433:5432'
+    volumes:
+      # Mount baseline schema (realtime, pgsodium, etc.) but NOT pgflow migrations
+      - ../../../core/atlas/supabase-baseline-schema.sql:/docker-entrypoint-initdb.d/950_baseline.sql
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
