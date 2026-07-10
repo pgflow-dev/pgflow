@@ -13,7 +13,7 @@ export { ControlPlane } from './control-plane/index.js';
 export * from './platform/index.js';
 
 // Export types
-export type { StepTaskRecord } from './flow/types.js';
+export type { StepTaskRecord } from '@pgflow/core';
 export type { FlowWorkerConfig } from './flow/createFlowWorker.js';
 export type { StepTaskPollerConfig } from './flow/StepTaskPoller.js';
 

@@ -1,5 +1,6 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { IPgflowClient } from './types.js';
+import type { StepTaskRecord } from '@pgflow/core';
+import type { IPgflowClient } from '@pgflow/core';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, TaskLogContext } from '../platform/types.js';
 import type { StepTaskHandlerContext } from '../core/context.js';
@@ -39,7 +40,7 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
   }
 
   // Convenience getters to avoid drilling into context
-  get stepTask() {
+  get stepTask(): StepTaskRecord<TFlow> {
     return this.context.stepTask;
   }
 

@@ -37,7 +37,9 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
   private readonly queries: Queries;
   private worker: Worker | null = null;
   private workerId: string | null = null;
-  private shutdownStarted = false;
+  private stopPromise: Promise<void> | null = null;
+  private gracefulExitPromise: Promise<void> | null = null;
+  private signalCount = 0;
 
   constructor(
     options?: ProcessAdapterOptions,
@@ -67,31 +69,25 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.workerId = workerId;
     this.loggingFactory.setWorkerId(workerId);
     this.loggingFactory.setWorkerName(workerName);
-    this.registerSignalHandlers();
 
     this.worker = createWorkerFn(this.loggingFactory.createLogger);
+
+    this.worker.onDeprecated(() => {
+      this.handleDeprecation().catch(() => undefined);
+    });
+
     await this.worker.startOnlyOnce({
       edgeFunctionName: workerName,
       workerId,
       startMode: 'process',
     });
+
+    this.registerSignalHandlers();
   }
 
-  async stopWorker(): Promise<void> {
-    this.requestShutdown();
-
-    try {
-      if (this.worker) {
-        await this.worker.stop();
-      }
-      if (this.workerId) {
-        await this.queries.markWorkerStopped(this.workerId);
-      }
-    } finally {
-      if (this.ownsSql) {
-        await this._platformResources.sql.end();
-      }
-    }
+  stopWorker(): Promise<void> {
+    this.stopPromise ??= Promise.resolve().then(() => this.performStopWorker());
+    return this.stopPromise;
   }
 
   requestShutdown(): void {
@@ -136,23 +132,49 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     }
   }
 
-  private async handleSignal(): Promise<void> {
-    if (this.shutdownStarted) {
-      this.deps.exit(1);
-    }
-
-    this.shutdownStarted = true;
+  private async performStopWorker(): Promise<void> {
+    this.requestShutdown();
 
     try {
-      await this.stopWorker();
-    } catch (error) {
-      this.logger.error('Process worker shutdown failed', error);
-      this.deps.setExitCode(1);
+      if (this.worker) {
+        await this.worker.stop();
+      }
+      if (this.workerId) {
+        await this.queries.markWorkerStopped(this.workerId);
+      }
+    } finally {
+      if (this.ownsSql) {
+        await this._platformResources.sql.end();
+      }
+    }
+  }
+
+  private gracefulExit(): Promise<void> {
+    this.gracefulExitPromise ??= (async () => {
+      let exitCode = 0;
+      try {
+        await this.stopWorker();
+      } catch (error) {
+        this.logger.error('Process worker shutdown failed', error);
+        exitCode = 1;
+      }
+      this.deps.setExitCode(exitCode);
+      this.deps.exit(exitCode);
+    })();
+    return this.gracefulExitPromise;
+  }
+
+  private async handleDeprecation(): Promise<void> {
+    await this.gracefulExit();
+  }
+
+  private async handleSignal(): Promise<void> {
+    this.signalCount++;
+    if (this.signalCount > 1) {
       this.deps.exit(1);
     }
 
-    this.deps.setExitCode(0);
-    this.deps.exit(0);
+    await this.gracefulExit();
   }
 
   private assertProcessEnv(env: Record<string, string | undefined>): asserts env is ProcessEnv {

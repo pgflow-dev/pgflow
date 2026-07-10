@@ -25,7 +25,7 @@ import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
 
 `@pgflow/edge-worker` is published to both registries:
 
-- Use JSR for Supabase Edge Functions and Deno deployments.
+- Use JSR for Supabase Edge Functions.
 - Use npm for Node and Bun long-running process deployments.
 
 Supabase Edge Functions remain the primary deployment path. Node and Bun process hosting is intended for Railway, Docker, and similar hosts that run workers as normal long-running processes.

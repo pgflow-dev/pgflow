@@ -2,7 +2,7 @@
 import type { BaseContext, AnyFlow, AllStepInputs, ExtractFlowInput } from '@pgflow/dsl';
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
-import type { StepTaskRecord } from '../flow/types.js';
+import type { StepTaskRecord } from '@pgflow/core';
 import type { QueueWorkerConfig, FlowWorkerConfig } from './workerConfigTypes.js';
 
 /* ──────────────────────────────────────────────────────────────────────

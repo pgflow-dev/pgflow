@@ -25,6 +25,20 @@ runs:
         echo '{"default-ulimits":{"nofile":{"Name":"nofile","Hard":100000,"Soft":100000}}}' | sudo tee /etc/docker/daemon.json
         sudo systemctl restart docker
 
+    # Restrict the kernel's ephemeral (outbound) port range to ports below the
+    # ones Supabase projects bind on the host (50320-55324). The default range
+    # (32768-60999) overlaps them, so any outbound connection (docker pull,
+    # pnpm, nx cloud) can transiently occupy e.g. 50422, and `supabase start`
+    # then fails with "address already in use". The socket sits in TIME_WAIT
+    # for ~60s, outlasting the retry loop in scripts/supabase-start.sh.
+    - name: Restrict ephemeral ports below Supabase host ports
+      shell: bash
+      run: |
+        sudo sysctl -w net.ipv4.ip_local_port_range="32768 49999"
+        # Fail the job if the range does not exclude Supabase ports (50320+)
+        read -r low high < <(sysctl -n net.ipv4.ip_local_port_range)
+        [ "$high" -lt 50320 ] || { echo "::error::ephemeral port range $low-$high overlaps Supabase ports"; exit 1; }
+
     - uses: pnpm/action-setup@v4
       with:
         version: '10.20.0'

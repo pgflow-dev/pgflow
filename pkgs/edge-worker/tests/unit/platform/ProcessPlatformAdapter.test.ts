@@ -33,6 +33,7 @@ type SqlStub = postgres.Sql & {
 type WorkerStub = {
   startOnlyOnce: SpyFn<[unknown], Promise<void>>;
   stop: SpyFn<[], Promise<void>>;
+  onDeprecated: SpyFn<[() => void], void>;
 };
 
 function createDeps(env: Record<string, string | undefined> = {}) {
@@ -70,6 +71,7 @@ function createWorkerStub(): WorkerStub {
   return {
     startOnlyOnce: createSpy<[unknown], Promise<void>>(() => Promise.resolve()),
     stop: createSpy<[], Promise<void>>(() => Promise.resolve()),
+    onDeprecated: createSpy<[() => void], void>(() => undefined),
   };
 }
 
@@ -210,4 +212,62 @@ Deno.test('ProcessPlatformAdapter stop failure exits with non-zero code for sign
 
   assertEquals((deps.setExitCode as SpyFn<[number], void>).calls, [[1]]);
   assertEquals(exit.calls, [[1]]);
+});
+
+Deno.test('ProcessPlatformAdapter concurrent stopWorker calls share one promise', async () => {
+  const { deps } = createDeps(validEnv());
+  const sql = createSqlStub();
+  const worker = createWorkerStub();
+  const adapter = new ProcessPlatformAdapter({ sql }, deps);
+
+  await adapter.startWorker(() => worker as never);
+
+  const p1 = adapter.stopWorker();
+  const p2 = adapter.stopWorker();
+
+  assertEquals(p1 === p2, true, 'Concurrent stopWorker calls should return same promise');
+
+  await p1;
+  assertEquals(worker.stop.calls.length, 1, 'worker.stop should be called once');
+});
+
+Deno.test('ProcessPlatformAdapter deprecation drains and exits zero', async () => {
+  const { deps, exit } = createDeps(validEnv());
+  const sql = createSqlStub();
+  const worker = createWorkerStub();
+  const adapter = new ProcessPlatformAdapter({ sql }, deps);
+
+  await adapter.startWorker(() => worker as never);
+
+  assertEquals(worker.onDeprecated.calls.length, 1, 'deprecation handler should be registered');
+
+  const deprecationHandler = worker.onDeprecated.calls[0]?.[0];
+  assertEquals(typeof deprecationHandler, 'function');
+
+  deprecationHandler?.();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assertEquals(worker.stop.calls.length, 1);
+  assertEquals((deps.setExitCode as SpyFn<[number], void>).calls, [[0]]);
+  assertEquals(exit.calls, [[0]]);
+});
+
+Deno.test('ProcessPlatformAdapter signal handlers registered after startup readiness', async () => {
+  let resolveStartup = () => {};
+  const { deps, handlers } = createDeps(validEnv());
+  const sql = createSqlStub();
+  const worker = createWorkerStub();
+  worker.startOnlyOnce.implementation = () => new Promise<void>((resolve) => {
+    resolveStartup = resolve;
+  });
+  const adapter = new ProcessPlatformAdapter({ sql }, deps);
+
+  const startupPromise = adapter.startWorker(() => worker as never);
+
+  assertEquals(handlers.size, 0, 'No signal handlers should be registered during startup');
+
+  resolveStartup();
+  await startupPromise;
+
+  assertEquals(handlers.size, 3, 'All signal handlers should be registered after startup');
 });

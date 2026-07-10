@@ -4,8 +4,9 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function maxPgConnectionsHandler(queueName, expectedMax) {
-  return async (_payload, { sql }) => {
+function maxPgConnectionsHandler(expectedMax) {
+  return async (_payload, { sql, workerConfig }) => {
+    const queueName = workerConfig.queueName;
     const actualMax = sql.options.max;
     const status = actualMax === expectedMax ? 'success' : 'error';
     const errorMessage = actualMax === expectedMax
@@ -64,7 +65,7 @@ export const portableExamples = {
     options: {
       queueName: 'conn_max_pg_default',
     },
-    handler: maxPgConnectionsHandler('conn_max_pg_default', 4),
+    handler: maxPgConnectionsHandler(4),
   },
   conn_max_pg_override: {
     name: 'conn_max_pg_override',
@@ -76,7 +77,7 @@ export const portableExamples = {
       queueName: 'conn_max_pg_override',
       maxPgConnections: 7,
     },
-    handler: maxPgConnectionsHandler('conn_max_pg_override', 7),
+    handler: maxPgConnectionsHandler(7),
   },
   conn_env_var: {
     name: 'conn_env_var',

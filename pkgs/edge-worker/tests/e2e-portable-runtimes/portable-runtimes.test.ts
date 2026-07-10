@@ -74,14 +74,15 @@ async function ensureEmptyQueue(sql: postgres.Sql, queueName: string) {
 async function resetExample(
   sql: postgres.Sql,
   exampleName: ExampleName,
-  options: { preserveWorkerMetadata?: boolean } = {}
+  options: { preserveWorkerMetadata?: boolean; queueNameOverride?: string } = {}
 ) {
   const example = portableExample(exampleName);
+  const queueName = options.queueNameOverride ?? example.queueName;
 
   if (options.preserveWorkerMetadata) {
-    await ensureEmptyQueue(sql, example.queueName);
+    await ensureEmptyQueue(sql, queueName);
   } else {
-    await resetQueue(sql, example.queueName);
+    await resetQueue(sql, queueName);
   }
 
   if (example.kind === 'sequence') {
@@ -99,9 +100,9 @@ async function resetExample(
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  await sql`DELETE FROM e2e_test_results WHERE queue_name = ${example.queueName}`;
+  await sql`DELETE FROM e2e_test_results WHERE queue_name = ${queueName}`;
 
-  if (!options.preserveWorkerMetadata) {
+  if (!options.preserveWorkerMetadata && !options.queueNameOverride) {
     await sql`
       DELETE FROM pgflow.workers
       WHERE function_name = ${example.queueName}
@@ -162,12 +163,14 @@ async function waitForResult(sql: postgres.Sql, queueName: string, expectedMax: 
 async function waitForExampleAssertion(
   sql: postgres.Sql,
   exampleName: ExampleName,
-  sequenceStartValue?: number
+  sequenceStartValue?: number,
+  queueNameOverride?: string
 ) {
   const example = portableExample(exampleName);
+  const queueName = queueNameOverride ?? example.queueName;
 
   if (example.kind === 'result') {
-    await waitForResult(sql, example.queueName, example.expectedMax);
+    await waitForResult(sql, queueName, example.expectedMax);
     return;
   }
 
@@ -207,16 +210,6 @@ async function waitForFreshWorker(sql: postgres.Sql, queueName: string) {
   );
 }
 
-async function currentWorkerFunctionMode(sql: postgres.Sql, queueName: string) {
-  const rows = await sql<{ start_mode: string }[]>`
-    SELECT start_mode
-    FROM pgflow.worker_functions
-    WHERE function_name = ${queueName}
-  `;
-
-  return rows[0]?.start_mode;
-}
-
 async function waitForProcessExit(
   child: Deno.ChildProcess,
   statusPromise: Promise<Deno.CommandStatus>,
@@ -234,12 +227,12 @@ async function waitForProcessExit(
   return await statusPromise;
 }
 
-function processEnv(exampleName: ExampleName) {
-  const example = portableExample(exampleName);
+function processEnv(exampleName: ExampleName, uniqueName: string) {
   const env: Record<string, string> = {
     ...Deno.env.toObject(),
     PORTABLE_EXAMPLE_NAME: exampleName,
-    WORKER_NAME: example.queueName,
+    WORKER_NAME: uniqueName,
+    PORTABLE_QUEUE_NAME: uniqueName,
     SUPABASE_URL: e2eConfig.apiUrl,
     SUPABASE_SERVICE_ROLE_KEY: SERVICE_ROLE_KEY,
     EDGE_WORKER_LOG_LEVEL: 'warn',
@@ -263,13 +256,14 @@ async function runProcessExample(
   exampleName: ExampleName
 ) {
   const example = portableExample(exampleName);
-  const previousStartMode = await currentWorkerFunctionMode(sql, example.queueName);
-  await resetExample(sql, exampleName);
+  const uniqueName = `${example.queueName}_${runtime.name}_${crypto.randomUUID().slice(0, 8)}`;
+
+  await resetExample(sql, exampleName, { queueNameOverride: uniqueName });
 
   const child = new Deno.Command(runtime.command, {
     args: [PROCESS_FIXTURE],
     cwd: new URL('../..', import.meta.url).pathname,
-    env: processEnv(exampleName),
+    env: processEnv(exampleName, uniqueName),
     stdout: 'null',
     stderr: 'null',
   }).spawn();
@@ -277,13 +271,13 @@ async function runProcessExample(
   let childExited = false;
 
   try {
-    await waitForWorkerFunctionMode(sql, example.queueName, 'process');
-    const worker = await waitForFreshWorker(sql, example.queueName);
+    await waitForWorkerFunctionMode(sql, uniqueName, 'process');
+    const worker = await waitForFreshWorker(sql, uniqueName);
     const sequenceStartValue = example.kind === 'sequence'
       ? await seqLastValue(example.sequenceName)
       : undefined;
-    await sendBatch(example.messagesToSend, example.queueName);
-    await waitForExampleAssertion(sql, exampleName, sequenceStartValue);
+    await sendBatch(example.messagesToSend, uniqueName);
+    await waitForExampleAssertion(sql, exampleName, sequenceStartValue, uniqueName);
 
     child.kill('SIGTERM');
     const status = await waitForProcessExit(child, statusPromise);
@@ -300,7 +294,7 @@ async function runProcessExample(
 
         return rows[0]?.stopped_at ? rows[0] : false;
       },
-      { description: `${runtime.name} ${example.queueName} stopped_at` }
+      { description: `${runtime.name} ${uniqueName} stopped_at` }
     );
 
     assertExists(stoppedWorker.stopped_at);
@@ -315,13 +309,11 @@ async function runProcessExample(
       await waitForProcessExit(child, statusPromise);
     }
 
-    if (previousStartMode === 'http') {
-      await sql`
-        UPDATE pgflow.worker_functions
-        SET start_mode = 'http'
-        WHERE function_name = ${example.queueName}
-      `;
-    }
+    await sql`
+      DELETE FROM pgflow.worker_functions
+      WHERE function_name = ${uniqueName}
+    `;
+    await sql`DELETE FROM e2e_test_results WHERE queue_name = ${uniqueName}`;
   }
 }
 

@@ -5,7 +5,7 @@ import type {
 import type {
   MessageContext, StepTaskContext
 } from './context.js';
-import type { StepTaskRecord } from '../flow/types.js';
+import type { StepTaskRecord } from '@pgflow/core';
 import type { PgmqMessageRecord } from '../queue/types.js';
 
 export function createMessageTestContext<

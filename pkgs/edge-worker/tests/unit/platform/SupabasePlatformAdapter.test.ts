@@ -483,7 +483,12 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const adapter = new SupabasePlatformAdapter(undefined, deps);
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
+
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     let createCount = 0;
 
     await adapter.startWorker(() => {
@@ -591,5 +596,88 @@ Deno.test({
     }
 
     assertEquals(callOrder, ['worker.stop', 'sql.end']);
+  },
+});
+
+Deno.test({
+  name: 'replacement marks old worker stopped before starting replacement',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    const events: string[] = [];
+    const workerIds: string[] = [];
+
+    const deprecatedWorker = {
+      startOnlyOnce: () => {},
+      stop: () => {
+        events.push('old.stop');
+        return Promise.resolve();
+      },
+      get isDeprecated() {
+        return true;
+      },
+      get isStopped() {
+        return false;
+      },
+    } as unknown as Worker;
+
+    const replacementWorker = {
+      startOnlyOnce: () => {
+        events.push('new.startOnlyOnce');
+      },
+      stop: () => Promise.resolve(),
+      get isDeprecated() {
+        return false;
+      },
+      get isStopped() {
+        return false;
+      },
+    } as unknown as Worker;
+
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => {
+      const query = String.raw({ raw: strings }, ...values.map(String));
+      if (query.includes('pgflow.mark_worker_stopped')) {
+        events.push('markWorkerStopped');
+        workerIds.push(values[0] as string);
+      }
+      return Promise.resolve([{ has_active: true }]);
+    }) as unknown as { end: () => Promise<void> };
+    sql.end = () => Promise.resolve();
+
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    let createCount = 0;
+    await adapter.startWorker(() => {
+      createCount++;
+      return createCount === 1 ? deprecatedWorker : replacementWorker;
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+    await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    }));
+
+    const secondResponse = await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    })) as Response;
+
+    assertEquals(secondResponse.status, 200);
+
+    assertEquals(
+      events,
+      ['old.stop', 'markWorkerStopped', 'new.startOnlyOnce'],
+      'Old worker should be stopped, marked stopped, then replacement started'
+    );
+
+    assertEquals(
+      workerIds[0],
+      'test-exec-id',
+      'markWorkerStopped should be called with the old worker ID'
+    );
   },
 });

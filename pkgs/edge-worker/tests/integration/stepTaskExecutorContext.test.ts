@@ -8,7 +8,7 @@ import type {
 import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
-import type { StepTaskRecord } from '../../src/flow/types.ts';
+import type { StepTaskRecord } from '@pgflow/core';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   SUPABASE_DB_URL: 'postgresql://test',
