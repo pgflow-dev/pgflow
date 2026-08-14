@@ -37,9 +37,13 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
   private readonly queries: Queries;
   private worker: Worker | null = null;
   private workerId: string | null = null;
+  private startupPromise: Promise<void> | null = null;
   private stopPromise: Promise<void> | null = null;
   private gracefulExitPromise: Promise<void> | null = null;
+  private cleanupPromise: Promise<void> | null = null;
+  private signalHandlersRegistered = false;
   private signalCount = 0;
+  private readonly signalHandler = () => this.handleSignal();
 
   constructor(
     options?: ProcessAdapterOptions,
@@ -48,41 +52,34 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.deps = deps;
     this.assertProcessEnv(deps.env);
     this.validatedEnv = deps.env;
-    this._connectionString = resolveConnectionString(this.validatedEnv, {
+    const connectionOptions = {
+      ...options,
       hasSql: !!options?.sql,
-      connectionString: options?.connectionString,
-    });
+      allowDatabaseUrl: true,
+    };
+    this._connectionString = resolveConnectionString(
+      this.validatedEnv,
+      connectionOptions
+    );
     this.ownsSql = !options?.sql;
     this.loggingFactory = createLoggingFactory(this.validatedEnv);
     this.logger = this.loggingFactory.createLogger('ProcessPlatformAdapter');
     this._platformResources = {
-      sql: resolveSqlConnection(this.validatedEnv, options),
+      sql: resolveSqlConnection(this.validatedEnv, connectionOptions),
       supabase: createServiceSupabaseClient(this.validatedEnv),
     };
     this.queries = new Queries(this._platformResources.sql);
   }
 
-  async startWorker(createWorkerFn: CreateWorkerFn): Promise<void> {
-    const workerName = this.validatedEnv.WORKER_NAME || 'pgflow-worker';
-    const workerId = this.deps.randomUUID();
-
-    this.workerId = workerId;
-    this.loggingFactory.setWorkerId(workerId);
-    this.loggingFactory.setWorkerName(workerName);
-
-    this.worker = createWorkerFn(this.loggingFactory.createLogger);
-
-    this.worker.onDeprecated(() => {
-      this.handleDeprecation().catch(() => undefined);
-    });
-
-    await this.worker.startOnlyOnce({
-      edgeFunctionName: workerName,
-      workerId,
-      startMode: 'process',
-    });
-
+  startWorker(createWorkerFn: CreateWorkerFn): Promise<void> {
     this.registerSignalHandlers();
+    this.startupPromise ??= this.performStartWorker(createWorkerFn).catch(
+      async (error) => {
+        await this.cleanup();
+        throw error;
+      }
+    );
+    return this.startupPromise;
   }
 
   stopWorker(): Promise<void> {
@@ -126,9 +123,41 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     return this._platformResources.supabase;
   }
 
+  private async performStartWorker(createWorkerFn: CreateWorkerFn): Promise<void> {
+    const workerName = this.validatedEnv.WORKER_NAME || 'pgflow-worker';
+    const workerId = this.deps.randomUUID();
+
+    this.workerId = workerId;
+    this.loggingFactory.setWorkerId(workerId);
+    this.loggingFactory.setWorkerName(workerName);
+
+    this.worker = createWorkerFn(this.loggingFactory.createLogger);
+    this.worker.onDeprecated(() => {
+      this.handleDeprecation().catch(() => undefined);
+    });
+
+    await this.worker.startOnlyOnce({
+      edgeFunctionName: workerName,
+      workerId,
+      startMode: 'process',
+    });
+  }
+
   private registerSignalHandlers(): void {
+    if (this.signalHandlersRegistered) return;
+
+    this.signalHandlersRegistered = true;
     for (const signal of ['SIGTERM', 'SIGINT', 'SIGQUIT'] satisfies ProcessSignal[]) {
-      this.deps.onSignal(signal, () => this.handleSignal());
+      this.deps.onSignal(signal, this.signalHandler);
+    }
+  }
+
+  private removeSignalHandlers(): void {
+    if (!this.signalHandlersRegistered) return;
+
+    this.signalHandlersRegistered = false;
+    for (const signal of ['SIGTERM', 'SIGINT', 'SIGQUIT'] satisfies ProcessSignal[]) {
+      this.deps.offSignal?.(signal, this.signalHandler);
     }
   }
 
@@ -136,6 +165,7 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.requestShutdown();
 
     try {
+      await this.startupPromise;
       if (this.worker) {
         await this.worker.stop();
       }
@@ -143,10 +173,18 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
         await this.queries.markWorkerStopped(this.workerId);
       }
     } finally {
+      await this.cleanup();
+    }
+  }
+
+  private cleanup(): Promise<void> {
+    this.cleanupPromise ??= (async () => {
+      this.removeSignalHandlers();
       if (this.ownsSql) {
         await this._platformResources.sql.end();
       }
-    }
+    })();
+    return this.cleanupPromise;
   }
 
   private gracefulExit(): Promise<void> {

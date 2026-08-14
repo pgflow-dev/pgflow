@@ -67,7 +67,7 @@ export class Worker {
 
         if (!this.isMainLoopActive) {
           this.logDeprecation();
-          if (this.lifecycle.isDeprecated) {
+          if (this.isDeprecated) {
             this.deprecationHandler?.();
           }
           break;
@@ -142,7 +142,7 @@ export class Worker {
   }
 
   get isStarting() {
-    return this.lifecycle.isStarting;
+    return this.lifecycle.isStarting ?? false;
   }
 
   get isRunning() {
@@ -150,7 +150,7 @@ export class Worker {
   }
 
   get isDeprecated() {
-    return this.lifecycle.isDeprecated;
+    return this.lifecycle.isDeprecated ?? false;
   }
 
   get isStopped() {

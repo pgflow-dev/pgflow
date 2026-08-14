@@ -37,7 +37,13 @@ type WorkerStub = {
 };
 
 function createDeps(env: Record<string, string | undefined> = {}) {
-  const handlers = new Map<ProcessSignal, () => void | Promise<void>>();
+  type SignalHandler = () => void | Promise<void>;
+  const handlers = new Map<ProcessSignal, SignalHandler>();
+  const offSignal = createSpy<[ProcessSignal, SignalHandler], void>(
+    (signal, handler) => {
+      if (handlers.get(signal) === handler) handlers.delete(signal);
+    }
+  );
   const exit = createSpy<[number], never>((code) => {
     throw new Error(`exit:${code}`);
   });
@@ -46,12 +52,13 @@ function createDeps(env: Record<string, string | undefined> = {}) {
     onSignal: (signal, handler) => {
       handlers.set(signal, handler);
     },
+    offSignal,
     exit: exit as unknown as (code: number) => never,
     setExitCode: createSpy<[number], void>(() => undefined),
     randomUUID: createSpy<[], string>(() => '00000000-0000-4000-8000-000000000001'),
   };
 
-  return { deps, handlers, exit };
+  return { deps, handlers, exit, offSignal };
 }
 
 function createSqlStub(events?: string[]): SqlStub {
@@ -108,6 +115,18 @@ Deno.test('ProcessPlatformAdapter throws when no database source is available', 
     Error,
     'No database connection available'
   );
+});
+
+Deno.test('ProcessPlatformAdapter prefers DATABASE_URL when both database variables are set', async () => {
+  const { deps } = createDeps(validEnv({
+    DATABASE_URL: 'postgresql://process:5432/database',
+    EDGE_WORKER_DB_URL: 'postgresql://edge:5432/database',
+  }));
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+
+  assertEquals(adapter.connectionString, 'postgresql://process:5432/database');
+
+  await adapter.stopWorker();
 });
 
 Deno.test('ProcessPlatformAdapter starts immediately with process start mode and generated worker id', async () => {
@@ -252,7 +271,7 @@ Deno.test('ProcessPlatformAdapter deprecation drains and exits zero', async () =
   assertEquals(exit.calls, [[0]]);
 });
 
-Deno.test('ProcessPlatformAdapter signal handlers registered after startup readiness', async () => {
+Deno.test('ProcessPlatformAdapter handles a first signal during startup after readiness', async () => {
   let resolveStartup = () => {};
   const { deps, handlers } = createDeps(validEnv());
   const sql = createSqlStub();
@@ -264,10 +283,61 @@ Deno.test('ProcessPlatformAdapter signal handlers registered after startup readi
 
   const startupPromise = adapter.startWorker(() => worker as never);
 
-  assertEquals(handlers.size, 0, 'No signal handlers should be registered during startup');
+  assertEquals(handlers.size, 3, 'Signal handlers must exist during startup');
+
+  const shutdownPromise = handlers.get('SIGTERM')?.();
+  await Promise.resolve();
+  assertEquals(worker.stop.calls.length, 0, 'Worker must not stop while startup is pending');
 
   resolveStartup();
   await startupPromise;
+  await assertRejects(async () => await shutdownPromise, Error, 'exit:0');
 
-  assertEquals(handlers.size, 3, 'All signal handlers should be registered after startup');
+  assertEquals(worker.stop.calls.length, 1);
+  assertEquals(handlers.size, 0);
+});
+
+Deno.test('ProcessPlatformAdapter startup failure cleans owned resources once', async () => {
+  const { deps, handlers, offSignal } = createDeps(validEnv());
+  const worker = createWorkerStub();
+  worker.startOnlyOnce.implementation = () => Promise.reject(new Error('startup failed'));
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+  const end = createSpy<[], Promise<void>>(() => Promise.resolve());
+  (adapter.sql as unknown as { end: typeof end }).end = end;
+
+  await assertRejects(
+    () => adapter.startWorker(() => worker as never),
+    Error,
+    'startup failed'
+  );
+
+  assertEquals(end.calls.length, 1);
+  assertEquals(offSignal.calls.length, 3);
+  assertEquals(handlers.size, 0);
+
+  await assertRejects(() => adapter.stopWorker(), Error, 'startup failed');
+  assertEquals(end.calls.length, 1);
+  assertEquals(offSignal.calls.length, 3);
+});
+
+Deno.test('ProcessPlatformAdapter shutdown cleans owned resources once', async () => {
+  const { deps, handlers, offSignal } = createDeps(validEnv());
+  const worker = createWorkerStub();
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+  const end = createSpy<[], Promise<void>>(() => Promise.resolve());
+  (adapter.sql as unknown as { end: typeof end }).end = end;
+  const markWorkerStopped = createSpy<[string], Promise<void>>(() => Promise.resolve());
+  (adapter as unknown as {
+    queries: { markWorkerStopped: typeof markWorkerStopped };
+  }).queries.markWorkerStopped = markWorkerStopped;
+
+  await adapter.startWorker(() => worker as never);
+  await adapter.stopWorker();
+  await adapter.stopWorker();
+
+  assertEquals(worker.stop.calls.length, 1);
+  assertEquals(markWorkerStopped.calls.length, 1);
+  assertEquals(end.calls.length, 1);
+  assertEquals(offSignal.calls.length, 3);
+  assertEquals(handlers.size, 0);
 });

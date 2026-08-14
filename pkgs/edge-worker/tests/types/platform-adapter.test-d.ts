@@ -1,5 +1,9 @@
 import type { PlatformAdapter } from '../../src/platform/types.ts';
-import type { WorkerBootstrap, WorkerStartMode } from '../../src/core/types.ts';
+import type {
+  ILifecycle,
+  WorkerBootstrap,
+  WorkerStartMode,
+} from '../../src/core/types.ts';
 
 const adapterWithoutRequestShutdown: PlatformAdapter = {
   async startWorker() {},
@@ -32,3 +36,30 @@ const processBootstrap: WorkerBootstrap = {
 };
 
 void processBootstrap;
+
+const legacyLifecycle: ILifecycle = {
+  async acknowledgeStart(_workerBootstrap: WorkerBootstrap) {},
+  acknowledgeStop() {},
+  async sendHeartbeat() {},
+  get edgeFunctionName() {
+    return undefined;
+  },
+  get queueName() {
+    return 'legacy-queue';
+  },
+  get isCreated() {
+    return true;
+  },
+  get isRunning() {
+    return false;
+  },
+  get isStopping() {
+    return false;
+  },
+  get isStopped() {
+    return false;
+  },
+  transitionToStopping() {},
+};
+
+void legacyLifecycle;

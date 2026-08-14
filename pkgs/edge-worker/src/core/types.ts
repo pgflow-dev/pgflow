@@ -27,13 +27,18 @@ export interface ILifecycle {
   get edgeFunctionName(): string | undefined;
   get queueName(): string;
   get isCreated(): boolean;
-  get isStarting(): boolean;
+  readonly isStarting?: boolean;
   get isRunning(): boolean;
-  get isDeprecated(): boolean;
+  readonly isDeprecated?: boolean;
   get isStopping(): boolean;
   get isStopped(): boolean;
 
   transitionToStopping(): void;
+}
+
+export interface InternalLifecycle extends ILifecycle {
+  readonly isStarting: boolean;
+  readonly isDeprecated: boolean;
 }
 
 export interface IBatchProcessor {

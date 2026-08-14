@@ -82,6 +82,13 @@ export class Queries {
    * pinging during startup (debounce).
    */
   async trackWorkerFunction(functionName: string, startMode: WorkerStartMode = 'http'): Promise<void> {
+    if (startMode === 'http') {
+      await this.sql`
+        SELECT pgflow.track_worker_function(${functionName})
+      `;
+      return;
+    }
+
     await this.sql`
       SELECT pgflow.track_worker_function(${functionName}, ${startMode})
     `;

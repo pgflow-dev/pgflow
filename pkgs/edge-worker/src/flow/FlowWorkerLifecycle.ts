@@ -1,5 +1,5 @@
 import type { Queries } from '../core/Queries.js';
-import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
+import type { InternalLifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
 import type { Logger, StartupContext } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
@@ -21,7 +21,7 @@ type CompilationStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
  */
-export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
+export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifecycle {
   private workerState: WorkerState;
   private logger: Logger;
   private queries: Queries;

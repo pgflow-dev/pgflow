@@ -26,9 +26,19 @@ Deno.test('Queries.trackWorkerFunction - calls correct SQL function', async () =
   await queries.trackWorkerFunction('my-edge-function');
 
   assertEquals(calls.length, 1);
-  assertEquals(calls[0].values, ['my-edge-function', 'http']);
+  assertEquals(calls[0].values, ['my-edge-function']);
   // Check that query references the correct function
   assertEquals(calls[0].query.includes('pgflow.track_worker_function'), true);
+});
+
+Deno.test('Queries.trackWorkerFunction - keeps explicit HTTP mode compatible with old databases', async () => {
+  const { mockSql, calls } = createMockSql();
+  const queries = new Queries(mockSql);
+
+  await queries.trackWorkerFunction('http-worker', 'http');
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].values, ['http-worker']);
 });
 
 Deno.test('Queries.trackWorkerFunction - passes explicit process start mode', async () => {
@@ -48,7 +58,7 @@ Deno.test('Queries.trackWorkerFunction - handles special characters in function 
   await queries.trackWorkerFunction('my_function-with-special_chars');
 
   assertEquals(calls.length, 1);
-  assertEquals(calls[0].values, ['my_function-with-special_chars', 'http']);
+  assertEquals(calls[0].values, ['my_function-with-special_chars']);
 });
 
 Deno.test('Queries.markWorkerStopped - calls correct SQL function', async () => {
