@@ -44,6 +44,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private worker: Worker | null = null;
   private workerId: string | null = null;
   private workerReplacementPromise: Promise<void> | null = null;
+  private stopPromise: Promise<void> | null = null;
   private logger: Logger;
   private abortController: AbortController;
   private _platformResources: SupabaseResources;
@@ -105,15 +106,66 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     await Promise.resolve();
   }
 
-  async stopWorker(): Promise<void> {
+  stopWorker(): Promise<void> {
+    this.stopPromise ??= this.performStopWorker();
+    return this.stopPromise;
+  }
+
+  /**
+   * Single shared stop operation: concurrent callers share it and SQL closes
+   * exactly once. Awaits any in-flight worker replacement so the worker row
+   * is guaranteed to exist before it is marked stopped.
+   */
+  private async performStopWorker(): Promise<void> {
     this.requestShutdown();
 
+    // Boxed so a rejection value of undefined cannot be mistaken for success.
+    let operationFailure: { error: unknown } | null = null;
     try {
-      if (this.worker) {
-        await this.worker.stop();
+      // Capture the promise before awaiting: its owner clears the field in a
+      // finally block, but shutdown must await the replacement it observed.
+      const replacement = this.workerReplacementPromise;
+      if (replacement) {
+        // Startup/replacement rejection is already handled by the HTTP
+        // startup path; shutdown continues with cleanup.
+        await replacement.catch(() => undefined);
       }
-    } finally {
+
+      if (this.worker) {
+        let markFailure: { error: unknown } | null = null;
+        if (this.workerId) {
+          try {
+            // Signal death to ensure_workers() cron by setting stopped_at.
+            // This allows the cron to immediately ping for a replacement worker.
+            await this.queries.markWorkerStopped(this.workerId);
+          } catch (error) {
+            this.logger.error('Failed to mark worker stopped', error);
+            markFailure = { error };
+          }
+        }
+
+        await this.worker.stop();
+
+        if (markFailure !== null) {
+          throw markFailure.error;
+        }
+      }
+    } catch (error) {
+      operationFailure = { error };
+    }
+
+    try {
       await this._platformResources.sql.end();
+    } catch (closeError) {
+      if (!operationFailure) {
+        throw closeError;
+      }
+      // A failing close must not replace the earlier operation error.
+      this.logger.error('Failed to close sql connection', closeError);
+    }
+
+    if (operationFailure) {
+      throw operationFailure.error;
     }
   }
 
@@ -181,15 +233,6 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private setupShutdownHandler(): void {
     this.deps.onShutdown(async () => {
       this.logger.debug('Shutting down...');
-
-      if (this.worker) {
-        // Signal death to ensure_workers() cron by setting stopped_at.
-        // This allows the cron to immediately ping for a replacement worker.
-        if (this.workerId) {
-          await this.queries.markWorkerStopped(this.workerId);
-        }
-      }
-
       await this.stopWorker();
     });
   }
@@ -270,7 +313,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       if (previousWorkerId) {
         await this.queries.markWorkerStopped(previousWorkerId);
       }
-      this.abortController = new AbortController();
+      // Once adapter stop started the signal must stay aborted; the
+      // replacement worker then captures the aborted platform signal.
+      if (!this.stopPromise) {
+        this.abortController = new AbortController();
+      }
     }
 
     this.edgeFunctionName = this.extractFunctionName(req);

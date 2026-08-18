@@ -99,15 +99,22 @@ export class Worker {
       return;
     }
 
-    this.lifecycle.transitionToStopping();
-
     try {
       this.logDeprecation();
       this.requestShutdown?.();
       this.abortController.abort();
 
+      // Wait for startup to settle before transitioning: a stop during
+      // Starting must not attempt an invalid transition, and the abort
+      // above already keeps the main loop from processing any batch.
+      if (this.startupPromise) {
+        await this.startupPromise;
+      }
+
+      this.lifecycle.transitionToStopping();
+
+      this.logger.debug('-> Waiting for main loop to complete');
       try {
-        this.logger.debug('-> Waiting for main loop to complete');
         await this.mainLoopPromise;
       } catch (error) {
         this.logger.error(

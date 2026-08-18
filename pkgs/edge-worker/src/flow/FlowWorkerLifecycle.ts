@@ -114,10 +114,6 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   acknowledgeStop() {
     this.workerState.transitionTo(States.Stopping);
 
-    if (!this.workerRow) {
-      throw new Error('Cannot stop worker: workerRow not set');
-    }
-
     try {
       this.logger.debug('Acknowledging worker stop...');
       this.workerState.transitionTo(States.Stopped);

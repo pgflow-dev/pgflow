@@ -22,7 +22,7 @@ export enum States {
 }
 
 export const Transitions: Record<States, States[]> = {
-  [States.Created]: [States.Starting],
+  [States.Created]: [States.Starting, States.Stopping],
   [States.Starting]: [States.Running],
   [States.Running]: [States.Deprecated, States.Stopping],
   [States.Deprecated]: [States.Stopping],

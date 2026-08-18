@@ -237,6 +237,18 @@ Deno.test('WorkerLifecycle - deprecated state transitions', async () => {
   assertEquals(lifecycle.isStopped, true);
 });
 
+Deno.test('WorkerLifecycle - stopping a never-started lifecycle reaches Stopped without a worker row', () => {
+  const mockQueries = new MockQueries();
+  const mockQueue = new MockQueue('test-queue');
+  const lifecycle = new WorkerLifecycle(mockQueries, mockQueue, logger);
+
+  lifecycle.transitionToStopping();
+  assertEquals(lifecycle.isStopping, true);
+
+  lifecycle.acknowledgeStop();
+  assertEquals(lifecycle.isStopped, true);
+});
+
 Deno.test(
   'WorkerLifecycle - cannot transition to deprecated from non-running states',
   () => {

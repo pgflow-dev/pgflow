@@ -271,9 +271,35 @@ Deno.test('ProcessPlatformAdapter deprecation drains and exits zero', async () =
   assertEquals(exit.calls, [[0]]);
 });
 
-Deno.test('ProcessPlatformAdapter handles a first signal during startup after readiness', async () => {
+Deno.test('ProcessPlatformAdapter first signal during startup exits immediately with zero', async () => {
+  const { deps, handlers, exit } = createDeps(validEnv());
+  const sql = createSqlStub();
+  const worker = createWorkerStub();
+  worker.startOnlyOnce.implementation = () => new Promise<void>(() => undefined);
+  const adapter = new ProcessPlatformAdapter({ sql }, deps);
+  const end = createSpy<[], Promise<void>>(() => Promise.resolve());
+  (adapter.sql as unknown as { end: typeof end }).end = end;
+
+  const startupPromise = adapter.startWorker(() => worker as never);
+
+  assertEquals(handlers.size, 3, 'Signal handlers must exist during startup');
+  assertEquals(adapter.shutdownSignal.aborted, false);
+
+  await assertRejects(async () => await handlers.get('SIGTERM')?.(), Error, 'exit:0');
+
+  assertEquals(adapter.shutdownSignal.aborted, true, 'first signal must abort the shutdown signal');
+  assertEquals((deps.setExitCode as SpyFn<[number], void>).calls, [[0]]);
+  assertEquals(exit.calls, [[0]], 'exit must not wait for the hung startup');
+  assertEquals(worker.stop.calls.length, 0, 'no worker drain before the hard exit');
+  assertEquals(sql.calls.length, 0, 'no row marking before the hard exit');
+  assertEquals(end.calls.length, 0, 'no owned-SQL cleanup before the hard exit');
+
+  void startupPromise;
+});
+
+Deno.test('ProcessPlatformAdapter manual stop during startup waits for readiness without exiting', async () => {
   let resolveStartup = () => {};
-  const { deps, handlers } = createDeps(validEnv());
+  const { deps, exit } = createDeps(validEnv());
   const sql = createSqlStub();
   const worker = createWorkerStub();
   worker.startOnlyOnce.implementation = () => new Promise<void>((resolve) => {
@@ -282,19 +308,19 @@ Deno.test('ProcessPlatformAdapter handles a first signal during startup after re
   const adapter = new ProcessPlatformAdapter({ sql }, deps);
 
   const startupPromise = adapter.startWorker(() => worker as never);
+  const stopPromise = adapter.stopWorker();
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assertEquals(handlers.size, 3, 'Signal handlers must exist during startup');
-
-  const shutdownPromise = handlers.get('SIGTERM')?.();
-  await Promise.resolve();
-  assertEquals(worker.stop.calls.length, 0, 'Worker must not stop while startup is pending');
+  assertEquals(worker.stop.calls.length, 0, 'manual stop must wait for startup');
+  assertEquals(exit.calls.length, 0, 'manual stop must not exit the process');
 
   resolveStartup();
   await startupPromise;
-  await assertRejects(async () => await shutdownPromise, Error, 'exit:0');
+  await stopPromise;
 
   assertEquals(worker.stop.calls.length, 1);
-  assertEquals(handlers.size, 0);
+  assertStringIncludes(sql.calls.at(-1) ?? '', 'pgflow.mark_worker_stopped');
+  assertEquals(exit.calls.length, 0);
 });
 
 Deno.test('ProcessPlatformAdapter startup failure cleans owned resources once', async () => {

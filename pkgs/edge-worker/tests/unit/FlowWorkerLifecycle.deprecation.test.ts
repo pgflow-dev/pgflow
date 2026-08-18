@@ -167,6 +167,18 @@ Deno.test('FlowWorkerLifecycle - deprecated state transitions', async () => {
   assertEquals(lifecycle.isStopped, true);
 });
 
+Deno.test('FlowWorkerLifecycle - stopping a never-started lifecycle reaches Stopped without a worker row', () => {
+  const mockQueries = new MockQueries();
+  const mockFlow = createMockFlow();
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+
+  lifecycle.transitionToStopping();
+  assertEquals(lifecycle.isStopping, true);
+
+  lifecycle.acknowledgeStop();
+  assertEquals(lifecycle.isStopped, true);
+});
+
 Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-running states', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
