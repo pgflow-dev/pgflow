@@ -367,3 +367,84 @@ Deno.test('ProcessPlatformAdapter shutdown cleans owned resources once', async (
   assertEquals(offSignal.calls.length, 3);
   assertEquals(handlers.size, 0);
 });
+
+// ============================================================
+// Dual-Failure Error Precedence Tests (review follow-up)
+// ============================================================
+
+/**
+ * Replaces the adapter's logger.error with a recorder so tests can assert
+ * that cleanup failures are logged without being thrown.
+ */
+function captureErrorLogs(adapter: ProcessPlatformAdapter): string[] {
+  const messages: string[] = [];
+  const logger = (adapter as unknown as {
+    logger: { error: (message: string) => void };
+  }).logger;
+  logger.error = (message: string) => {
+    messages.push(message);
+  };
+  return messages;
+}
+
+function rejectEnd(adapter: ProcessPlatformAdapter, endCalls: unknown[][]): void {
+  (adapter.sql as unknown as {
+    end: (options?: unknown) => Promise<void>;
+  }).end = (options) => {
+    endCalls.push([options]);
+    return Promise.reject(new Error('sql close failed'));
+  };
+}
+
+Deno.test('ProcessPlatformAdapter startup failure keeps the startup error when owned sql close fails', async () => {
+  const { deps } = createDeps(validEnv());
+  const worker = createWorkerStub();
+  worker.startOnlyOnce.implementation = () => Promise.reject(new Error('startup failed'));
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+  const endCalls: unknown[][] = [];
+  rejectEnd(adapter, endCalls);
+  const loggedErrors = captureErrorLogs(adapter);
+
+  await assertRejects(() => adapter.startWorker(() => worker as never), Error, 'startup failed');
+
+  assertEquals(endCalls.length, 1, 'owned sql.end must run once');
+  assertStringIncludes(loggedErrors.join('\n'), 'Cleanup after startup failure failed');
+});
+
+Deno.test('ProcessPlatformAdapter stop failure keeps the drain error when owned sql close fails', async () => {
+  const { deps } = createDeps(validEnv());
+  const worker = createWorkerStub();
+  worker.stop.implementation = () => Promise.reject(new Error('drain failed'));
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+  const endCalls: unknown[][] = [];
+  rejectEnd(adapter, endCalls);
+  const loggedErrors = captureErrorLogs(adapter);
+
+  await adapter.startWorker(() => worker as never);
+  await assertRejects(() => adapter.stopWorker(), Error, 'drain failed');
+
+  assertEquals(endCalls.length, 1, 'owned sql.end must run once');
+  assertStringIncludes(loggedErrors.join('\n'), 'Cleanup during shutdown failed');
+});
+
+Deno.test('ProcessPlatformAdapter keeps the marking error when drain succeeds but owned sql close fails', async () => {
+  const { deps } = createDeps(validEnv());
+  const worker = createWorkerStub();
+  const adapter = new ProcessPlatformAdapter(undefined, deps);
+  const markWorkerStopped = createSpy<[string], Promise<void>>(() =>
+    Promise.reject(new Error('mark failed'))
+  );
+  (adapter as unknown as {
+    queries: { markWorkerStopped: typeof markWorkerStopped };
+  }).queries.markWorkerStopped = markWorkerStopped;
+  const endCalls: unknown[][] = [];
+  rejectEnd(adapter, endCalls);
+  const loggedErrors = captureErrorLogs(adapter);
+
+  await adapter.startWorker(() => worker as never);
+  await assertRejects(() => adapter.stopWorker(), Error, 'mark failed');
+
+  assertEquals(worker.stop.calls.length, 1);
+  assertEquals(endCalls.length, 1, 'owned sql.end must run once');
+  assertStringIncludes(loggedErrors.join('\n'), 'Cleanup during shutdown failed');
+});

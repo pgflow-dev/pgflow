@@ -1,4 +1,4 @@
-import { assertEquals } from '@std/assert';
+import { assertEquals, assertRejects } from '@std/assert';
 import { ReadWithPollPoller } from '../../src/queue/ReadWithPollPoller.ts';
 import { StepTaskPoller } from '../../src/flow/StepTaskPoller.ts';
 import { fakeLogger } from '../fakes.ts';
@@ -181,4 +181,27 @@ Deno.test('StepTaskPoller uses configured batchSize without limit', async () => 
   await poller.poll();
 
   assertEquals(readQty, 5);
+});
+
+Deno.test('StepTaskPoller rethrows readMessages failures instead of returning an empty batch', async () => {
+  const adapter = {
+    readMessages: () => Promise.reject(new Error('connection refused')),
+    startTasks: () => Promise.resolve([]),
+  };
+
+  const poller = new StepTaskPoller(
+    adapter as never,
+    new AbortController().signal,
+    {
+      batchSize: 5,
+      queueName: 'test_flow',
+      visibilityTimeout: 10,
+      maxPollSeconds: 1,
+      pollIntervalMs: 100,
+    },
+    () => 'worker-id',
+    fakeLogger
+  );
+
+  await assertRejects(() => poller.poll(), Error, 'connection refused');
 });

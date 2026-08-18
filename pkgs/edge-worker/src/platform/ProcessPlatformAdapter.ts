@@ -76,7 +76,12 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.registerSignalHandlers();
     this.startupPromise ??= this.performStartWorker(createWorkerFn).catch(
       async (error) => {
-        await this.cleanup();
+        try {
+          await this.cleanup();
+        } catch (cleanupError) {
+          // A cleanup failure must not replace the startup failure.
+          this.logger.error('Cleanup after startup failure failed', cleanupError);
+        }
         throw error;
       }
     );
@@ -166,6 +171,7 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
   private async performStopWorker(): Promise<void> {
     this.requestShutdown();
 
+    let operationError: { error: unknown } | null = null;
     try {
       await this.startupPromise;
       if (this.worker) {
@@ -174,8 +180,22 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
       if (this.workerId) {
         await this.queries.markWorkerStopped(this.workerId);
       }
-    } finally {
+    } catch (error) {
+      operationError = { error };
+    }
+
+    try {
       await this.cleanup();
+    } catch (cleanupError) {
+      if (!operationError) {
+        throw cleanupError;
+      }
+      // A cleanup failure must not replace the drain or marking failure.
+      this.logger.error('Cleanup during shutdown failed', cleanupError);
+    }
+
+    if (operationError) {
+      throw operationError.error;
     }
   }
 

@@ -115,7 +115,9 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       return taskWithMessages;
     } catch (err: unknown) {
       this.logger.error(`Error in two-phase polling for flow tasks: ${err}`);
-      return [];
+      // Rethrow so Worker can distinguish a failed poll (which drives its
+      // retry backoff) from an empty successful poll.
+      throw err;
     }
   }
 

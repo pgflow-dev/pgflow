@@ -1,4 +1,5 @@
-import { assertEquals, assertRejects, assertThrows } from '@std/assert';
+import { assertEquals, assertInstanceOf, assertRejects, assertStringIncludes, assertThrows } from '@std/assert';
+import { FakeTime } from '@std/testing/time';
 import { SupabasePlatformAdapter } from '../../../src/platform/SupabasePlatformAdapter.ts';
 import type { SupabasePlatformDeps } from '../../../src/platform/deps.ts';
 import type { Worker } from '../../../src/core/Worker.ts';
@@ -771,8 +772,8 @@ Deno.test({
 
     assertEquals(
       events,
-      ['markWorkerStopped', 'worker.stop', 'sql.end'],
-      'after startup settles the order must be mark, stop, close'
+      ['worker.stop', 'markWorkerStopped', 'sql.end'],
+      'after startup settles the order must be drain, mark, close'
     );
     assertEquals(workerStopCalls, 1);
   },
@@ -882,7 +883,7 @@ Deno.test({
 
     assertEquals(
       events,
-      ['markWorkerStopped', 'worker.stop', 'sql.end'],
+      ['worker.stop', 'markWorkerStopped', 'sql.end'],
       'worker must stop and sql must close even when marking rejects'
     );
   },
@@ -924,7 +925,7 @@ Deno.test({
 
     await p1;
 
-    assertEquals(events, ['markWorkerStopped', 'worker.stop', 'sql.end']);
+    assertEquals(events, ['worker.stop', 'markWorkerStopped', 'sql.end']);
   },
 });
 
@@ -1076,11 +1077,14 @@ Deno.test({
 
     resolveReplacementStartup();
     const response = await replacementResponse;
-    assertEquals(response.status, 200);
+    // Startup admission is permanently closed by stopPromise, so the
+    // in-flight request must not report the replacement as running.
+    assertEquals(response.status, 500);
     await stopPromise;
 
-    const replacementId = (await (response as Response).json()).workerId;
-    assertEquals(markedIds, ['test-exec-id', replacementId]);
+    assertEquals(markedIds.length, 2);
+    assertEquals(markedIds[0], 'test-exec-id');
+    assertEquals(markedIds[1] !== markedIds[0], true);
     assertEquals(events, [
       'old.stop',
       'replacement.startOnlyOnce',
@@ -1154,7 +1158,7 @@ Deno.test({
 
     await assertRejects(() => adapter.stopWorker(), Error, 'mark failed');
 
-    assertEquals(events, ['markWorkerStopped', 'worker.stop', 'sql.end']);
+    assertEquals(events, ['worker.stop', 'markWorkerStopped', 'sql.end']);
     assertEquals(sqlEndCalls, 1);
   },
 });
@@ -1258,5 +1262,380 @@ Deno.test({
       'test-exec-id',
       'markWorkerStopped should be called with the old worker ID'
     );
+  },
+});
+
+// ============================================================
+// Startup Admission Serialization Tests (review follow-up)
+// ============================================================
+
+function authedRequest(): Request {
+  return new Request('http://localhost/functions/v1/my-worker', {
+    headers: { authorization: 'Bearer test-service-key' },
+  });
+}
+
+Deno.test({
+  name: 'second HTTP request waits for an in-flight startup instead of reporting running',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
+
+    let resolveStartup = () => {};
+    let createCount = 0;
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    await adapter.startWorker(() => {
+      createCount++;
+      return {
+        startOnlyOnce: () =>
+          new Promise<void>((resolve) => {
+            resolveStartup = resolve;
+          }),
+        stop: () => Promise.resolve(),
+        get isDeprecated() {
+          return false;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker;
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+
+    const firstResponse = handler(authedRequest());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // replaceWorker() has published the worker, but startup is still pending.
+    let secondSettled = false;
+    const secondResponse = Promise.resolve(handler(authedRequest()));
+    secondResponse.then(
+      () => {
+        secondSettled = true;
+      },
+      () => {
+        secondSettled = true;
+      }
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assertEquals(secondSettled, false, 'second request must wait for the in-flight startup');
+
+    resolveStartup();
+    const firstBody = await (await firstResponse).json();
+    const secondBody = await (await secondResponse).json();
+
+    assertEquals(firstBody.status, 'started');
+    assertEquals(secondBody.status, 'running');
+    assertEquals(createCount, 1, 'both requests must share one worker');
+  },
+});
+
+Deno.test({
+  name: 'shared startup rejection fails every waiting request',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
+
+    let rejectStartup = (_error: Error) => {};
+    let createCount = 0;
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    await adapter.startWorker(() => {
+      createCount++;
+      return {
+        startOnlyOnce: () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectStartup = reject;
+          }),
+        stop: () => Promise.resolve(),
+        get isDeprecated() {
+          return false;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker;
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+
+    const firstResponse = handler(authedRequest());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const secondResponse = handler(authedRequest());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    rejectStartup(new Error('sensitive database details'));
+    const first = await firstResponse;
+    const second = await secondResponse;
+    const firstBody = await first.text();
+    const secondBody = await second.text();
+
+    assertEquals(first.status, 500);
+    assertEquals(second.status, 500);
+    assertEquals(firstBody.includes('sensitive database details'), false);
+    assertEquals(secondBody.includes('sensitive database details'), false);
+    assertEquals(firstBody.includes('running'), false);
+    assertEquals(secondBody.includes('running'), false);
+    assertEquals(createCount, 1);
+  },
+});
+
+Deno.test({
+  name: 'HTTP request after shutdown begins fails without creating a worker',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    let shutdownHandler: (() => void | Promise<void>) | null = null;
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+      onShutdown: (h) => {
+        shutdownHandler = h;
+      },
+    });
+
+    let releaseSqlEnd = () => {};
+    let sqlEndCalls = 0;
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => {
+      sqlEndCalls++;
+      return new Promise<void>((resolve) => {
+        releaseSqlEnd = resolve;
+      });
+    };
+
+    let createCount = 0;
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    await adapter.startWorker(() => {
+      createCount++;
+      return createMockWorker();
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+
+    const shutdownPromise = shutdownHandler!();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const response = await handler(authedRequest());
+
+    assertEquals(response.status, 500);
+    assertEquals(createCount, 0, 'no worker may be created after shutdown begins');
+
+    releaseSqlEnd();
+    await shutdownPromise;
+    assertEquals(sqlEndCalls, 1);
+  },
+});
+
+// ============================================================
+// Bounded Shutdown Tests (review follow-up)
+// ============================================================
+
+Deno.test({
+  name: 'stopWorker starts the drain before marking and closes sql only after both settle',
+  sanitizeResources: false,
+  fn: async () => {
+    const events: string[] = [];
+    const deps = createMockDeps();
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+
+    let releaseStop = () => {};
+    let releaseMark = () => {};
+    (adapter as unknown as { worker: Worker | null }).worker = {
+      startOnlyOnce: () => {},
+      stop: () => {
+        events.push('worker.stop');
+        return new Promise<void>((resolve) => {
+          releaseStop = resolve;
+        });
+      },
+    } as unknown as Worker;
+    (adapter as unknown as { workerId: string | null }).workerId = 'worker-1';
+    (adapter as unknown as {
+      queries: { markWorkerStopped: (workerId: string) => Promise<void> };
+    }).queries.markWorkerStopped = (_workerId) => {
+      events.push('markWorkerStopped');
+      return new Promise<void>((resolve) => {
+        releaseMark = resolve;
+      });
+    };
+
+    const sql = adapter.sql as unknown as { end: () => Promise<void> };
+    sql.end = () => {
+      events.push('sql.end');
+      return Promise.resolve();
+    };
+
+    const stopPromise = adapter.stopWorker();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assertEquals(
+      events,
+      ['worker.stop', 'markWorkerStopped'],
+      'drain must start first and sql must stay open while both are pending'
+    );
+
+    releaseStop();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(
+      events,
+      ['worker.stop', 'markWorkerStopped'],
+      'sql must stay open until marking settles too'
+    );
+
+    releaseMark();
+    await stopPromise;
+    assertEquals(events, ['worker.stop', 'markWorkerStopped', 'sql.end']);
+  },
+});
+
+Deno.test({
+  name: 'stopWorker rejects with an AggregateError when drain and marking both fail',
+  sanitizeResources: false,
+  fn: async () => {
+    const events: string[] = [];
+    const deps = createMockDeps();
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+
+    (adapter as unknown as { worker: Worker | null }).worker = {
+      startOnlyOnce: () => {},
+      stop: () => {
+        events.push('worker.stop');
+        return Promise.reject(new Error('drain failed'));
+      },
+    } as unknown as Worker;
+    (adapter as unknown as { workerId: string | null }).workerId = 'worker-1';
+    (adapter as unknown as {
+      queries: { markWorkerStopped: (workerId: string) => Promise<void> };
+    }).queries.markWorkerStopped = (_workerId) => {
+      events.push('markWorkerStopped');
+      return Promise.reject(new Error('mark failed'));
+    };
+
+    const sql = adapter.sql as unknown as { end: () => Promise<void> };
+    sql.end = () => {
+      events.push('sql.end');
+      return Promise.resolve();
+    };
+
+    const error = await assertRejects(() => adapter.stopWorker());
+
+    assertInstanceOf(error, AggregateError);
+    assertEquals(
+      error.errors.map((e) => (e as Error).message),
+      ['drain failed', 'mark failed'],
+      'AggregateError must preserve both errors in drain-then-mark order'
+    );
+    assertEquals(events, ['worker.stop', 'markWorkerStopped', 'sql.end']);
+  },
+});
+
+Deno.test({
+  name: 'shutdown deadline force-closes sql when startup never settles',
+  sanitizeResources: false,
+  fn: async () => {
+    const time = new FakeTime();
+    try {
+      let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+      let shutdownHandler: (() => void | Promise<void>) | null = null;
+      const deps = createMockDeps({
+        serve: (h) => {
+          serveHandler = h;
+        },
+        onShutdown: (h) => {
+          shutdownHandler = h;
+        },
+      });
+
+      const endCalls: unknown[] = [];
+      const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+        end: (options?: unknown) => Promise<void>;
+      };
+      sql.end = (options) => {
+        endCalls.push(options);
+        return Promise.resolve();
+      };
+
+      const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+      const warns: string[] = [];
+      (adapter as unknown as {
+        logger: { warn: (message: string) => void };
+      }).logger.warn = (message) => {
+        warns.push(message);
+      };
+
+      // Startup never settles, so shutdown can only finish via the deadline.
+      const worker = {
+        startOnlyOnce: () => new Promise<void>(() => undefined),
+        stop: () => Promise.resolve(),
+        get isDeprecated() {
+          return false;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker;
+      await adapter.startWorker(() => worker);
+
+      const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+      const responsePromise = Promise.resolve(handler(authedRequest()));
+      await time.tickAsync(0);
+
+      const shutdownPromise = Promise.resolve(shutdownHandler!());
+      // Capture the rejection immediately: a transiently unhandled rejection
+      // would fail the test runner before the assertions below.
+      const shutdownError = shutdownPromise.then(
+        () => new Error('expected shutdown to reject'),
+        (error: unknown) => error
+      );
+      assertEquals(adapter.shutdownSignal.aborted, true);
+
+      await time.tickAsync(5_000);
+      await time.tickAsync(0);
+
+      const error = (await shutdownError) as Error;
+      assertStringIncludes(error.message, 'timed out after 5000ms');
+      assertEquals(error instanceof Error && /5000ms/.test(error.message), true);
+      assertEquals(endCalls, [{ timeout: 0 }], 'sql must be force-closed once at the deadline');
+      assertEquals(warns.length, 1, 'the deadline expiry must be logged once');
+      assertStringIncludes(warns[0], '5000');
+      assertEquals(adapter.shutdownSignal.aborted, true, 'signal must stay aborted');
+
+      let responseSettled = false;
+      responsePromise.then(
+        () => {
+          responseSettled = true;
+        },
+        () => {
+          responseSettled = true;
+        }
+      );
+      await time.tickAsync(0);
+      assertEquals(responseSettled, false, 'startup stays unresolved after the deadline');
+      void shutdownPromise;
+    } finally {
+      time.restore();
+    }
   },
 });
