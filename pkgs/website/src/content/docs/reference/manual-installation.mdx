@@ -136,7 +136,8 @@ Create `supabase/flows/index.ts` to export your flows:
 
 ```typescript title="supabase/flows/index.ts"
 // Re-export all flows from this directory
-// Example: export { MyFlow } from './my-flow.ts';
+// (Do not keep commented-out import examples here — the Supabase CLI's
+// import scanner treats them as real imports and `supabase start` fails)
 
 export { GreetUser } from './greet-user.ts';
 ```

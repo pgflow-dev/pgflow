@@ -4,7 +4,10 @@ import { log, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 
 const INDEX_TS_TEMPLATE = `// Re-export all flows from this directory
-// Example: export { MyFlow } from './my-flow.ts';
+//
+// Do not add commented-out import examples: the Supabase CLI scans file
+// text for import statements without parsing comments, so an example that
+// names a missing file breaks "supabase start" with "failed to read file".
 
 export { GreetUser } from './greet-user.ts';
 `;
