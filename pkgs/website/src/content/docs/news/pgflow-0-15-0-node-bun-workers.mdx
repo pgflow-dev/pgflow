@@ -1,0 +1,50 @@
+---
+title: 'pgflow 0.15.0: Standalone Workers with Node and Bun'
+description: 'Run pgflow workers as long-lived Node or Bun processes on any hosting platform with the new @pgflow/edge-worker npm package'
+date: 2026-08-18
+authors:
+  - jumski
+tags:
+  - feature
+  - minor
+featured: false
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+pgflow workers are no longer tied to Supabase Edge Functions. This release publishes `@pgflow/edge-worker` to npm and adds a process runtime that runs workers as long-lived Node or Bun processes — on Railway, Fly.io, Docker, or any VM.
+
+<Aside type="note" title="Supabase is still required">
+Flows, runs, and task queues still live in your Supabase Postgres database — only the worker *process* moved. It runs on your infrastructure and connects back to Supabase. Edge Function workers keep working as before.
+</Aside>
+
+## Run a worker with Node or Bun
+
+Install the package with your package manager of choice, set your connection variables, and start a worker script:
+
+```sh frame="none"
+npm add @pgflow/edge-worker
+pnpm add @pgflow/edge-worker
+bun add @pgflow/edge-worker
+```
+
+```ts title="worker.ts"
+import { EdgeWorker } from '@pgflow/edge-worker';
+import { ProcessOrders } from './flows/process-orders.js';
+
+await EdgeWorker.start(ProcessOrders);
+```
+
+Process workers handle `SIGTERM`, `SIGINT`, and `SIGQUIT` with graceful drain: tasks finish, the worker is marked stopped, and connections close before exit.
+
+See the [Node/Bun Process Workers guide](/deploy/node-bun-process-workers/) for deployment recipes and configuration.
+
+Already using pgflow? 0.15.0 ships a database migration — follow [Update pgflow](/deploy/update-pgflow/) before deploying process workers.
+
+## Supabase Edge Function improvements
+
+Edge Function workers also got lifecycle hardening in this release:
+
+- **Bounded shutdown.** Shutdown finishes within a five-second deadline; PostgreSQL connections are force-closed if it expires.
+- **Serialized startup.** Concurrent requests share one startup; none observe a half-started worker.
+- **Retry backoff.** Persistent database failures back off exponentially (100 ms to 5 s) instead of hot-looping.

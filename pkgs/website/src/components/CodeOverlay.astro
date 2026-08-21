@@ -319,7 +319,8 @@
     const button = document.querySelector('.reveal-button') as HTMLElement | null;
     const overlay = document.querySelector('.code-overlay') as HTMLElement | null;
     const scrollableContainer = document.querySelector('.scrollable-content') as HTMLElement | null;
-    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement | null;
+    // Cast non-null: the guard below protects runtime; hoisted animateScroll can't inherit the narrowing.
+    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement;
 
     if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
 
