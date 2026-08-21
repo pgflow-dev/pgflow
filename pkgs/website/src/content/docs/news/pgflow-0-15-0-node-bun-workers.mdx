@@ -1,7 +1,7 @@
 ---
 draft: true
-title: 'pgflow 0.15.0: Portable Workers with Node and Bun Support'
-description: 'Run pgflow workers anywhere with the new @pgflow/edge-worker npm package, including long-running Node and Bun processes'
+title: 'pgflow 0.15.0: Standalone Workers with Node and Bun'
+description: 'Run pgflow workers as long-lived Node or Bun processes on any hosting platform with the new @pgflow/edge-worker npm package'
 date: 2026-08-18
 authors:
   - jumski
@@ -14,6 +14,10 @@ featured: false
 import { Aside } from '@astrojs/starlight/components';
 
 pgflow workers are no longer tied to Supabase Edge Functions. This release publishes `@pgflow/edge-worker` to npm and adds a process runtime that runs workers as long-lived Node or Bun processes — on Railway, Fly.io, Docker, or any VM.
+
+<Aside type="warning" title="Supabase is still required">
+A standalone worker still needs a Supabase project. pgflow runs on your Supabase Postgres database: flows, runs, task queues, and the control plane (worker registration, heartbeats, deprecation) all live there. What changed is only *where the worker process runs* — instead of Supabase hosting it as an Edge Function, it runs as your own long-lived process on an external service and connects back to Supabase. If you don't need long-running or custom runtimes, Edge Function workers continue to work as before.
+</Aside>
 
 ## Run a worker with Node or Bun
 
