@@ -222,15 +222,20 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
       this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
-      const wasStarted = await this.ensureWorkerStarted(req, createWorkerFn);
+      try {
+        const wasStarted = await this.ensureWorkerStarted(req, createWorkerFn);
 
-      return new Response(JSON.stringify({
-        status: wasStarted ? 'started' : 'running',
-        workerId: this.workerId,
-        functionName: this.edgeFunctionName,
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+        return new Response(JSON.stringify({
+          status: wasStarted ? 'started' : 'running',
+          workerId: this.workerId,
+          functionName: this.edgeFunctionName,
+        }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        this.logger.error('Worker startup failed', error);
+        return createServerErrorResponse();
+      }
     });
   }
 
@@ -279,12 +284,21 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     this.loggingFactory.setWorkerName(this.edgeFunctionName);
 
     // Create the worker using the factory function and the logger
-    this.worker = createWorkerFn(this.loggingFactory.createLogger);
-    void this.worker.startOnlyOnce({
-      edgeFunctionName: this.edgeFunctionName,
-      workerId,
-      startMode: 'http',
-    });
+    const worker = createWorkerFn(this.loggingFactory.createLogger);
+    this.worker = worker;
+
+    try {
+      await worker.startOnlyOnce({
+        edgeFunctionName: this.edgeFunctionName,
+        workerId,
+        startMode: 'http',
+      });
+    } catch (error) {
+      if (this.worker === worker) {
+        this.worker = null;
+      }
+      throw error;
+    }
   }
 
   /**

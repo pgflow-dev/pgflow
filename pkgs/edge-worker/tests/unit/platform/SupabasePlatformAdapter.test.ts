@@ -209,6 +209,30 @@ Deno.test({
   },
 });
 
+Deno.test({
+  name: 'ignores DATABASE_URL when EDGE_WORKER_DB_URL is also set',
+  sanitizeResources: false,
+  fn: () => {
+    const deps = createMockDeps({
+      getEnv: () => ({
+        SUPABASE_URL: 'https://abc123.supabase.co',
+        SUPABASE_ANON_KEY: 'test-anon-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+        SB_EXECUTION_ID: 'test-exec-id',
+        DATABASE_URL: 'postgresql://unrelated:5432/database',
+        EDGE_WORKER_DB_URL: 'postgresql://edge-worker:5432/database',
+      }),
+    });
+
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+
+    assertEquals(
+      adapter.connectionString,
+      'postgresql://edge-worker:5432/database'
+    );
+  },
+});
+
 // ============================================================
 // Local Environment Detection Tests
 // ============================================================
@@ -358,6 +382,78 @@ Deno.test({
       workerId: 'test-exec-id',
       startMode: 'http',
     });
+  },
+});
+
+Deno.test({
+  name: 'HTTP startup returns a controlled 500 and retries with a fresh worker',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    let rejectStartup = (_error: Error) => {};
+    let createCount = 0;
+
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+    const sql = (() => Promise.resolve([])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
+
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    await adapter.startWorker(() => {
+      createCount++;
+      return {
+        startOnlyOnce: () => createCount === 1
+          ? new Promise<void>((_resolve, reject) => {
+            rejectStartup = reject;
+          })
+          : Promise.resolve(),
+        stop: () => Promise.resolve(),
+        get isDeprecated() {
+          return false;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker;
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+    const request = () => new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    });
+
+    let responseSettled = false;
+    const responsePromise = Promise.resolve(handler(request()));
+    responsePromise.then(() => {
+      responseSettled = true;
+    });
+    await Promise.resolve();
+
+    assertEquals(responseSettled, false, 'Response must wait for worker readiness');
+
+    rejectStartup(new Error('sensitive database details'));
+    const failedResponse = await responsePromise;
+    const failedBody = await failedResponse.text();
+
+    assertEquals(failedResponse.status, 500);
+    assertEquals(failedBody.includes('sensitive database details'), false);
+    assertEquals(JSON.parse(failedBody), {
+      error: 'Internal Server Error',
+      message: 'Internal Server Error',
+    });
+
+    const retryResponse = await handler(request()) as Response;
+    const retryBody = await retryResponse.json();
+
+    assertEquals(retryResponse.status, 200);
+    assertEquals(retryBody.status, 'started');
+    assertEquals(createCount, 2);
+    assertEquals(retryBody.workerId === 'test-exec-id', false);
   },
 });
 

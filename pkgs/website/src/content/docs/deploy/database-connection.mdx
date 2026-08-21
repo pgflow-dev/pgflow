@@ -11,7 +11,9 @@ pgflow auto-detects your database connection in local development and requires m
 
 ## Connection Priority
 
-When an Edge Worker starts, pgflow resolves the database connection using this priority chain:
+### Supabase Edge Functions
+
+Supabase Edge Functions use this priority chain:
 
 | Priority | Source                    | Use Case                                       |
 | -------- | ------------------------- | ---------------------------------------------- |
@@ -20,12 +22,26 @@ When an Edge Worker starts, pgflow resolves the database connection using this p
 | 3        | `EDGE_WORKER_DB_URL`      | Production environment variable                |
 | 4        | Local fallback            | Supabase local development (automatic)         |
 
+`DATABASE_URL` does not affect Supabase Edge Functions. This prevents an unrelated application database URL from redirecting an Edge Worker.
+
+### Node and Bun Process Workers
+
+Process workers use this priority chain:
+
+| Priority | Source                    |
+| -------- | ------------------------- |
+| 1        | `config.sql`              |
+| 2        | `config.connectionString` |
+| 3        | `DATABASE_URL`            |
+| 4        | `EDGE_WORKER_DB_URL`      |
+| 5        | Local fallback            |
+
 If none of these are available, the worker throws an error: `"No database connection available"`.
 
 <Aside type="note" title="Explicit config wins">
-  Providing `config.sql`, `config.connectionString`, or `EDGE_WORKER_DB_URL`
-  **skips the automatic local connection**. The local fallback only applies when
-  no explicit configuration is provided.
+  Providing `config.sql`, `config.connectionString`, or the applicable
+  environment variable **skips the automatic local connection**. The local
+  fallback only applies when no explicit configuration is provided.
 </Aside>
 
 ## Local Development

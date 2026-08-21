@@ -20,36 +20,37 @@ export interface ConnectionEnv extends Record<string, string | undefined> {
 export interface ConnectionOptions {
   hasSql?: boolean;
   connectionString?: string;
+  allowDatabaseUrl?: boolean;
 }
 
-export interface SqlConnectionOptions {
+export interface SqlConnectionOptions extends ConnectionOptions {
   sql?: postgres.Sql;
-  connectionString?: string;
   maxPgConnections?: number;
 }
 
 /**
- * Resolves the connection string based on priority:
- * config.sql -> config.connectionString -> DATABASE_URL -> EDGE_WORKER_DB_URL -> local fallback
+ * Resolves the connection string based on priority. Supabase workers ignore
+ * DATABASE_URL by default; process workers opt in to DATABASE_URL priority.
  */
 export function resolveConnectionString(
   env: ConnectionEnv,
   options?: ConnectionOptions
 ): string | undefined {
-  const isLocal = isLocalSupabaseEnv(env);
+  const envConnectionString = options?.allowDatabaseUrl
+    ? env.DATABASE_URL || env.EDGE_WORKER_DB_URL
+    : env.EDGE_WORKER_DB_URL;
 
   // Zero-config local dev: use docker pooler when nothing else is configured
   if (
-    isLocal &&
+    isLocalSupabaseEnv(env) &&
     !options?.hasSql &&
     !options?.connectionString &&
-    !env.DATABASE_URL &&
-    !env.EDGE_WORKER_DB_URL
+    !envConnectionString
   ) {
     return DOCKER_TRANSACTION_POOLER_URL;
   }
 
-  return options?.connectionString || env.DATABASE_URL || env.EDGE_WORKER_DB_URL;
+  return options?.connectionString || envConnectionString;
 }
 
 /**
@@ -68,12 +69,7 @@ export function assertConnectionAvailable(
 }
 
 /**
- * Resolves and creates the SQL connection based on priority:
- * 1. config.sql - User-provided SQL client (highest priority)
- * 2. config.connectionString - User-provided connection string
- * 3. DATABASE_URL - Environment variable
- * 4. EDGE_WORKER_DB_URL - Environment variable
- * 5. Local Supabase detection + Docker URL (lowest priority)
+ * Resolves and creates the SQL connection using resolveConnectionString().
  *
  * @throws Error if no connection source is available
  */
@@ -81,31 +77,16 @@ export function resolveSqlConnection(
   env: ConnectionEnv,
   options?: SqlConnectionOptions
 ): postgres.Sql {
-  // 1. config.sql - highest priority
   if (options?.sql) {
     return options.sql;
   }
 
-  const max = options?.maxPgConnections ?? 4;
-
-  // 2. config.connectionString
-  if (options?.connectionString) {
-    return postgres(options.connectionString, { prepare: false, max });
-  }
-
-  // 3. DATABASE_URL
-  if (env.DATABASE_URL) {
-    return postgres(env.DATABASE_URL, { prepare: false, max });
-  }
-
-  // 4. EDGE_WORKER_DB_URL
-  if (env.EDGE_WORKER_DB_URL) {
-    return postgres(env.EDGE_WORKER_DB_URL, { prepare: false, max });
-  }
-
-  // 5. Local Supabase detection + docker URL
-  if (isLocalSupabaseEnv(env)) {
-    return postgres(DOCKER_TRANSACTION_POOLER_URL, { prepare: false, max });
+  const connectionString = resolveConnectionString(env, options);
+  if (connectionString) {
+    return postgres(connectionString, {
+      prepare: false,
+      max: options?.maxPgConnections ?? 4,
+    });
   }
 
   throw new Error(

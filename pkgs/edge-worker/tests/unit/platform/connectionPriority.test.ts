@@ -58,6 +58,20 @@ Deno.test('connection priority - production uses EDGE_WORKER_DB_URL', () => {
   assertEquals(result, 'postgresql://prod:5432/db');
 });
 
+Deno.test('connection priority - DATABASE_URL is opt-in for process workers', () => {
+  const env = {
+    SUPABASE_URL: 'https://abc123.supabase.co',
+    DATABASE_URL: 'postgresql://process:5432/db',
+    EDGE_WORKER_DB_URL: 'postgresql://edge:5432/db',
+  };
+
+  assertEquals(resolveConnectionString(env), 'postgresql://edge:5432/db');
+  assertEquals(
+    resolveConnectionString(env, { allowDatabaseUrl: true }),
+    'postgresql://process:5432/db'
+  );
+});
+
 Deno.test('connection priority - production config.connectionString overrides env var', () => {
   const env = {
     SUPABASE_URL: 'https://abc123.supabase.co',

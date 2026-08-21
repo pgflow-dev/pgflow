@@ -1,6 +1,6 @@
 import type { Queries } from './Queries.js';
 import type { Queue } from '../queue/Queue.js';
-import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
+import type { InternalLifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
 import { States, WorkerState } from './WorkerState.js';
 import type { Logger } from '../platform/types.js';
 
@@ -9,7 +9,7 @@ export interface LifecycleConfig {
   heartbeatInterval?: number;
 }
 
-export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
+export class WorkerLifecycle<IMessage extends Json> implements InternalLifecycle {
   private workerState: WorkerState;
   private logger: Logger;
   private queries: Queries;
