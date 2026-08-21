@@ -1,5 +1,16 @@
 # @pgflow/core
 
+## 0.15.0
+
+### Minor Changes
+
+- 9a9022e: Publish `@pgflow/edge-worker` to npm and add Node/Bun process runtime support.
+
+### Patch Changes
+
+- Updated dependencies [9a9022e]
+  - @pgflow/dsl@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes
