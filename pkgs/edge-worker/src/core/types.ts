@@ -48,7 +48,10 @@ export type WorkerRow = {
   function_name: string;
 };
 
+export type WorkerStartMode = 'http' | 'process';
+
 export interface WorkerBootstrap {
   edgeFunctionName: string;
   workerId: string;
+  startMode?: WorkerStartMode;
 }

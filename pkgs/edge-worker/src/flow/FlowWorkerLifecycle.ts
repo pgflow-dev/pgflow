@@ -52,7 +52,8 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this._edgeFunctionName = workerBootstrap.edgeFunctionName;
 
     // Register this edge function for monitoring by ensure_workers() cron.
-    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
+    const startMode = workerBootstrap.startMode ?? 'http';
+    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
 
     // Compile/verify flow as part of Starting (before registering worker)
     let compilationStatus: CompilationStatus = 'verified';

@@ -113,6 +113,31 @@ describe('PgflowClient', () => {
     expect(result).toBeNull();
   });
 
+  test('getRun returns null without logging when no run data is returned', async () => {
+    const { client, mocks } = createMockClient();
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {
+        // Suppress the log while asserting it is not called.
+      });
+
+    mockRpcCall(mocks, { data: null, error: null });
+
+    const pgflowClient = new PgflowClient(client, {
+      realtimeStabilizationDelayMs: 0,
+      schedule: createSyncSchedule(),
+    });
+
+    try {
+      const result = await pgflowClient.getRun('nonexistent-id');
+
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
   test('emits events through callbacks', async () => {
     const { client, mocks } = createMockClient();
 

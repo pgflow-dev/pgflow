@@ -1,4 +1,5 @@
 import type { PlatformAdapter } from '../../src/platform/types.ts';
+import type { WorkerBootstrap, WorkerStartMode } from '../../src/core/types.ts';
 
 const adapterWithoutRequestShutdown: PlatformAdapter = {
   async startWorker() {},
@@ -21,3 +22,13 @@ const adapterWithoutRequestShutdown: PlatformAdapter = {
 };
 
 void adapterWithoutRequestShutdown;
+
+const processMode: WorkerStartMode = 'process';
+
+const processBootstrap: WorkerBootstrap = {
+  edgeFunctionName: 'process-worker',
+  workerId: 'worker-id',
+  startMode: processMode,
+};
+
+void processBootstrap;
