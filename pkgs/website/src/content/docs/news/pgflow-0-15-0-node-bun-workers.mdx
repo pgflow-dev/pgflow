@@ -1,5 +1,4 @@
 ---
-draft: true
 title: 'pgflow 0.15.0: Standalone Workers with Node and Bun'
 description: 'Run pgflow workers as long-lived Node or Bun processes on any hosting platform with the new @pgflow/edge-worker npm package'
 date: 2026-08-18
@@ -49,7 +48,3 @@ Edge Function workers also got lifecycle hardening in this release:
 - **Bounded shutdown.** Shutdown finishes within a five-second deadline; PostgreSQL connections are force-closed if it expires.
 - **Serialized startup.** Concurrent requests share one startup; none observe a half-started worker.
 - **Retry backoff.** Persistent database failures back off exponentially (100 ms to 5 s) instead of hot-looping.
-
-<Aside type="note">
-Draft — the final changelog lands before publishing.
-</Aside>
