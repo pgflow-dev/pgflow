@@ -1,0 +1,131 @@
+---
+title: Node/Bun Process Workers
+description: Deploy pgflow workers as long-running Node or Bun processes
+sidebar:
+  order: 2
+---
+
+import { Aside, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Use this deployment mode when your host runs a long-running process, such as Railway, Fly, Docker, or a VM worker service.
+
+Use Supabase Edge Functions instead when you want pgflow to start workers through HTTP and have `ensure_workers()` respawn missing edge functions.
+
+<Aside type="note" title="Supabase remains the primary path">
+  Process workers are for hosts that supervise normal processes. If you deploy
+  to Supabase Edge Functions, keep using JSR imports and the [Supabase deployment
+  guide](/deploy/supabase/).
+</Aside>
+
+## Install
+
+Install the npm package in the application that owns your worker process:
+
+```sh frame="none"
+pnpm add @pgflow/edge-worker
+```
+
+## Worker Script
+
+Create a user-owned worker script that imports `EdgeWorker` and calls `EdgeWorker.start(...)`.
+
+```ts title="worker.ts"
+import { EdgeWorker } from '@pgflow/edge-worker';
+
+await EdgeWorker.start('process-orders', async (payload, context) => {
+  context.logger.info('Processing order', { payload });
+
+  return {
+    processedAt: new Date().toISOString(),
+  };
+});
+```
+
+Flow workers use the same process runtime. Import your flow definition from your app code and pass it to `EdgeWorker.start(...)`:
+
+```ts title="worker.ts"
+import { EdgeWorker } from '@pgflow/edge-worker';
+import { ProcessOrders } from './flows/process-orders.js';
+
+await EdgeWorker.start(ProcessOrders);
+```
+
+## Required Environment Variables
+
+Set these variables in your process host:
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `SUPABASE_URL` | Yes | Your Supabase project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service role key used by the worker runtime. |
+| `DATABASE_URL` | Yes, unless `EDGE_WORKER_DB_URL` is set | PostgreSQL connection string for the pgflow database. |
+| `EDGE_WORKER_DB_URL` | Yes, unless `DATABASE_URL` is set | Alternative PostgreSQL connection string name shared with Supabase Edge Functions. |
+| `WORKER_NAME` | No | Worker function name recorded in pgflow. Defaults to `pgflow-worker`. |
+
+Use `DATABASE_URL` for process hosts when possible. `EDGE_WORKER_DB_URL` remains supported for deployments that share configuration with Supabase Edge Functions.
+
+## Run The Worker
+
+<Tabs>
+  <TabItem label="Node">
+    Compile your app worker script to JavaScript for production, then run the compiled file:
+
+    ```sh frame="none"
+    node dist/worker.js
+    ```
+  </TabItem>
+  <TabItem label="Bun">
+    Bun can run the app worker script directly:
+
+    ```sh frame="none"
+    bun run worker.ts
+    ```
+  </TabItem>
+</Tabs>
+
+Your process manager should keep this command running. On Railway, Fly, Docker, or a VM, configure it as the service start command.
+
+## Shutdown
+
+Process workers drain on `SIGTERM`, `SIGINT`, and `SIGQUIT`.
+
+On the first signal, the worker stops accepting new work, lets in-flight tasks finish, marks the worker stopped in pgflow, and exits with code `0`. A second signal exits immediately with code `1`.
+
+## Health
+
+There is no built-in HTTP health endpoint for process workers. Use your host's process liveness checks and pgflow worker heartbeat data in the database.
+
+```sql frame="none"
+SELECT worker_id, function_name, last_heartbeat_at
+FROM pgflow.workers
+WHERE stopped_at IS NULL
+ORDER BY last_heartbeat_at DESC;
+```
+
+For more heartbeat queries, see [Monitor workers health](/deploy/monitor-workers-health/).
+
+## Supervision
+
+Process workers are tracked with `start_mode = 'process'`. `ensure_workers()` only pings HTTP-started workers and never invokes process workers.
+
+That means your process host is responsible for restarting crashed Node or Bun workers. pgflow still tracks worker rows, heartbeats, deprecation, and task recovery.
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Deploy to Supabase"
+    href="/deploy/supabase/"
+    description="Primary deployment path using Supabase Edge Functions"
+  />
+  <LinkCard
+    title="Worker Management"
+    href="/deploy/worker-management/"
+    description="How pgflow registers, deprecates, and tracks workers"
+  />
+  <LinkCard
+    title="Database Connection"
+    href="/deploy/database-connection/"
+    description="Connection options and production database configuration"
+  />
+</CardGrid>
