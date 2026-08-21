@@ -2,7 +2,7 @@
 \set QUIET on
 
 begin;
-select plan(5);
+select plan(7);
 
 select pgflow_tests.reset_db();
 
@@ -31,6 +31,13 @@ select is(
   )),
   2::int,
   'First call should skip 2 steps (map_step + dependent_step)'
+);
+
+select is(
+  (select count(*) from pgflow.step_tasks
+   where flow_slug = 'idempotent_test' and step_slug = 'map_step' and status = 'skipped'),
+  3::bigint,
+  'First call should terminalize started and queued map_step tasks to skipped'
 );
 
 create temporary table after_first as
@@ -69,6 +76,13 @@ select is(
   (select count(*) from pgmq.a_idempotent_test),
   (select archive_count from after_first),
   'Archive count should be unchanged after second call'
+);
+
+select is(
+  (select count(*) from pgflow.step_tasks
+   where flow_slug = 'idempotent_test' and step_slug = 'map_step' and status = 'skipped'),
+  3::bigint,
+  'Task statuses should be unchanged after second call'
 );
 
 select * from finish();

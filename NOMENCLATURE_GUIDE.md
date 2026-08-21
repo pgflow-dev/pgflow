@@ -142,6 +142,7 @@ Slugs are unique text identifiers with specific rules:
 - `started` - Step is executing
 - `completed` - Step completed successfully
 - `failed` - Step failed permanently
+- `skipped` - Step was skipped due to failed dependency, unmet condition, or exhausted retries
 
 ### Task Statuses
 
@@ -149,6 +150,7 @@ Slugs are unique text identifiers with specific rules:
 - `started` - Task is executing
 - `completed` - Task completed successfully
 - `failed` - Task failed (may be retried or permanent)
+- `skipped` - Task was cancelled because its parent step was skipped
 
 ## Configuration Terms
 

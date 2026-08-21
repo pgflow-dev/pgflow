@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(7);
 select pgflow_tests.reset_db();
 
 -- Setup: Create a flow with map step (max_attempts=>0, when_exhausted=>'skip') and 'other' step
@@ -66,6 +66,14 @@ select is(
   (select r.remaining_steps from pgflow.runs r, after_first_skip a where r.run_id = a.run_id),
   (select remaining_steps from after_first_skip),
   'remaining_steps unchanged after late fail (no double-decrement)'
+);
+
+-- Verify late-failed task row remains skipped (late callback must not rewrite it)
+select is(
+  (select st.status from pgflow.step_tasks st, after_first_skip a
+   where st.run_id = a.run_id and st.step_slug = 'map_a' and st.task_index = 1),
+  'skipped',
+  'Late fail callback should not rewrite skipped sibling task row'
 );
 
 select finish();

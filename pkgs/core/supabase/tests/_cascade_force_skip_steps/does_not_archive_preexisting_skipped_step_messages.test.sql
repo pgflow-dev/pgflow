@@ -2,7 +2,7 @@
 \set QUIET on
 
 begin;
-select plan(4);
+select plan(6);
 
 select pgflow_tests.reset_db();
 
@@ -63,6 +63,24 @@ select is(
   (select status from pgflow.step_states where flow_slug = 'cascade_skip_preexisting' and step_slug = 'target'),
   'skipped'::text,
   'Target step should be marked skipped'
+);
+
+select is(
+  (select count(*) from pgflow.step_tasks
+   where flow_slug = 'cascade_skip_preexisting'
+     and step_slug = 'target'
+     and status = 'skipped'),
+  2::bigint,
+  'Tasks of step newly skipped by this cascade call should become skipped'
+);
+
+select is(
+  (select count(*) from pgflow.step_tasks
+   where flow_slug = 'cascade_skip_preexisting'
+     and step_slug = 'already_skipped'
+     and status = 'queued'),
+  2::bigint,
+  'Task rows under preexisting skipped step should remain untouched (queued)'
 );
 
 select * from finish();

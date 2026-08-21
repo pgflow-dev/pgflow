@@ -8,7 +8,7 @@ volatile
 set search_path to ''
 language sql
 as $$
-  with tasks as (
+  with task_candidates as (
     select
       task.flow_slug,
       task.run_id,
@@ -29,17 +29,27 @@ as $$
           and ss.status = 'started'
       )
   ),
-  start_tasks_update as (
+  -- Claim rows with a guarded update and return only what was actually
+  -- claimed. A concurrent skip can win the row lock between the candidate
+  -- select and this update; the status = 'queued' recheck then claims nothing,
+  -- so no stale candidate row must escape to the worker (#638).
+  tasks as (
     update pgflow.step_tasks
     set
       attempts_count = attempts_count + 1,
       status = 'started',
       started_at = now(),
       last_worker_id = worker_id
-    from tasks
-    where step_tasks.message_id = tasks.message_id
-      and step_tasks.flow_slug = tasks.flow_slug
+    from task_candidates as candidate
+    where step_tasks.message_id = candidate.message_id
+      and step_tasks.flow_slug = candidate.flow_slug
       and step_tasks.status = 'queued'
+    returning
+      step_tasks.flow_slug,
+      step_tasks.run_id,
+      step_tasks.step_slug,
+      step_tasks.task_index,
+      step_tasks.message_id
   ),
   runs as (
     select
