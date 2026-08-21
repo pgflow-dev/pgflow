@@ -21,7 +21,13 @@ Flows, runs, and task queues still live in your Supabase Postgres database — o
 
 ## Run a worker with Node or Bun
 
-Install the package, set your connection variables, and start a worker script:
+Install the package with your package manager of choice, set your connection variables, and start a worker script:
+
+```sh frame="none"
+npm add @pgflow/edge-worker
+pnpm add @pgflow/edge-worker
+bun add @pgflow/edge-worker
+```
 
 ```ts title="worker.ts"
 import { EdgeWorker } from '@pgflow/edge-worker';
