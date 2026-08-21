@@ -1,5 +1,17 @@
 # pgflow
 
+## 0.15.0
+
+### Minor Changes
+
+- 9a9022e: Publish `@pgflow/edge-worker` to npm and add Node/Bun process runtime support.
+
+### Patch Changes
+
+- c6d9573: Fix freshly installed projects failing to start: the generated `supabase/flows/index.ts` contained a commented-out example import that the Supabase CLI's text-based import scanner treats as a real import, aborting `supabase start` with `failed to read file: supabase/flows/my-flow.ts`.
+- Updated dependencies [9a9022e]
+  - @pgflow/core@0.15.0
+
 ## 0.14.2
 
 ### Patch Changes
