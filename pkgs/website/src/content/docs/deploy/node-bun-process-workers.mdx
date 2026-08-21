@@ -69,12 +69,11 @@ Set these variables in your process host:
 
 Use `DATABASE_URL` for process hosts when possible. `EDGE_WORKER_DB_URL` remains supported for deployments that share configuration with Supabase Edge Functions. If both are set, `DATABASE_URL` takes priority.
 
-<Aside type="caution" title="Apply the worker start mode migration first">
-  Apply the pgflow migration that adds `worker_functions.start_mode` and the
-  two-argument `track_worker_function` before the first process worker
-  deployment. Process workers require this migration; existing HTTP Edge
-  workers remain compatible with databases that only have the one-argument
-  function.
+<Aside type="caution" title="Update your pgflow schema first">
+  Process workers need the pgflow 0.15.0 database migrations (`start_mode`).
+  Run `npx pgflow@latest install` and apply new migrations before your first
+  process worker deployment — see
+  [Update pgflow](/deploy/update-pgflow/).
 </Aside>
 
 ## Run The Worker
