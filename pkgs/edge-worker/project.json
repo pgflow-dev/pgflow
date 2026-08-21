@@ -199,6 +199,21 @@
         "parallel": false
       }
     },
+    "e2e:portable-runtimes": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "serve:functions:e2e"],
+      "local": true,
+      "cache": false,
+      "inputs": ["default", "^production"],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "deno run --allow-net=localhost:50321 \"data:application/typescript,console.log(%22Waiting%20for%20functions%20server%20(port%2050321)...%22)%3B%20const%20deadline%20%3D%20Date.now()%20%2B%20120_000%3B%20while%20(Date.now()%20%3C%20deadline)%20%7B%20try%20%7B%20const%20conn%20%3D%20await%20Deno.connect(%7B%20hostname%3A%20%22localhost%22%2C%20port%3A%2050321%20%7D)%3B%20conn.close()%3B%20console.log(%22%20Ready!%22)%3B%20Deno.exit(0)%3B%20%7D%20catch%20%7B%20await%20new%20Promise((resolve)%20%3D%3E%20setTimeout(resolve%2C%20500))%3B%20%7D%20%7D%20console.error(%22TIMEOUT%3A%20Functions%20server%20not%20available%20on%20port%2050321%20after%20120s%22)%3B%20Deno.exit(1)%3B\"",
+          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e-portable-runtimes/"
+        ],
+        "parallel": false
+      }
+    },
     "test": {
       "inputs": ["default", "^production"],
       "dependsOn": ["test:types", "test:unit"]

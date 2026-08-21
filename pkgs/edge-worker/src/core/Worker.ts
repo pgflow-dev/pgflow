@@ -116,6 +116,26 @@ export class Worker {
     return this.lifecycle.edgeFunctionName;
   }
 
+  get isCreated() {
+    return this.lifecycle.isCreated;
+  }
+
+  get isStarting() {
+    return this.lifecycle.isStarting;
+  }
+
+  get isRunning() {
+    return this.lifecycle.isRunning;
+  }
+
+  get isDeprecated() {
+    return this.lifecycle.isDeprecated;
+  }
+
+  get isStopped() {
+    return this.lifecycle.isStopped;
+  }
+
   /**
    * Log deprecation message only once (prevents duplicate logs when deprecation
    * is detected in heartbeat and then stop() is called)

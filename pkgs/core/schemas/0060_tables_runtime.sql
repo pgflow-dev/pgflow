@@ -3,7 +3,7 @@
 -- Runs table - tracks flow execution instances
 create table pgflow.runs (
   run_id uuid primary key not null default gen_random_uuid(),
-  flow_slug text not null references pgflow.flows (flow_slug), -- denormalized
+  flow_slug text not null references pgflow.flows(flow_slug), -- denormalized
   status text not null default 'started',
   input jsonb not null,
   output jsonb,
@@ -22,8 +22,8 @@ create index if not exists idx_runs_status on pgflow.runs (status);
 
 -- Step states table - tracks the state of individual steps within a run
 create table pgflow.step_states (
-  flow_slug text not null references pgflow.flows (flow_slug),
-  run_id uuid not null references pgflow.runs (run_id),
+  flow_slug text not null references pgflow.flows(flow_slug),
+  run_id uuid not null references pgflow.runs(run_id),
   step_slug text not null,
   status text not null default 'created',
   remaining_tasks int null,  -- NULL = not started, >0 = active countdown
@@ -39,7 +39,7 @@ create table pgflow.step_states (
   skipped_at timestamptz,
   primary key (run_id, step_slug),
   foreign key (flow_slug, step_slug)
-  references pgflow.steps (flow_slug, step_slug),
+  references pgflow.steps(flow_slug, step_slug),
   constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed', 'skipped')),
   constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
   -- Add constraint to ensure remaining_tasks is only set when step has started
@@ -82,8 +82,8 @@ create index if not exists idx_step_states_run_id on pgflow.step_states (run_id)
 
 -- Step tasks table - tracks units of work for step
 create table pgflow.step_tasks (
-  flow_slug text not null references pgflow.flows (flow_slug),
-  run_id uuid not null references pgflow.runs (run_id),
+  flow_slug text not null references pgflow.flows(flow_slug),
+  run_id uuid not null references pgflow.runs(run_id),
   step_slug text not null,
   message_id bigint,
   task_index int not null default 0,
@@ -95,14 +95,14 @@ create table pgflow.step_tasks (
   started_at timestamptz,
   completed_at timestamptz,
   failed_at timestamptz,
-  last_worker_id uuid references pgflow.workers (worker_id) on delete set null,
+  last_worker_id uuid references pgflow.workers(worker_id) on delete set null,
   -- Requeue tracking columns
   requeued_count int not null default 0,
   last_requeued_at timestamptz,
   permanently_stalled_at timestamptz,
   constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
   foreign key (run_id, step_slug)
-  references pgflow.step_states (run_id, step_slug),
+  references pgflow.step_states(run_id, step_slug),
   constraint valid_status check (
     status in ('queued', 'started', 'completed', 'failed')
   ),

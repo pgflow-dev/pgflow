@@ -1,7 +1,6 @@
 import { withSql } from '../sql.ts';
 import { assertEquals, assertExists } from 'jsr:@std/assert';
 import {
-  fetchWorkers,
   log,
   sendBatch,
   seqLastValue,
@@ -41,10 +40,14 @@ Deno.test(
         await sql`SELECT pgmq.purge_queue(${WORKER_NAME})`;
       }
 
-      // Clean up old worker records (but workers may still be running)
+      // Clean up old worker records without orphaning live workers.
       await sql`
         DELETE FROM pgflow.workers
         WHERE function_name = ${WORKER_NAME}
+          AND (
+            stopped_at IS NOT NULL
+            OR last_heartbeat_at < NOW() - INTERVAL '6 seconds'
+          )
       `;
 
       // Start monitoring for debugging
@@ -53,21 +56,32 @@ Deno.test(
       try {
         // Start the worker
         await startWorker(WORKER_NAME);
+        const startedWaitingAt = new Date();
 
-        // Get the initial worker record
-        const initialWorkers = await fetchWorkers(WORKER_NAME);
-        assertEquals(initialWorkers.length, 1, 'Should have exactly 1 worker');
-        const workerId = initialWorkers[0].worker_id;
+        // Get the active worker records. Long-lived local edge isolates from
+        // previous runs may still be polling this function's queue.
+        const activeWorkers = await sql`
+          SELECT *
+          FROM pgflow.workers
+          WHERE function_name = ${WORKER_NAME}
+            AND stopped_at IS NULL
+            AND last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
+          ORDER BY started_at DESC
+        `;
+        const [initialWorker] = activeWorkers;
+        assertExists(initialWorker, 'Should have an active worker');
 
         // Verify stopped_at is NULL initially
         assertEquals(
-          initialWorkers[0].stopped_at,
+          initialWorker.stopped_at,
           null,
           'Worker should have NULL stopped_at initially'
         );
 
-        // Send CPU-intensive tasks that will cause the worker to die
-        await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
+        // Send enough CPU-intensive tasks that at least one active isolate
+        // should hit the CPU clock limit even when old isolates share the work.
+        const messagesToSend = MESSAGES_TO_SEND * activeWorkers.length;
+        await sendBatch(messagesToSend, WORKER_NAME);
 
         // Wait for at least some messages to be processed (worker was running)
         await waitForSeqToIncrementBy(MIN_MESSAGES_PROCESSED, {
@@ -76,27 +90,30 @@ Deno.test(
           pollIntervalMs: 300,
         });
 
-        // Wait for the original worker to have stopped_at set
+        // Wait for a worker from this test run to have stopped_at set.
         const stoppedWorker = await waitFor(
           async () => {
             const [worker] = await sql`
               SELECT worker_id, stopped_at, last_heartbeat_at
               FROM pgflow.workers
-              WHERE worker_id = ${workerId}
+              WHERE function_name = ${WORKER_NAME}
+                AND stopped_at IS NOT NULL
+                AND stopped_at >= ${startedWaitingAt}
+              ORDER BY stopped_at DESC
+              LIMIT 1
             `;
 
             if (!worker) {
-              log('Worker not found in DB');
+              log('No worker from this test run has stopped yet');
               return false;
             }
 
             log(`Worker state: stopped_at=${worker.stopped_at}, last_hb=${worker.last_heartbeat_at}`);
 
-            // Return the worker once stopped_at is set
-            return worker.stopped_at !== null ? worker : false;
+            return worker;
           },
           {
-            timeoutMs: 30000,
+            timeoutMs: 120000,
             pollIntervalMs: 500,
             description: 'worker to have stopped_at set',
           }

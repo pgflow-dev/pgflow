@@ -335,8 +335,12 @@ Deno.test({
         serveHandler = h;
       },
     });
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
 
-    const adapter = new SupabasePlatformAdapter(undefined, deps);
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     await adapter.startWorker(() => ({
       startOnlyOnce: (workerBootstrap: unknown) => {
         bootstrap = workerBootstrap;
@@ -354,6 +358,160 @@ Deno.test({
       workerId: 'test-exec-id',
       startMode: 'http',
     });
+  },
+});
+
+Deno.test({
+  name: 'HTTP startup uses a fresh worker id when replacing deprecated worker',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    const workerIds: string[] = [];
+    let firstWorkerStopped = false;
+    let requestShutdown: (() => void) | null = null;
+    const workers: Worker[] = [
+      {
+        startOnlyOnce: (workerBootstrap: { workerId: string }) => {
+          workerIds.push(workerBootstrap.workerId);
+        },
+        stop: () => {
+          firstWorkerStopped = true;
+          requestShutdown?.();
+          return Promise.resolve();
+        },
+        get isDeprecated() {
+          return true;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker,
+      {
+        startOnlyOnce: (workerBootstrap: { workerId: string }) => {
+          workerIds.push(workerBootstrap.workerId);
+        },
+        stop: () => Promise.resolve(),
+        get isDeprecated() {
+          return false;
+        },
+        get isStopped() {
+          return false;
+        },
+      } as unknown as Worker,
+    ];
+
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      end: () => Promise<void>;
+    };
+    sql.end = () => Promise.resolve();
+
+    const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
+    requestShutdown = () => adapter.requestShutdown();
+    await adapter.startWorker(() => workers.shift()!);
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+    await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    }));
+
+    const secondResponse = await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    })) as Response;
+    const secondBody = await secondResponse.json();
+
+    assertEquals(workerIds.length, 2);
+    assertEquals(workerIds[0], 'test-exec-id');
+    assertEquals(workerIds[1] !== workerIds[0], true);
+    assertEquals(firstWorkerStopped, true);
+    assertEquals(adapter.shutdownSignal.aborted, false);
+    assertEquals(secondBody.workerId, workerIds[1]);
+  },
+});
+
+Deno.test({
+  name: 'HTTP startup serializes concurrent deprecated worker replacement',
+  sanitizeResources: false,
+  fn: async () => {
+    let serveHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+    const workerIds: string[] = [];
+    let stopCalls = 0;
+    let releaseStop = () => {};
+    let resolveStopStarted: (() => void) | null = null;
+    const stopStarted = new Promise<void>((resolve) => {
+      resolveStopStarted = resolve;
+    });
+
+    const deprecatedWorker = {
+      startOnlyOnce: (workerBootstrap: { workerId: string }) => {
+        workerIds.push(workerBootstrap.workerId);
+      },
+      stop: () => {
+        stopCalls++;
+        resolveStopStarted?.();
+        return new Promise<void>((release) => {
+          releaseStop = release;
+        });
+      },
+      get isDeprecated() {
+        return true;
+      },
+      get isStopped() {
+        return false;
+      },
+    } as unknown as Worker;
+
+    const replacementWorker = {
+      startOnlyOnce: (workerBootstrap: { workerId: string }) => {
+        workerIds.push(workerBootstrap.workerId);
+      },
+      stop: () => Promise.resolve(),
+      get isDeprecated() {
+        return false;
+      },
+      get isStopped() {
+        return false;
+      },
+    } as unknown as Worker;
+
+    const deps = createMockDeps({
+      serve: (h) => {
+        serveHandler = h;
+      },
+    });
+    const adapter = new SupabasePlatformAdapter(undefined, deps);
+    let createCount = 0;
+
+    await adapter.startWorker(() => {
+      createCount++;
+      return createCount === 1 ? deprecatedWorker : replacementWorker;
+    });
+
+    const handler = serveHandler as unknown as (req: Request) => Response | Promise<Response>;
+    await handler(new Request('http://localhost/functions/v1/my-worker', {
+      headers: { authorization: 'Bearer test-service-key' },
+    }));
+
+    const replacements = Promise.all([
+      handler(new Request('http://localhost/functions/v1/my-worker', {
+        headers: { authorization: 'Bearer test-service-key' },
+      })),
+      handler(new Request('http://localhost/functions/v1/my-worker', {
+        headers: { authorization: 'Bearer test-service-key' },
+      })),
+    ]);
+
+    await stopStarted;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(stopCalls, 1);
+    releaseStop();
+    await replacements;
+
+    assertEquals(workerIds.length, 2);
   },
 });
 

@@ -99,6 +99,10 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
     return this.workerState.isCreated;
   }
 
+  get isStarting() {
+    return this.workerState.isStarting;
+  }
+
   get isRunning() {
     return this.workerState.isRunning;
   }

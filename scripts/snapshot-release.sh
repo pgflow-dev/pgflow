@@ -284,9 +284,10 @@ if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
   echo ""
   echo -e "This will:"
   echo -e "  1. Build all packages (${BLUE}pnpm nx run-many -t build${NC})"
-  echo -e "  2. Publish to npm registry with ${BOLD}snapshot${NC} tag"
+  echo -e "  2. Smoke-test edge-worker dist exports"
+  echo -e "  3. Publish to npm registry with ${BOLD}snapshot${NC} tag"
   if [[ -f pkgs/edge-worker/jsr.json ]]; then
-    echo -e "  3. Publish edge-worker to JSR registry"
+    echo -e "  4. Publish edge-worker to JSR registry"
   fi
   echo ""
   read -p "Continue? (y/N) " -n 1 -r
@@ -310,6 +311,19 @@ if pnpm nx run-many -t build --exclude=demo,website ; then
   echo -e "${GREEN}✓ Packages built successfully${NC}"
 else
   echo -e "${RED}✗ Build failed${NC}"
+  exit 1
+fi
+
+# ------------------------------------------------------------------
+# Smoke test edge-worker npm dist
+# ------------------------------------------------------------------
+echo ""
+echo -e "${BOLD}Smoke-testing edge-worker dist...${NC}"
+
+if node ./scripts/smoke-edge-worker-dist.mjs ; then
+  echo -e "${GREEN}✓ Edge-worker dist exports verified${NC}"
+else
+  echo -e "${RED}✗ Edge-worker dist is missing required exports${NC}"
   exit 1
 fi
 

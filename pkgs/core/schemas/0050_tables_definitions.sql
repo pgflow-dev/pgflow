@@ -15,7 +15,7 @@ create table pgflow.flows (
 
 -- Steps table - stores individual steps within flows
 create table pgflow.steps (
-  flow_slug text not null references pgflow.flows (flow_slug),
+  flow_slug text not null references pgflow.flows(flow_slug),
   step_slug text not null,
   step_type text not null default 'single',
   step_index int not null default 0,
@@ -49,15 +49,15 @@ create table pgflow.steps (
 
 -- Dependencies table - stores relationships between steps
 create table pgflow.deps (
-  flow_slug text not null references pgflow.flows (flow_slug),
+  flow_slug text not null references pgflow.flows(flow_slug),
   dep_slug text not null, -- slug of the dependency
   step_slug text not null, -- slug of the dependent
   created_at timestamptz not null default now(),
   primary key (flow_slug, dep_slug, step_slug),
   foreign key (flow_slug, dep_slug)
-  references pgflow.steps (flow_slug, step_slug),
+  references pgflow.steps(flow_slug, step_slug),
   foreign key (flow_slug, step_slug)
-  references pgflow.steps (flow_slug, step_slug),
+  references pgflow.steps(flow_slug, step_slug),
   check (dep_slug != step_slug)  -- Prevent self-dependencies
 );
 

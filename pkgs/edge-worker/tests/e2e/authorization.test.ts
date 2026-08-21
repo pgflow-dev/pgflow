@@ -16,17 +16,16 @@ const SEQ_NAME = 'auth_test_seq';
 async function setupTest(sql: postgres.Sql) {
   await sql`CREATE SEQUENCE IF NOT EXISTS ${sql(SEQ_NAME)}`;
   await sql`ALTER SEQUENCE ${sql(SEQ_NAME)} RESTART WITH 1`;
-  await sql`
-    SELECT * FROM pgmq.drop_queue(${QUEUE_NAME})
-    WHERE EXISTS (
-      SELECT 1 FROM pgmq.list_queues() WHERE queue_name = ${QUEUE_NAME}
-    )
-  `;
-  await sql`SELECT pgmq.create(${QUEUE_NAME})`;
-  await sql`
-    DELETE FROM pgflow.workers
-    WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
-  `;
+
+  const queues = await sql`SELECT queue_name FROM pgmq.list_queues() WHERE queue_name = ${QUEUE_NAME}`;
+  if (queues.length === 0) {
+    await sql`SELECT pgmq.create(${QUEUE_NAME})`;
+  } else {
+    await sql`SELECT pgmq.purge_queue(${QUEUE_NAME})`;
+  }
+
+  // Preserve worker metadata: local edge functions are long-lived, and removing
+  // rows can leave an in-memory worker polling without DB visibility.
 }
 
 // ============================================================
