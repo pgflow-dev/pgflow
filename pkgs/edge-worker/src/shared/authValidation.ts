@@ -1,5 +1,18 @@
-import { timingSafeEqual } from '@std/crypto/timing-safe-equal';
-import { isLocalSupabaseEnv } from './localDetection.ts';
+import { isLocalSupabaseEnv } from './localDetection.js';
+
+function timingSafeEqualBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  let diff = 0;
+
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a[index] ^ b[index];
+  }
+
+  return diff === 0;
+}
 
 export interface AuthValidationResult {
   valid: boolean;
@@ -38,12 +51,7 @@ export function validateServiceRoleAuth(
   const authBytes = encoder.encode(authHeader);
   const expectedBytes = encoder.encode(expected);
 
-  // Length check first (timingSafeEqual requires same length)
-  if (authBytes.length !== expectedBytes.length) {
-    return { valid: false, error: 'Invalid Authorization header' };
-  }
-
-  if (!timingSafeEqual(authBytes, expectedBytes)) {
+  if (!timingSafeEqualBytes(authBytes, expectedBytes)) {
     return { valid: false, error: 'Invalid Authorization header' };
   }
 

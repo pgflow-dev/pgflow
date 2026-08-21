@@ -8,7 +8,7 @@
  * ```typescript
  * // Using namespace import (recommended)
  * import { ControlPlane } from '@pgflow/edge-worker';
- * import * as flows from '../../flows/index.ts';
+ * import * as flows from '../../flows/index.js';
  *
  * ControlPlane.serve(flows);
  * ```
@@ -17,7 +17,7 @@
  * ```typescript
  * // Using array (legacy)
  * import { ControlPlane } from '@pgflow/edge-worker';
- * import { MyFlow } from '../../flows/my_flow.ts';
+ * import { MyFlow } from '../../flows/my_flow.js';
  *
  * ControlPlane.serve([MyFlow]);
  * ```

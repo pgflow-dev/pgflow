@@ -8,11 +8,9 @@
       "executor": "nx:noop"
     },
     "build": {
-      "executor": "nx:noop",
-      "dependsOn": ["^build"]
-    },
-    "_build_disabled": {
       "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "dependsOn": ["^build"],
       "options": {
         "outputPath": "pkgs/edge-worker/dist",
         "main": "pkgs/edge-worker/src/index.ts",

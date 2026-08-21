@@ -1,4 +1,4 @@
-import { isLocalSupabaseEnv } from '../shared/localDetection.ts';
+import { isLocalSupabaseEnv } from '../shared/localDetection.js';
 import postgres from 'postgres';
 
 /**
