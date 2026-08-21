@@ -104,7 +104,11 @@ Your process manager should keep this command running. On Railway, Fly, Docker, 
 
 Process workers drain on `SIGTERM`, `SIGINT`, and `SIGQUIT`.
 
-On the first signal, the worker stops accepting new work, lets in-flight tasks finish, marks the worker stopped in pgflow, and exits with code `0`. A second signal exits immediately with code `1`.
+After the worker is ready, the first signal stops accepting new work, lets in-flight tasks finish, marks the worker stopped in pgflow, and exits with code `0`.
+
+During startup, before the worker is ready, the first signal exits immediately with code `0`. No tasks have been accepted yet, so there is nothing to drain, and waiting on startup could block termination.
+
+A second signal exits immediately with code `1`.
 
 ## Health
 

@@ -43,6 +43,7 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
   private cleanupPromise: Promise<void> | null = null;
   private signalHandlersRegistered = false;
   private signalCount = 0;
+  private startupCompleted = false;
   private readonly signalHandler = () => this.handleSignal();
 
   constructor(
@@ -75,7 +76,12 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.registerSignalHandlers();
     this.startupPromise ??= this.performStartWorker(createWorkerFn).catch(
       async (error) => {
-        await this.cleanup();
+        try {
+          await this.cleanup();
+        } catch (cleanupError) {
+          // A cleanup failure must not replace the startup failure.
+          this.logger.error('Cleanup after startup failure failed', cleanupError);
+        }
         throw error;
       }
     );
@@ -141,6 +147,7 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
       workerId,
       startMode: 'process',
     });
+    this.startupCompleted = true;
   }
 
   private registerSignalHandlers(): void {
@@ -164,6 +171,7 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
   private async performStopWorker(): Promise<void> {
     this.requestShutdown();
 
+    let operationError: { error: unknown } | null = null;
     try {
       await this.startupPromise;
       if (this.worker) {
@@ -172,8 +180,22 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
       if (this.workerId) {
         await this.queries.markWorkerStopped(this.workerId);
       }
-    } finally {
+    } catch (error) {
+      operationError = { error };
+    }
+
+    try {
       await this.cleanup();
+    } catch (cleanupError) {
+      if (!operationError) {
+        throw cleanupError;
+      }
+      // A cleanup failure must not replace the drain or marking failure.
+      this.logger.error('Cleanup during shutdown failed', cleanupError);
+    }
+
+    if (operationError) {
+      throw operationError.error;
     }
   }
 
@@ -210,6 +232,15 @@ export class ProcessPlatformAdapter implements PlatformAdapter<SupabaseResources
     this.signalCount++;
     if (this.signalCount > 1) {
       this.deps.exit(1);
+    }
+
+    if (!this.startupCompleted) {
+      // No batch loop is ready, so no accepted task needs draining, and the
+      // hung bootstrap may be exactly what is blocking termination. Hard-exit
+      // now; the OS closes process resources after exit.
+      this.requestShutdown();
+      this.deps.setExitCode(0);
+      this.deps.exit(0);
     }
 
     await this.gracefulExit();

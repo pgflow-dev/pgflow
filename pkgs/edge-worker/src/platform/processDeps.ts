@@ -28,7 +28,6 @@ export function getProcessDeps(): ProcessDeps {
   if (
     !processLike?.env ||
     !processLike.on ||
-    !processLike.off ||
     !processLike.exit ||
     !cryptoLike?.randomUUID
   ) {
@@ -38,7 +37,9 @@ export function getProcessDeps(): ProcessDeps {
   return {
     env: processLike.env,
     onSignal: (signal, handler) => processLike.on?.(signal, handler),
-    offSignal: (signal, handler) => processLike.off?.(signal, handler),
+    offSignal: processLike.off
+      ? (signal, handler) => processLike.off?.(signal, handler)
+      : undefined,
     exit: (code) => processLike.exit!(code),
     setExitCode: (code) => {
       processLike.exitCode = code;

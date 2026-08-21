@@ -1,0 +1,43 @@
+---
+draft: true
+title: 'pgflow 0.15.0: Portable Workers with Node and Bun Support'
+description: 'Run pgflow workers anywhere with the new @pgflow/edge-worker npm package, including long-running Node and Bun processes'
+date: 2026-08-18
+authors:
+  - jumski
+tags:
+  - feature
+  - minor
+featured: false
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+pgflow workers are no longer tied to Supabase Edge Functions. This release publishes `@pgflow/edge-worker` to npm and adds a process runtime that runs workers as long-lived Node or Bun processes — on Railway, Fly.io, Docker, or any VM.
+
+## Run a worker with Node or Bun
+
+Install the package, set your connection variables, and start a worker script:
+
+```ts title="worker.ts"
+import { EdgeWorker } from '@pgflow/edge-worker';
+import { ProcessOrders } from './flows/process-orders.js';
+
+await EdgeWorker.start(ProcessOrders);
+```
+
+Process workers handle `SIGTERM`, `SIGINT`, and `SIGQUIT` with graceful drain: tasks finish, the worker row is marked stopped, and connections close before exit. Deprecation via the control plane stops the process cleanly, and `ensure_workers()` can replace it.
+
+See the [Node/Bun Process Workers guide](/deploy/node-bun-process-workers/) for deployment recipes and configuration.
+
+## Supabase Edge Function improvements
+
+Edge Function workers also got lifecycle hardening in this release:
+
+- **Bounded shutdown.** Shutdown now finishes within a five-second deadline. Worker drain starts before database bookkeeping, and PostgreSQL connections are force-closed if the deadline expires.
+- **Serialized startup.** Concurrent HTTP requests share one worker startup; none can observe a half-started worker, and shutdown permanently closes startup admission.
+- **Retry backoff.** Persistent database failures now back off exponentially (100 ms to 5 s) instead of hot-looping, and the backoff resets after a healthy iteration.
+
+<Aside type="note">
+This article is a draft. The release also bundles additional bug fixes; the final changelog will be updated before publishing.
+</Aside>

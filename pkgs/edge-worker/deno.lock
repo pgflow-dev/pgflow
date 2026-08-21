@@ -8,6 +8,7 @@
     "jsr:@std/assert@0.224": "0.224.0",
     "jsr:@std/async@0.224": "0.224.2",
     "jsr:@std/crypto@0.224": "0.224.0",
+    "jsr:@std/data-structures@0.224": "0.224.1",
     "jsr:@std/fmt@0.224": "0.224.0",
     "jsr:@std/fmt@1.0.3": "1.0.3",
     "jsr:@std/internal@0.224": "0.224.0",
@@ -46,6 +47,9 @@
         "jsr:@std/assert@0.224"
       ]
     },
+    "@std/data-structures@0.224.1": {
+      "integrity": "266365f90014e5c52bccf1eadd65f7782a2af2c84e4052ef8316698a3572cac3"
+    },
     "@std/fmt@0.224.0": {
       "integrity": "e20e9a2312a8b5393272c26191c0a68eda8d2c4b08b046bad1673148f1d69851"
     },
@@ -64,7 +68,9 @@
     "@std/testing@0.224.0": {
       "integrity": "371b8a929aa7132240d5dd766a439be8f780ef5c176ab194e0bcab72370c761e",
       "dependencies": [
-        "jsr:@std/assert@0.224"
+        "jsr:@std/assert@0.224",
+        "jsr:@std/async",
+        "jsr:@std/data-structures"
       ]
     }
   },

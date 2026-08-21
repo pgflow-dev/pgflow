@@ -1,6 +1,11 @@
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
 import type { Logger } from '../platform/types.js';
 
+/** Initial delay before retrying a failed main-loop iteration. */
+const RETRY_DELAY_MS = 100;
+/** Maximum delay for consecutive failed main-loop iterations. */
+const MAX_RETRY_DELAY_MS = 5_000;
+
 export interface WorkerOptions {
   requestShutdown?: () => void;
   cleanup?: () => Promise<void>;
@@ -57,12 +62,17 @@ export class Worker {
   }
 
   private async runMainLoop() {
+    let consecutiveFailures = 0;
+
     try {
       while (this.isMainLoopActive) {
+        let iterationFailed = false;
+
         try {
           await this.lifecycle.sendHeartbeat();
         } catch (error: unknown) {
           this.logger.error(`Error sending heartbeat: ${error}`);
+          iterationFailed = true;
         }
 
         if (!this.isMainLoopActive) {
@@ -77,12 +87,48 @@ export class Worker {
           await this.batchProcessor.processBatch();
         } catch (error: unknown) {
           this.logger.error(`Error processing batch: ${error}`);
+          iterationFailed = true;
+        }
+
+        if (iterationFailed) {
+          consecutiveFailures++;
+          if (this.isMainLoopActive) {
+            await this.waitForRetry(
+              Math.min(RETRY_DELAY_MS * 2 ** (consecutiveFailures - 1), MAX_RETRY_DELAY_MS)
+            );
+          }
+        } else {
+          // Only a fully successful iteration resets the backoff.
+          consecutiveFailures = 0;
         }
       }
     } catch (error) {
       this.logger.error(`Error in worker main loop: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Abort-aware backoff wait: resolves after `ms`, or immediately when the
+   * worker's abort signal fires so stop() never waits out a retry delay.
+   */
+  private waitForRetry(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      if (this.isAborted) {
+        resolve();
+        return;
+      }
+
+      const onAbort = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        this.abortController.signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+      this.abortController.signal.addEventListener('abort', onAbort, { once: true });
+    });
   }
 
   onDeprecated(handler: () => void): void {
@@ -99,15 +145,22 @@ export class Worker {
       return;
     }
 
-    this.lifecycle.transitionToStopping();
-
     try {
       this.logDeprecation();
       this.requestShutdown?.();
       this.abortController.abort();
 
+      // Wait for startup to settle before transitioning: a stop during
+      // Starting must not attempt an invalid transition, and the abort
+      // above already keeps the main loop from processing any batch.
+      if (this.startupPromise) {
+        await this.startupPromise;
+      }
+
+      this.lifecycle.transitionToStopping();
+
+      this.logger.debug('-> Waiting for main loop to complete');
       try {
-        this.logger.debug('-> Waiting for main loop to complete');
         await this.mainLoopPromise;
       } catch (error) {
         this.logger.error(

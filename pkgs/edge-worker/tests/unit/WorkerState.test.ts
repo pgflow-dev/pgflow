@@ -61,6 +61,20 @@ Deno.test('WorkerState - valid deprecation transitions', () => {
   assertEquals(state.current, States.Stopped);
 });
 
+Deno.test('WorkerState - valid cancellation from Created before startup', () => {
+  const state = new WorkerState(logger);
+
+  // Created -> Stopping (explicit cancellation)
+  state.transitionTo(States.Stopping);
+  assertEquals(state.current, States.Stopping);
+  assertEquals(state.isStopping, true);
+
+  // Stopping -> Stopped
+  state.transitionTo(States.Stopped);
+  assertEquals(state.current, States.Stopped);
+  assertEquals(state.isStopped, true);
+});
+
 Deno.test('WorkerState - invalid state transitions should throw', () => {
   const state = new WorkerState(logger);
 
@@ -80,6 +94,17 @@ Deno.test('WorkerState - invalid state transitions should throw', () => {
     },
     TransitionError,
     'Cannot transition from created to stopped'
+  );
+
+  // Cannot transition from Starting to Stopping
+  const startingState = new WorkerState(logger);
+  startingState.transitionTo(States.Starting);
+  assertThrows(
+    () => {
+      startingState.transitionTo(States.Stopping);
+    },
+    TransitionError,
+    'Cannot transition from starting to stopping'
   );
 });
 

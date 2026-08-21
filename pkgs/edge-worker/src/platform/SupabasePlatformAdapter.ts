@@ -32,6 +32,12 @@ interface SupabaseEnv extends Record<string, string | undefined> {
 
 
 /**
+ * Hard ceiling for the whole Supabase shutdown operation: replacement
+ * settlement, worker drain, marking, and SQL close must all fit inside it.
+ */
+const SUPABASE_SHUTDOWN_DEADLINE_MS = 5_000;
+
+/**
  * Supabase platform adapter for Deno runtime environment.
  * IMPORTANT: This class assumes it is running within a Deno environment
  * with access to the `Deno` and `EdgeRuntime` global objects.
@@ -44,6 +50,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private worker: Worker | null = null;
   private workerId: string | null = null;
   private workerReplacementPromise: Promise<void> | null = null;
+  private stopPromise: Promise<void> | null = null;
   private logger: Logger;
   private abortController: AbortController;
   private _platformResources: SupabaseResources;
@@ -105,16 +112,132 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     await Promise.resolve();
   }
 
-  async stopWorker(): Promise<void> {
+  stopWorker(): Promise<void> {
+    this.stopPromise ??= this.performStopWorker();
+    return this.stopPromise;
+  }
+
+  /**
+   * Single shared stop operation: concurrent callers share it and SQL closes
+   * exactly once. Awaits any in-flight worker replacement so the worker row
+   * is guaranteed to exist before it is marked stopped.
+   *
+   * The whole operation (replacement settlement, worker drain, marking) runs
+   * under one deadline; when the deadline expires SQL is force-closed and the
+   * stop rejects with a timeout error.
+   */
+  private async performStopWorker(): Promise<void> {
     this.requestShutdown();
 
-    try {
-      if (this.worker) {
-        await this.worker.stop();
+    const startedAt = Date.now();
+    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+    const deadlinePromise = new Promise<void>((resolve) => {
+      deadlineTimer = setTimeout(() => {
+        resolve();
+      }, SUPABASE_SHUTDOWN_DEADLINE_MS);
+    });
+
+    // Boxed so a rejection value of undefined cannot be mistaken for success,
+    // and so a synchronously throwing peer can never reject this promise.
+    const work = this.drainAndMark().then(
+      (failure) => ({ failure }),
+      (error) => ({ failure: { error } })
+    );
+
+    const settled = await Promise.race([
+      work.then(() => 'work' as const),
+      deadlinePromise.then(() => 'deadline' as const),
+    ]);
+    clearTimeout(deadlineTimer);
+
+    if (settled === 'deadline') {
+      this.logger.warn(
+        `Supabase shutdown exceeded the ${SUPABASE_SHUTDOWN_DEADLINE_MS}ms deadline; forcing sql close`
+      );
+      try {
+        await this._platformResources.sql.end({ timeout: 0 });
+      } catch (closeError) {
+        this.logger.error('Failed to force close sql connection', closeError);
       }
-    } finally {
-      await this._platformResources.sql.end();
+      // The detached operation may still settle later; observe it so it
+      // cannot surface as an unhandled rejection.
+      work.then(({ failure }) => {
+        if (failure) {
+          this.logger.error('Supabase shutdown operation failed after the deadline', failure.error);
+        }
+      });
+      throw new Error(`Supabase shutdown timed out after ${SUPABASE_SHUTDOWN_DEADLINE_MS}ms`);
     }
+
+    const { failure } = await work;
+
+    const remainingMs = Math.max(SUPABASE_SHUTDOWN_DEADLINE_MS - (Date.now() - startedAt), 0);
+    try {
+      await this._platformResources.sql.end({ timeout: remainingMs / 1000 });
+    } catch (closeError) {
+      if (!failure) {
+        throw closeError;
+      }
+      // A failing close must not replace the earlier operation error.
+      this.logger.error('Failed to close sql connection', closeError);
+    }
+
+    if (failure) {
+      throw failure.error;
+    }
+  }
+
+  /**
+   * Waits for any in-flight replacement, then drains the current worker and
+   * marks it stopped. The drain starts before marking so database bookkeeping
+   * can never delay it, and both peers are awaited so one failure cannot skip
+   * the other. Resolves with the first operational failure (if any), never
+   * rejects.
+   */
+  private async drainAndMark(): Promise<{ error: unknown } | null> {
+    // Capture the promise before awaiting: its owner clears the field in a
+    // finally block, but shutdown must await the replacement it observed.
+    const replacement = this.workerReplacementPromise;
+    if (replacement) {
+      // Startup/replacement rejection is already handled by the HTTP
+      // startup path; shutdown continues with cleanup.
+      await replacement.catch(() => undefined);
+    }
+
+    // Snapshot after replacement settlement: replaceWorker may still be
+    // swapping worker and worker id.
+    const worker = this.worker;
+    const workerId = this.workerId;
+    if (!worker) {
+      return null;
+    }
+
+    // Signal death to ensure_workers() cron by setting stopped_at.
+    // This allows the cron to immediately ping for a replacement worker.
+    const [drainResult, markResult] = await Promise.allSettled([
+      worker.stop(),
+      workerId ? this.queries.markWorkerStopped(workerId) : Promise.resolve(),
+    ]);
+
+    const failures: unknown[] = [];
+    if (drainResult.status === 'rejected') {
+      this.logger.error('Failed to drain worker', drainResult.reason);
+      failures.push(drainResult.reason);
+    }
+    if (markResult.status === 'rejected') {
+      this.logger.error('Failed to mark worker stopped', markResult.reason);
+      failures.push(markResult.reason);
+    }
+
+    if (failures.length === 0) {
+      return null;
+    }
+    if (failures.length === 1) {
+      return { error: failures[0] };
+    }
+    return {
+      error: new AggregateError(failures, 'Worker drain and worker marking both failed'),
+    };
   }
 
   requestShutdown(): void {
@@ -181,15 +304,6 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private setupShutdownHandler(): void {
     this.deps.onShutdown(async () => {
       this.logger.debug('Shutting down...');
-
-      if (this.worker) {
-        // Signal death to ensure_workers() cron by setting stopped_at.
-        // This allows the cron to immediately ping for a replacement worker.
-        if (this.workerId) {
-          await this.queries.markWorkerStopped(this.workerId);
-        }
-      }
-
       await this.stopWorker();
     });
   }
@@ -243,23 +357,50 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     return !this.worker || this.worker.isDeprecated || this.worker.isStopped;
   }
 
+  /**
+   * Serializes worker startup across concurrent HTTP requests: every request
+   * waits for an in-flight replacement, exactly one request owns each
+   * replacement, and once `stopPromise` exists no request can admit a new
+   * replacement or report readiness after shutdown began.
+   */
   private async ensureWorkerStarted(req: Request, createWorkerFn: CreateWorkerFn): Promise<boolean> {
-    while (this.needsWorkerReplacement()) {
-      if (this.workerReplacementPromise) {
-        await this.workerReplacementPromise;
+    for (;;) {
+      if (this.stopPromise) {
+        throw new Error('Worker startup rejected: shutdown in progress');
+      }
+
+      // Wait for an in-flight replacement before deciding anything: the
+      // worker reference exists while its startup is still pending.
+      const inFlight = this.workerReplacementPromise;
+      if (inFlight) {
+        await inFlight;
         continue;
       }
 
-      this.workerReplacementPromise = this.replaceWorker(req, createWorkerFn);
-      try {
-        await this.workerReplacementPromise;
-        return true;
-      } finally {
-        this.workerReplacementPromise = null;
+      if (!this.needsWorkerReplacement()) {
+        return false;
       }
-    }
 
-    return false;
+      // Assign and own the replacement in one synchronous section so
+      // shutdown always observes an admitted replacement.
+      const owned = this.replaceWorker(req, createWorkerFn);
+      this.workerReplacementPromise = owned;
+      try {
+        await owned;
+      } finally {
+        if (this.workerReplacementPromise === owned) {
+          this.workerReplacementPromise = null;
+        }
+      }
+
+      // Re-check shutdown after the awaited replacement instead of reporting
+      // readiness directly: once stopPromise exists, no request may report
+      // a started worker.
+      if (this.stopPromise) {
+        throw new Error('Worker startup rejected: shutdown in progress');
+      }
+      return true;
+    }
   }
 
   private async replaceWorker(req: Request, createWorkerFn: CreateWorkerFn): Promise<void> {
@@ -270,7 +411,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       if (previousWorkerId) {
         await this.queries.markWorkerStopped(previousWorkerId);
       }
-      this.abortController = new AbortController();
+      // Once adapter stop started the signal must stay aborted; the
+      // replacement worker then captures the aborted platform signal.
+      if (!this.stopPromise) {
+        this.abortController = new AbortController();
+      }
     }
 
     this.edgeFunctionName = this.extractFunctionName(req);
