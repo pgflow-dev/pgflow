@@ -147,9 +147,24 @@
     },
     "test:node": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
-        "command": "pnpm vitest run tests/unit/platform/ProcessPlatformAdapter.test.ts",
+        "command": "node ../../scripts/smoke-edge-worker-dist.mjs",
         "cwd": "pkgs/edge-worker"
+      }
+    },
+    "verify-exports": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": ["build"],
+      "inputs": [
+        "production",
+        "^production",
+        "{workspaceRoot}/scripts/smoke-edge-worker-dist.mjs"
+      ],
+      "options": {
+        "command": "node ./scripts/smoke-edge-worker-dist.mjs",
+        "cwd": "{workspaceRoot}"
       }
     },
     "smoke:bun": {

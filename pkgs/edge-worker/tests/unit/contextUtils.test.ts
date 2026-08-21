@@ -6,7 +6,7 @@ import {
 } from '../../src/test/test-helpers.ts';
 import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { StepTaskRecord } from '../../src/flow/types.ts';
+import type { StepTaskRecord } from '@pgflow/core';
 
 // Mock SQL client
 const mockSql = {} as unknown as import('postgres').default.Sql;

@@ -81,13 +81,10 @@ Deno.test(
 
     try {
       // Start worker - this triggers compilation
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-
-      // Give time for startup to complete
-      await delay(100);
 
       // Verify flow was created
       const [flowAfter] = await sql`
@@ -146,13 +143,10 @@ Deno.test(
 
     try {
       // Start worker - should verify without error
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-
-      // Give time for startup to complete
-      await delay(100);
 
       // Verify flow still exists (was not deleted/recreated)
       const [flowAfter] = await sql`
@@ -206,28 +200,29 @@ Deno.test(
     globalThis.addEventListener('unhandledrejection', errorHandler);
 
     try {
-      worker.startOnlyOnce({
-        edgeFunctionName: 'test_compilation',
-        workerId: crypto.randomUUID(),
-      });
-
-      // Give time for startup to fail
-      await delay(200);
+      let caughtError: Error | undefined;
+      try {
+        await worker.startOnlyOnce({
+          edgeFunctionName: 'test_compilation',
+          workerId: crypto.randomUUID(),
+        });
+      } catch (e) {
+        caughtError = e as Error;
+      }
 
       // Verify error was thrown
       assertEquals(
-        caughtErrors.length > 0,
+        caughtError !== undefined,
         true,
         'Should have caught an error'
       );
-      const caughtError = caughtErrors[0];
       assertEquals(
-        caughtError.name,
+        caughtError!.name,
         'FlowShapeMismatchError',
         'Error should be FlowShapeMismatchError'
       );
       assertEquals(
-        caughtError.message.includes('shape mismatch'),
+        caughtError!.message.includes('shape mismatch'),
         true,
         'Error message should mention mismatch'
       );
@@ -268,13 +263,10 @@ Deno.test(
     );
 
     try {
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-
-      // Give time for startup and recompilation
-      await delay(200);
 
       // Verify flow was recompiled with new structure
       const steps = await sql`
@@ -397,11 +389,10 @@ Deno.test(
     );
 
     try {
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-      await delay(100);
 
       // Flow should NOT have been created (compilation was skipped)
       const [flowAfter] = await sql`
@@ -449,11 +440,10 @@ Deno.test(
     );
 
     try {
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-      await delay(100);
 
       // Flow SHOULD have been created
       const [flowAfter] = await sql`
@@ -497,11 +487,10 @@ Deno.test(
     );
 
     try {
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId,
       });
-      await delay(100);
 
       // Worker should have registered (check workers table for this specific worker)
       const workers = await sql`
@@ -553,13 +542,10 @@ Deno.test(
     );
 
     try {
-      worker.startOnlyOnce({
+      await worker.startOnlyOnce({
         edgeFunctionName: 'test_compilation',
         workerId: crypto.randomUUID(),
       });
-
-      // Give time for startup and recompilation
-      await delay(200);
 
       // Verify flow was recompiled with new structure (NOT mismatch error)
       const steps = await sql`
@@ -619,28 +605,29 @@ Deno.test(
     globalThis.addEventListener('unhandledrejection', errorHandler);
 
     try {
-      worker.startOnlyOnce({
-        edgeFunctionName: 'test_compilation',
-        workerId: crypto.randomUUID(),
-      });
-
-      // Give time for startup to fail
-      await delay(200);
+      let caughtError: Error | undefined;
+      try {
+        await worker.startOnlyOnce({
+          edgeFunctionName: 'test_compilation',
+          workerId: crypto.randomUUID(),
+        });
+      } catch (e) {
+        caughtError = e as Error;
+      }
 
       // Verify error was thrown
       assertEquals(
-        caughtErrors.length > 0,
+        caughtError !== undefined,
         true,
         'Should have caught an error'
       );
-      const caughtError = caughtErrors[0];
       assertEquals(
-        caughtError.name,
+        caughtError!.name,
         'FlowShapeMismatchError',
         'Error should be FlowShapeMismatchError'
       );
       assertEquals(
-        caughtError.message.includes('shape mismatch'),
+        caughtError!.message.includes('shape mismatch'),
         true,
         'Error message should mention mismatch'
       );

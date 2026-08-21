@@ -16,8 +16,13 @@ if (!process.env.WORKER_NAME) {
 
 const expectedConnectionString = process.env.PORTABLE_EXPECTED_CONNECTION_STRING;
 
+const workerOptions = process.env.PORTABLE_QUEUE_NAME
+  ? { queueName: process.env.PORTABLE_QUEUE_NAME }
+  : {};
+
 await startPortableExample(EdgeWorker, exampleName, {
   expectedConnectionString,
+  workerOptions,
 });
 
 console.log(`portable worker started: ${exampleName}`);

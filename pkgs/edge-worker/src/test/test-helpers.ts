@@ -8,7 +8,7 @@ import type {
   SupabaseMessageContext,
   SupabaseStepTaskContext
 } from '../core/context.js';
-import type { StepTaskRecord } from '../flow/types.js';
+import type { StepTaskRecord } from '@pgflow/core';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createContextSafeConfig } from '../core/context.js';
 import type { QueueWorkerConfig, FlowWorkerConfig } from '../core/workerConfigTypes.js';

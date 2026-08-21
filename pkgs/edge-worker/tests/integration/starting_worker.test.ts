@@ -2,7 +2,6 @@ import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { createTestPlatformAdapter } from './_helpers.ts';
-import { delay } from '@std/async';
 
 Deno.test(
   'Starting worker',
@@ -17,13 +16,11 @@ Deno.test(
       createTestPlatformAdapter(sql)
     );
 
-    worker.startOnlyOnce({
+    await worker.startOnlyOnce({
       edgeFunctionName: 'test',
       // random uuid
       workerId: crypto.randomUUID(),
     });
-
-    await delay(100);
 
     try {
       const workers = await sql`select * from pgflow.workers`;

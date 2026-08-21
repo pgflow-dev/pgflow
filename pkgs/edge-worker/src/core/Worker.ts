@@ -15,7 +15,10 @@ export class Worker {
 
   private batchProcessor: IBatchProcessor;
   private mainLoopPromise: Promise<void> | undefined;
+  private startupPromise: Promise<void> | undefined;
+  private stopPromise: Promise<void> | undefined;
   private deprecationLogged = false;
+  private deprecationHandler?: () => void;
 
   constructor(
     batchProcessor: IBatchProcessor,
@@ -30,29 +33,43 @@ export class Worker {
     this.cleanup = options.cleanup;
   }
 
-  startOnlyOnce(workerBootstrap: WorkerBootstrap) {
+  startOnlyOnce(workerBootstrap: WorkerBootstrap): Promise<void> {
+    if (this.startupPromise) {
+      return this.startupPromise;
+    }
+
     if (!this.lifecycle.isCreated) {
       this.logger.debug('Worker not in Created state, ignoring start request');
-      return;
+      return Promise.resolve();
     }
-    this.mainLoopPromise = this.start(workerBootstrap);
+
+    this.startupPromise = this.lifecycle
+      .acknowledgeStart(workerBootstrap)
+      .then(() => {
+        this.mainLoopPromise = this.runMainLoop();
+      })
+      .catch((error) => {
+        this.logger.error(`Error in worker startup: ${error}`);
+        throw error;
+      });
+
+    return this.startupPromise;
   }
 
-  private async start(workerBootstrap: WorkerBootstrap) {
+  private async runMainLoop() {
     try {
-      await this.lifecycle.acknowledgeStart(workerBootstrap);
-
       while (this.isMainLoopActive) {
         try {
           await this.lifecycle.sendHeartbeat();
         } catch (error: unknown) {
           this.logger.error(`Error sending heartbeat: ${error}`);
-          // Continue execution - a failed heartbeat shouldn't stop processing
         }
 
-        // Check if deprecated after heartbeat
         if (!this.isMainLoopActive) {
           this.logDeprecation();
+          if (this.lifecycle.isDeprecated) {
+            this.deprecationHandler?.();
+          }
           break;
         }
 
@@ -60,7 +77,6 @@ export class Worker {
           await this.batchProcessor.processBatch();
         } catch (error: unknown) {
           this.logger.error(`Error processing batch: ${error}`);
-          // Continue to next iteration - failed batch shouldn't stop the worker
         }
       }
     } catch (error) {
@@ -69,8 +85,16 @@ export class Worker {
     }
   }
 
-  async stop() {
-    // If the worker is already stopping or stopped, do nothing
+  onDeprecated(handler: () => void): void {
+    this.deprecationHandler = handler;
+  }
+
+  stop(): Promise<void> {
+    this.stopPromise ??= Promise.resolve().then(() => this.performStop());
+    return this.stopPromise;
+  }
+
+  private async performStop() {
     if (this.lifecycle.isStopping || this.lifecycle.isStopped) {
       return;
     }
@@ -78,7 +102,6 @@ export class Worker {
     this.lifecycle.transitionToStopping();
 
     try {
-      // Signal deprecation (which includes "Stopped accepting new messages")
       this.logDeprecation();
       this.requestShutdown?.();
       this.abortController.abort();
@@ -93,7 +116,6 @@ export class Worker {
         throw error;
       }
 
-      // Signal waiting for pending tasks
       this.logger.shutdown('waiting');
       await this.batchProcessor.awaitCompletion();
 
@@ -104,7 +126,6 @@ export class Worker {
         await this.cleanup();
       }
 
-      // Signal graceful stop complete
       this.logger.shutdown('stopped');
     } catch (error) {
       this.logger.debug(`Error during worker stop: ${error}`);

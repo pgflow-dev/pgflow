@@ -258,14 +258,19 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   }
 
   private async replaceWorker(req: Request, createWorkerFn: CreateWorkerFn): Promise<void> {
+    const previousWorkerId = this.workerId;
+
     if (this.worker) {
       await this.worker.stop();
+      if (previousWorkerId) {
+        await this.queries.markWorkerStopped(previousWorkerId);
+      }
       this.abortController = new AbortController();
     }
 
     this.edgeFunctionName = this.extractFunctionName(req);
 
-    const workerId = this.workerId === null
+    const workerId = previousWorkerId === null
       ? this.validatedEnv.SB_EXECUTION_ID
       : globalThis.crypto.randomUUID();
     this.workerId = workerId;
@@ -275,7 +280,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
     // Create the worker using the factory function and the logger
     this.worker = createWorkerFn(this.loggingFactory.createLogger);
-    this.worker.startOnlyOnce({
+    void this.worker.startOnlyOnce({
       edgeFunctionName: this.edgeFunctionName,
       workerId,
       startMode: 'http',
