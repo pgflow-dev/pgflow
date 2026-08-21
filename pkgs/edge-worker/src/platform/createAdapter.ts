@@ -1,4 +1,5 @@
 import type { PlatformAdapter } from './types.js';
+import { ProcessPlatformAdapter } from './ProcessPlatformAdapter.js';
 import { SupabasePlatformAdapter } from './SupabasePlatformAdapter.js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import type postgres from 'postgres';
@@ -21,11 +22,17 @@ export function createAdapter(options?: AdapterOptions): PlatformAdapter<Supabas
     return adapter;
   }
 
-  // For now, only support Deno
-  // Later add NodeAdapter, BrowserAdapter, etc.
+  if (isProcessEnvironment()) {
+    return new ProcessPlatformAdapter(options);
+  }
+
   throw new Error('Unsupported environment');
 }
 
 function isDenoEnvironment(): boolean {
   return typeof Deno !== 'undefined';
+}
+
+function isProcessEnvironment(): boolean {
+  return typeof (globalThis as { process?: unknown }).process !== 'undefined';
 }
