@@ -98,30 +98,34 @@ else
   fi
 fi
 
-# JSR authentication - always validate with dry-run
-JSR_DRY_RUN_CMD="pnpm jsr publish --dry-run --allow-slow-types --allow-dirty"
+# JSR authentication
+# `deno publish --dry-run` exits 0 even with an invalid token (it never
+# contacts the registry), so validate JSR_TOKEN against the JSR API instead
 if [[ -n "${JSR_TOKEN:-}" ]]; then
-  JSR_DRY_RUN_CMD="$JSR_DRY_RUN_CMD --token $JSR_TOKEN"
-fi
-JSR_CHECK=$(cd pkgs/edge-worker && $JSR_DRY_RUN_CMD 2>&1 || true)
-if echo "$JSR_CHECK" | grep -qi "unauthorized\|not logged in\|authentication"; then
-  if [[ -n "${JSR_TOKEN:-}" ]]; then
-    echo -e "  ${YELLOW}!${NC} jsr: JSR_TOKEN set but invalid/expired - opening browser..."
+  if command -v curl >/dev/null \
+    && JSR_HTTP=$(curl -s -o /dev/null -w '%{http_code}' \
+        -H "Authorization: Bearer $JSR_TOKEN" https://api.jsr.io/user) \
+    && [[ "$JSR_HTTP" == "200" ]]; then
+    echo -e "  ${GREEN}✓${NC} jsr: token valid"
   else
-    echo -e "  ${YELLOW}jsr: not logged in - opening browser...${NC}"
-  fi
-  if deno login; then
-    echo -e "  ${GREEN}✓${NC} jsr: authenticated via browser"
-  else
-    echo -e "${RED}Error: JSR login failed${NC}"
+    echo -e "${RED}Error: JSR_TOKEN is invalid or expired (api.jsr.io: ${JSR_HTTP:-unreachable})${NC}"
+    echo -e "Create a fresh token at ${BLUE}https://jsr.io/settings/tokens${NC}"
     exit 1
   fi
 else
-  if [[ -n "${JSR_TOKEN:-}" ]]; then
-    echo -e "  ${GREEN}✓${NC} jsr: authenticated (via token)"
-  else
-    echo -e "  ${GREEN}✓${NC} jsr: authenticated (existing session)"
+  # No token: rely on the cached browser session in $DENO_DIR/auth.json
+  # (default ~/.cache/deno/auth.json). The `jsr` wrapper's deno prompts for
+  # interactive browser auth on first publish and caches the session.
+  DENO_AUTH_FILE="${DENO_DIR:-$HOME/.cache/deno}/auth.json"
+  if [[ ! -f "$DENO_AUTH_FILE" ]]; then
+    echo -e "${YELLOW}jsr: no cached browser session and JSR_TOKEN is unset.${NC}"
+    echo -e "Warm it up once so the session is cached before this script versions anything:"
+    echo -e "  ${BLUE}cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty${NC}"
+    echo -e "(The publish fails with 'already published' - that is fine, the login persists.)"
+    echo -e "Or create a token at ${BLUE}https://jsr.io/settings/tokens${NC} and export JSR_TOKEN."
+    exit 1
   fi
+  echo -e "  ${GREEN}✓${NC} jsr: using cached browser session ($DENO_AUTH_FILE)"
 fi
 
 echo ""
@@ -360,7 +364,11 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   if [[ -n "${JSR_TOKEN:-}" ]]; then
     JSR_PUBLISH_CMD="$JSR_PUBLISH_CMD --token $JSR_TOKEN"
   fi
-  if ( cd pkgs/edge-worker && $JSR_PUBLISH_CMD ) ; then
+  # jsr's error output echoes the full deno command line, which contains
+  # the token - redact it so logs stay shareable
+  if ( cd pkgs/edge-worker && $JSR_PUBLISH_CMD ) \
+      > >(sed -E 's/jsrp_[A-Za-z0-9]+/jsrp_[REDACTED]/g') \
+      2> >(sed -E 's/jsrp_[A-Za-z0-9]+/jsrp_[REDACTED]/g' >&2) ; then
     echo -e "${GREEN}✓ JSR package published${NC}"
   else
     echo -e "${RED}✗ JSR publish failed${NC}"
