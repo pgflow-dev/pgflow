@@ -340,10 +340,9 @@ NPM_SUCCESS=false
 JSR_SUCCESS=true  # Default true (only set false if JSR package exists and fails)
 JSR_PUBLISHED_VERSION=""  # Track JSR version if published
 
-# Publish to npm (token is read from NPM_TOKEN env var via .npmrc)
-# GITHUB_ACTIONS=true skips changeset's npm profile check which fails with automation tokens
+# Publish to npm (pnpm rewrites workspace:* dependencies before publishing)
 echo -e "${BOLD}Publishing to npm...${NC}"
-if GITHUB_ACTIONS=true pnpm exec changeset publish --tag snapshot ; then
+if pnpm publish --recursive --tag snapshot --no-git-checks ; then
   echo -e "${GREEN}✓ npm packages published${NC}"
   NPM_SUCCESS=true
 else
