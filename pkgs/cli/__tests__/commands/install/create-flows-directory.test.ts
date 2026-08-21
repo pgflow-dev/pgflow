@@ -54,6 +54,9 @@ describe('createFlowsDirectory', () => {
     expect(indexContent).toContain("export { GreetUser } from './greet-user.ts';");
     // Should have documenting comment
     expect(indexContent).toContain('Re-export all flows');
+    // No commented-out imports: the Supabase CLI regex-scans file text and
+    // fails `supabase start` on any import of a non-existent file
+    expect(indexContent).not.toContain('my-flow');
   });
 
   it('should create greet-user.ts with named export', async () => {
