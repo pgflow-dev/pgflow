@@ -90,15 +90,24 @@ BEGIN
         false
       ) as _broadcast_result
   ),
+  -- ---------- Terminalize active tasks of newly skipped steps ----------
+  skipped_tasks AS (
+    UPDATE pgflow.step_tasks AS task
+    SET status = 'skipped'
+    WHERE task.run_id = _cascade_force_skip_steps.run_id
+      AND task.step_slug IN (
+        SELECT skipped_step.step_slug
+        FROM skipped AS skipped_step
+      )
+      AND task.status IN ('queued', 'started')
+    RETURNING task.message_id
+  ),
   -- ---------- Archive queued/started task messages for skipped steps ----------
   archived_messages AS (
-    SELECT pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id)) as result
-    FROM pgflow.step_tasks st
-    WHERE st.run_id = _cascade_force_skip_steps.run_id
-      AND st.step_slug IN (SELECT sk.step_slug FROM skipped sk)
-      AND st.status IN ('queued', 'started')
-      AND st.message_id IS NOT NULL
-    HAVING COUNT(st.message_id) > 0
+    SELECT pgmq.archive(v_flow_slug, ARRAY_AGG(task.message_id)) as result
+    FROM skipped_tasks AS task
+    WHERE task.message_id IS NOT NULL
+    HAVING COUNT(task.message_id) > 0
   ),
   -- ---------- Update run counters ----------
   run_updates AS (

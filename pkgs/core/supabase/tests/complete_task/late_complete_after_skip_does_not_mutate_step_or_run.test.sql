@@ -1,7 +1,7 @@
 -- Test: Late complete after step is skipped should not mutate step or run state
 -- Verifies defense-in-depth: callbacks cannot change state after step is no longer started
 begin;
-select plan(4);
+select plan(5);
 select pgflow_tests.reset_db();
 
 -- Setup: Create flow with map_a (skip on exhaust) and independent 'other' step
@@ -84,6 +84,16 @@ select is(
   (select remaining_steps from pgflow.runs where run_id = :'test_run_id'::uuid),
   :remaining_steps_after_skip,
   'remaining_steps should not be decremented by late complete'
+);
+
+-- Verify sibling task row remains skipped (not revived or rewritten by late callback)
+select is(
+  (select status from pgflow.step_tasks
+   where run_id = :'test_run_id'::uuid
+     and step_slug = 'map_a'
+     and task_index = 1),
+  'skipped',
+  'Sibling task should remain skipped after late complete'
 );
 
 select * from finish();

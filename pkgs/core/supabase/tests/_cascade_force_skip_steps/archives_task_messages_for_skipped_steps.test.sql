@@ -2,7 +2,7 @@
 \set QUIET on
 
 begin;
-select plan(5);
+select plan(6);
 
 select pgflow_tests.reset_db();
 
@@ -59,6 +59,18 @@ select ok(
    join pgflow.step_tasks st on st.message_id = a.msg_id
    where st.flow_slug = 'cascade_skip_archive' and st.step_slug = 'map_a'),
   'Archive should contain all 3 map_a task messages'
+);
+
+-- Test: Active tasks of a directly cascaded skipped step become skipped
+select results_eq(
+  $$
+  select task_index, status
+  from pgflow.step_tasks
+  where flow_slug = 'cascade_skip_archive' and step_slug = 'map_a'
+  order by task_index
+  $$,
+  $$ values (0, 'skipped'), (1, 'skipped'), (2, 'skipped') $$,
+  'Started and queued tasks of cascaded skipped step should become skipped'
 );
 
 select * from finish();
