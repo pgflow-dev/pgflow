@@ -1,13 +1,5 @@
--- Requeue stalled tasks that have been in 'started' status longer than their effective
--- timeout (step override with flow fallback) + 30s buffer. This matches the effective
--- timeout used by start_tasks() for PGMQ visibility, without its +2s visibility margin.
--- This handles tasks that got stuck when workers crashed without completing them
-create or replace function pgflow.requeue_stalled_tasks()
-returns int
-language plpgsql
-security definer
-set search_path = ''
-as $$
+-- Modify "requeue_stalled_tasks" function
+CREATE OR REPLACE FUNCTION "pgflow"."requeue_stalled_tasks" () RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET "search_path" = '' AS $$
 declare
   result_count int := 0;
   max_requeues constant int := 3;
