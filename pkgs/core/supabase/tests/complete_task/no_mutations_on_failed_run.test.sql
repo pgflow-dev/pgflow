@@ -34,11 +34,11 @@ select pgflow.fail_task(:'run_id', 'step2', 0, 'Simulated failure');
 -- Now try to complete step1 (race condition - worker doesn't know run failed)
 select pgflow.complete_task(:'run_id', 'step1', 0, '{"result": "test"}'::jsonb);
 
--- Verify task was NOT marked as completed
+-- Verify task was NOT marked as completed: it was terminalized as cancelled
 select is(
   status,
-  'started',
-  'Task should remain in started status when run is failed'
+  'cancelled',
+  'Task should be cancelled when the run fails before it completes'
 ) from pgflow.step_tasks
 where run_id = :'run_id' and step_slug = 'step1' and task_index = 0;
 
@@ -73,11 +73,11 @@ select is(
   'Run should be in failed status'
 ) from pgflow.runs where run_id = :'run_id';
 
--- Verify step1 remains started (not completed)
+-- Verify step1 history is preserved (attempts kept from start_tasks)
 select is(
   attempts_count,
   1,
-  'Step1 attempts_count should be 1 after start_tasks'
+  'Step1 attempts_count should stay 1 after cancellation and late callback'
 ) from pgflow.step_tasks
 where run_id = :'run_id' and step_slug = 'step1' and task_index = 0;
 

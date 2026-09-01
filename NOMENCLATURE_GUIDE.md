@@ -151,6 +151,7 @@ Slugs are unique text identifiers with specific rules:
 - `completed` - Task completed successfully
 - `failed` - Task failed (may be retried or permanent)
 - `skipped` - Task was cancelled because its parent step was skipped
+- `cancelled` - Task was cancelled because its run failed before the task finished; `runs.failed_at` is the cancellation time
 
 ## Configuration Terms
 

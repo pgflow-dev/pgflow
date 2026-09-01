@@ -348,9 +348,12 @@ The system handles failures by:
    - Marking the step as 'failed'
    - Marking the run as 'failed'
    - Archiving the message in PGMQ
-   - **Archiving all queued messages for the failed run** (preventing orphaned messages)
+   - **Marking every remaining queued or started task in the run as 'cancelled'** and archiving their messages (the failed-run invariant: a failed run has no task rows left in `queued` or `started`)
 4. Additional failure handling:
-   - **No retries on already-failed runs** - tasks are immediately marked as failed
+   - **No retries on already-failed runs** - late `fail_task()` callbacks keep cancelled tasks cancelled
+   - **Cancellation wins over late callbacks** - late `complete_task()` or `fail_task()` cannot revive or rewrite a cancelled task; a committed completed task stays completed
+   - **`cancelled` differs from `failed` and `skipped`** - `failed` counts real handler failures, `skipped` is step-skip policy, `cancelled` is orchestration state invalidated by the run failure; `runs.failed_at` is the cancellation time
+   - **Database cancellation does not terminate handlers** - JavaScript already executing in a worker is not forcibly stopped and external side effects are not undone
    - **Graceful type constraint violations** - handled without exceptions when single steps feed map steps
    - **Stores invalid output on type violations** - captures the output that caused the violation for debugging
    - **Performance-optimized message archiving** using indexed queries

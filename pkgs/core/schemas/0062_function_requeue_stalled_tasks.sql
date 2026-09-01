@@ -13,6 +13,8 @@ begin
   -- Find and requeue stalled tasks (where started_at > timeout + 30s buffer)
   -- Tasks with requeued_count >= max_requeues will have their message archived
   -- but status left as 'started' for easy identification via requeued_count column
+  -- Eligibility requires the parent run AND parent step to still be 'started':
+  -- stale rows on failed runs or terminal steps must not be revived (#645).
   with stalled_tasks as (
     select
       st.run_id,
@@ -24,8 +26,11 @@ begin
       f.opt_timeout
     from pgflow.step_tasks st
     join pgflow.runs r on r.run_id = st.run_id
+    join pgflow.step_states ss on ss.run_id = st.run_id and ss.step_slug = st.step_slug
     join pgflow.flows f on f.flow_slug = r.flow_slug
     where st.status = 'started'
+      and r.status = 'started'
+      and ss.status = 'started'
       and st.permanently_stalled_at is null
       and st.started_at < now() - (f.opt_timeout * interval '1 second') - interval '30 seconds'
     for update of st skip locked
@@ -84,9 +89,9 @@ begin
   _vr as (select count(*) from visibility_reset),
   -- Force execution of mark_permanently_stalled CTE
   _mps as (select count(*) from mark_permanently_stalled),
-  -- Force execution of archived CTE  
+  -- Force execution of archived CTE
   _ar as (select count(*) from archived)
-  select count(*) into result_count 
+  select count(*) into result_count
   from requeued, _vr, _mps, _ar;
 
   return result_count;
