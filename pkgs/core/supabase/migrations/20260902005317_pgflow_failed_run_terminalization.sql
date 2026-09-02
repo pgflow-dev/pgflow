@@ -1242,7 +1242,6 @@ where st.run_id = fail_task.run_id
 
 end;
 $$;
-
 -- DATA REPAIR: Terminalize unfinished tasks on historical failed runs
 -- ==========================================
 -- Historical failure paths archived messages but left sibling task rows
