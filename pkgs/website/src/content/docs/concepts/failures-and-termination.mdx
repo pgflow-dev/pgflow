@@ -159,7 +159,11 @@ late -> run: "terminal state unchanged"
 
 The database records the terminal state before removing active queue messages. Workers cannot claim new tasks for a failed run.
 
-A completion or failure callback that arrives later returns the current task row unchanged. It cannot revive work, change counters, or emit another terminal event.
+A task that reached `completed` before the run failed is never cancelled. Its stored output remains available.
+
+If a still-running handler completes after its task becomes `cancelled`, pgflow returns the cancelled task row but does not persist the late output. If the handler reports an error, pgflow does not persist the late error message either.
+
+The worker can still log or capture that result elsewhere. The callback cannot revive work, change counters, or emit another terminal event.
 
 ## Worker disappearance uses a separate recovery loop
 
