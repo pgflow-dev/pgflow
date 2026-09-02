@@ -11,6 +11,8 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Tasks get stuck in `started` status when workers die mid-processing. This is common in serverless environments where functions can be terminated unexpectedly. When this happens, the message keeps cycling in the queue but can't be picked up because the task status filter excludes it. This wastes resources and blocks flow progress.
 
+See [Failures and termination](/concepts/failures-and-termination/) for how worker-loss recovery differs from handler-error retries and failed-run cancellation.
+
 ## Automatic Recovery
 
 pgflow automatically recovers stalled tasks via a cron job that runs every 15 seconds:

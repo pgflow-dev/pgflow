@@ -86,6 +86,8 @@ These tables track the execution state of flow instances:
 - `cancelled` marks unfinished tasks whose run failed: the task that caused the failure stays `failed` (with its error), completed work stays `completed`, and every remaining queued or started task becomes `cancelled`. `runs.failed_at` is the cancellation time; there is no separate `cancelled_at` column
 - Database cancellation does not terminate JavaScript already executing in a worker and does not undo external side effects the handler already performed
 
+See [Failures and termination](/concepts/failures-and-termination/) for the complete task, step, and run lifecycle.
+
 Created and modified during execution. Each run creates new records tracking progress from start to completion.
 
 ## Schema Visualization

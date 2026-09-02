@@ -92,10 +92,14 @@ classes: {
     style.stroke-dash: 3
   }
 
-  # Task state classes (queued, completed, failed)
+  # Task state classes (queued, started, completed, failed, skipped, cancelled)
   task_queued: {
     style.fill: "#95a0a3"
     style.stroke: "#4a5759"
+  }
+  task_started: {
+    style.fill: "#34578f"
+    style.stroke: "#5c8dd6"
   }
   task_completed: {
     style.fill: "#247056"
@@ -104,5 +108,14 @@ classes: {
   task_failed: {
     style.fill: "#a33636"
     style.stroke: "#e85c5c"
+  }
+  task_skipped: {
+    style.fill: "#4a5759"
+    style.stroke: "#6b7a7d"
+    style.stroke-dash: 3
+  }
+  task_cancelled: {
+    style.fill: "#a87c45"
+    style.stroke: "#d9a66e"
   }
 }

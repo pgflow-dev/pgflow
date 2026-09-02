@@ -185,6 +185,7 @@ export default defineConfig({
             'get-started/flows/run-flow',
             'concepts/how-pgflow-works',
             'concepts/data-model',
+            'concepts/failures-and-termination',
             'concepts/understanding-flows',
             'build/create-reusable-tasks',
             'deploy/monitor-execution',
@@ -381,6 +382,10 @@ export default defineConfig({
                       link: '/concepts/three-layer-architecture/',
                     },
                     { label: 'Data model', link: '/concepts/data-model/' },
+                    {
+                      label: 'Failures and termination',
+                      link: '/concepts/failures-and-termination/',
+                    },
                     {
                       label: 'Startup Compilation',
                       link: '/concepts/startup-compilation/',
