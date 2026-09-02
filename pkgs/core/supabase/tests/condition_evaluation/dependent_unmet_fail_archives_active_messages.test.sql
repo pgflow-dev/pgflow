@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(11);
 
 select pgflow_tests.reset_db();
 
@@ -35,20 +35,47 @@ select ok(
   'should have active messages before failure'
 );
 
-with started as (
-  select * from pgflow_tests.read_and_start('dependent_fail_archive', qty => 10)
-),
-target as (
-  select run_id, step_slug, task_index
-  from started
-  where step_slug = 'first'
-  limit 1
-)
-select pgflow.complete_task(
-  (select run_id from target),
-  (select step_slug from target),
-  (select task_index from target),
-  '{"ok": false}'::jsonb
+-- Install a guard on the queue table: archiving (DELETE) is only allowed once the
+-- owning step_tasks row left queued/started. If cascade_resolve_conditions archives
+-- messages before terminalizing their tasks, this trigger raises.
+create or replace function pg_temp.assert_task_terminalized_before_archive()
+returns trigger language plpgsql as $$
+declare
+  v_flow_slug text := substr(tg_table_name, 3); -- strip 'q_' prefix
+  v_status text;
+begin
+  select st.status into v_status
+  from pgflow.step_tasks st
+  join pgflow.runs r on r.run_id = st.run_id
+  where r.flow_slug = v_flow_slug
+    and st.message_id = old.msg_id;
+
+  if v_status in ('queued', 'started') then
+    raise exception 'message % archived before its task was terminalized', old.msg_id;
+  end if;
+
+  return old;
+end;
+$$;
+
+create trigger assert_terminalized_before_archive
+before delete on pgmq.q_dependent_fail_archive
+for each row execute function pg_temp.assert_task_terminalized_before_archive();
+
+-- Start both root tasks ('second' is the independent branch that stays unfinished)
+select * from pgflow_tests.read_and_start('dependent_fail_archive', qty => 10);
+
+-- Complete 'first' with an output that leaves the checker condition unmet
+select lives_ok(
+  $$
+    select pgflow.complete_task(
+      (select run_id from run_ids),
+      'first',
+      0,
+      '{"ok": false}'::jsonb
+    )
+  $$,
+  'condition failure should archive active messages only after terminalizing their tasks'
 );
 
 select is(
@@ -74,6 +101,39 @@ select is(
 
 select is(
   (
+    select status
+    from pgflow.step_tasks
+    where run_id = (select run_id from run_ids)
+      and step_slug = 'first'
+  ),
+  'completed',
+  'completed trigger task should stay completed'
+);
+
+select is(
+  (
+    select status
+    from pgflow.step_tasks
+    where run_id = (select run_id from run_ids)
+      and step_slug = 'second'
+  ),
+  'cancelled',
+  'independent unfinished task should become cancelled'
+);
+
+select is(
+  (
+    select count(*)::int
+    from pgflow.step_tasks
+    where run_id = (select run_id from run_ids)
+      and status in ('queued', 'started')
+  ),
+  0,
+  'failed run should have zero task rows with status queued or started'
+);
+
+select is(
+  (
     select count(*)
     from pgmq.q_dependent_fail_archive
   ),
@@ -92,15 +152,20 @@ select is(
   'previously active messages should be in archive'
 );
 
+-- Replay the failure route: events must not duplicate, terminal state must hold
 select is(
-  (
-    select error_message
-    from pgflow.step_states
-    where run_id = (select run_id from run_ids)
-      and step_slug = 'checker'
+  pgflow.cascade_resolve_conditions((select run_id from run_ids)),
+  false,
+  'replayed cascade_resolve_conditions should return false without duplicating transitions'
+);
+
+select is(
+  pgflow_tests.count_realtime_events(
+    'run:failed',
+    (select run_id from run_ids)
   ),
-  'Condition not met',
-  'checker failure should use stable condition error message'
+  1::int,
+  'replayed failure route should not duplicate run:failed events'
 );
 
 drop table if exists run_ids;

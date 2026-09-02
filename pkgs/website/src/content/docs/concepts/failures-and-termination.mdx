@@ -1,0 +1,257 @@
+---
+title: Failures and termination
+description: Understand failed, skipped, cancelled, and stalled work across tasks, steps, and runs.
+sidebar:
+  order: 35
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+pgflow terminates orchestration in Postgres. It does not forcibly stop arbitrary JavaScript already running in a worker.
+
+When a run fails, the culprit stays `failed`, completed work stays `completed`, and unfinished task rows become `cancelled`.
+
+<Aside type="danger" title="Database cancellation is not process termination">
+  A handler may continue after its task becomes `cancelled` or `skipped`. pgflow
+  preserves terminal database state, but it cannot undo external side effects
+  that the handler already performed.
+</Aside>
+
+## Three levels of execution
+
+A failure can affect a task, its step, or the entire run:
+
+| Level | Meaning |
+| --- | --- |
+| **Task** | One handler execution unit. A single step has one task; a map step can have many. |
+| **Step** | The orchestration node that owns one or more tasks. |
+| **Run** | One execution of the entire flow. |
+
+A failed task does not always produce a failed step. After the task exhausts its attempts, the step's `whenExhausted` option decides whether the step fails or skips.
+
+## Terminal states mean different things
+
+| State | Meaning |
+| --- | --- |
+| `failed` | The task or step encountered a real failure. |
+| `skipped` | Orchestration decided that the work should not run or continue. |
+| `cancelled` | A failed run invalidated unfinished task work. |
+| `permanently_stalled_at` | Recovery stopped after repeated worker-loss requeues. The task status remains `started`. |
+
+<Aside type="note">
+  `cancelled` is an internal task state. It does not represent a user-facing
+  "cancel run" API.
+</Aside>
+
+## What can cause a failure?
+
+| Cause | What pgflow does |
+| --- | --- |
+| A handler throws or rejects | Retries the task while attempts remain. |
+| A handler exhausts `maxAttempts` | Applies `whenExhausted`: `fail`, `skip`, or `skip-cascade`. |
+| A condition is unmet with `whenUnmet: 'fail'` | Fails the step and run without executing that step's handler. |
+| A producer returns the wrong type for a map step | Fails the producing task, step, and run regardless of `whenExhausted`. |
+| A worker disappears during a handler | Leaves the task `started`; stalled-task recovery handles it separately. |
+
+## Handler errors: retry or stop
+
+When a handler reports an error, pgflow either retries the task or applies the step's exhausted-attempt policy:
+
+```d2 width="800" pad="20"
+...@../../../assets/pgflow-theme.d2
+
+direction: down
+
+started: "Task started"
+started.class: task_started
+
+error: "Handler reports an error"
+error.class: error
+
+retry: "Task queued with backoff"
+retry.class: task_queued
+
+exhausted: "Attempts exhausted"
+exhausted.class: warning
+
+task_failed: "Culprit task failed"
+task_failed.class: task_failed
+
+step_failed: "Step failed"
+step_failed.class: step_failed
+
+run_failed: "Run failed"
+run_failed.class: run_failed
+
+step_skipped: "Step skipped"
+step_skipped.class: step_skipped
+
+cascade_skipped: "Step and downstream skipped"
+cascade_skipped.class: step_skipped
+
+run_continues: "Run continues"
+run_continues.class: run_started
+
+started -> error
+error -> retry: "attempts remain"
+retry -> started: "after backoff"
+error -> exhausted: "no attempts remain"
+exhausted -> task_failed
+
+task_failed -> step_failed: "whenExhausted: fail"
+step_failed -> run_failed
+
+task_failed -> step_skipped: "whenExhausted: skip"
+step_skipped -> run_continues
+
+task_failed -> cascade_skipped: "whenExhausted: skip-cascade"
+cascade_skipped -> run_continues
+```
+
+The exhausted culprit task remains `failed` in all three modes. The mode controls the parent step and the rest of the run:
+
+| `whenExhausted` | Step outcome | Run outcome |
+| --- | --- | --- |
+| `fail` | The step becomes `failed`. | The run becomes `failed`. |
+| `skip` | The step becomes `skipped`; active sibling tasks of that step become `skipped`. | The run continues; dependents receive no output for the skipped step. |
+| `skip-cascade` | The step and its downstream dependents become `skipped`. | Independent branches continue. |
+
+Completed sibling tasks keep their `completed` status. pgflow does not rewrite successful history when another task fails.
+
+<Aside type="caution" title="Type violations always fail the run">
+  If a step feeding a map produces `null` or a non-array value, pgflow treats it
+  as a programming error. `whenExhausted` cannot convert that error into a skip.
+</Aside>
+
+## What happens when a run fails?
+
+Run failure terminalizes every unfinished task across every branch:
+
+```d2 width="800" pad="20"
+...@../../../assets/pgflow-theme.d2
+
+direction: down
+
+run: "Run failed"
+run.class: run_failed
+
+culprit: "Culprit task\nfailed"
+culprit.class: task_failed
+
+completed: "Finished tasks\nstay completed"
+completed.class: task_completed
+
+cancelled: "Queued or started tasks\nbecome cancelled"
+cancelled.class: task_cancelled
+
+archived: "Active queue messages\narchived"
+archived.class: neutral
+
+late: "Late callback\nignored"
+late.class: warning
+
+run -> culprit
+run -> completed
+run -> cancelled
+cancelled -> archived
+late -> run: "terminal state unchanged"
+```
+
+The database records the terminal state before removing active queue messages. Workers cannot claim new tasks for a failed run.
+
+A task that reached `completed` before the run failed is never cancelled. Its stored output remains available.
+
+If a still-running handler completes after its task becomes `cancelled`, pgflow returns the cancelled task row but does not persist the late output. If the handler reports an error, pgflow does not persist the late error message either.
+
+The worker can still log or capture that result elsewhere. The callback cannot revive work, change counters, or emit another terminal event.
+
+## Worker disappearance uses a separate recovery loop
+
+A worker can stop without reporting success or failure. The task then remains `started` until automatic recovery makes it eligible for another attempt:
+
+```d2 width="800" pad="20"
+...@../../../assets/pgflow-theme.d2
+
+direction: down
+
+started: "Task started"
+started.class: task_started
+
+worker_gone: "Worker disappears"
+worker_gone.class: warning
+
+wait: "Timeout and recovery\nbuffer pass"
+wait.class: neutral
+
+cron: "Recovery cron\ndetects stall"
+cron.class: info
+
+queued: "Task queued again"
+queued.class: task_queued
+
+attempt: "New attempt"
+attempt.class: task_started
+
+permanent: "Message archived\npermanently_stalled_at set"
+permanent.class: warning
+
+started -> worker_gone
+worker_gone -> wait
+wait -> cron
+cron -> queued: "fewer than 3 requeues"
+queued -> attempt
+cron -> permanent: "already requeued 3 times"
+```
+
+Handler-error retries and stalled-task recovery are independent:
+
+| Mechanism | Counter | Limit |
+| --- | --- | --- |
+| Handler-error retry | `attempts_count` | The effective `maxAttempts` setting |
+| Worker-loss recovery | `requeued_count` | Three requeues |
+
+A permanently stalled task is not automatically marked `failed`. Its task, step, and run can remain `started` so you can investigate the worker or handler failure.
+
+## Design handlers for repeated execution
+
+Retries and worker-loss recovery mean a handler can run more than once. Treat external side effects as idempotent whenever possible.
+
+A useful external idempotency identity is the combination of:
+
+- `ctx.stepTask.run_id`
+- `ctx.stepTask.step_slug`
+- `ctx.stepTask.task_index`
+
+The same task keeps this identity across attempts.
+
+`ctx.shutdownSignal` signals worker shutdown. It does not currently signal that another task failed the run or that Postgres terminalized this task.
+
+## Learn more
+
+<CardGrid>
+  <LinkCard
+    title="Retrying Steps"
+    href="/build/retrying-steps/"
+    description="Configure max attempts and retry delays"
+  />
+  <LinkCard
+    title="Graceful Failure"
+    href="/build/graceful-failure/"
+    description="Continue after exhausted failures with whenExhausted"
+  />
+  <LinkCard
+    title="Monitor Flow Execution"
+    href="/deploy/monitor-execution/"
+    description="Inspect run, step, and task state in Postgres"
+  />
+  <LinkCard
+    title="Troubleshooting Stalled Tasks"
+    href="/deploy/troubleshooting-stalled-tasks/"
+    description="Investigate worker-loss recovery and permanent stalls"
+  />
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Reference for timeout, maxAttempts, and failure modes"
+  />
+</CardGrid>

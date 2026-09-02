@@ -40,8 +40,10 @@ run_id        | flow_slug    | status    | input                | output        
 Run statuses include:
 
 - `started`: The run has been created and is executing steps
-- `completed`: All steps have completed successfully
-- `failed`: One or more steps have failed after max retries
+- `completed`: All steps have completed or skipped successfully
+- `failed`: A step exhausted retries in `fail` mode, failed a required condition, or produced a type violation
+
+See [Failures and termination](/concepts/failures-and-termination/) for how run failure affects completed, failed, skipped, and unfinished tasks.
 
 ## View step details for a specific run
 
@@ -73,7 +75,8 @@ Step statuses include:
 - `created`: The step has been created but may be waiting for dependencies
 - `started`: The step has started execution (all dependencies are complete)
 - `completed`: The step has completed successfully
-- `failed`: The step has failed after max retries
+- `failed`: The step has failed
+- `skipped`: Conditions or exhausted-attempt policy prevented the step from continuing
 
 ## Monitor active tasks
 

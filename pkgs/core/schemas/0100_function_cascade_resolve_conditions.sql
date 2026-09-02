@@ -17,6 +17,9 @@ DECLARE
   v_iteration_count int := 0;
   v_max_iterations int := 50;
   v_processed_count int;
+  v_run_transitioned boolean;
+  v_flow_slug text;
+  v_cancelled_message_ids bigint[];
 BEGIN
   -- ==========================================
   -- GUARD: Early return if run is already terminal
@@ -108,54 +111,72 @@ BEGIN
     -- Note: Cannot use "v_first_fail IS NOT NULL" because records with NULL fields
     -- evaluate to NULL in IS NOT NULL checks. Use FOUND instead.
     IF FOUND THEN
-      UPDATE pgflow.step_states
-      SET status = 'failed',
-          failed_at = now(),
-          error_message = 'Condition not met'
-      WHERE pgflow.step_states.run_id = cascade_resolve_conditions.run_id
-        AND pgflow.step_states.step_slug = v_first_fail.step_slug;
-
+      -- Fail the run only if it is still started. The conditional UPDATE takes
+      -- the run row lock and rechecks status atomically, so replayed or
+      -- concurrent calls cannot duplicate the terminal transition or its events.
       UPDATE pgflow.runs
       SET status = 'failed',
           failed_at = now()
-      WHERE pgflow.runs.run_id = cascade_resolve_conditions.run_id;
+      WHERE pgflow.runs.run_id = cascade_resolve_conditions.run_id
+        AND pgflow.runs.status = 'started'
+      RETURNING true INTO v_run_transitioned;
 
-      PERFORM realtime.send(
-        jsonb_build_object(
-          'event_type', 'step:failed',
-          'run_id', cascade_resolve_conditions.run_id,
-          'step_slug', v_first_fail.step_slug,
-          'status', 'failed',
-          'error_message', 'Condition not met',
-          'failed_at', now()
-        ),
-        concat('step:', v_first_fail.step_slug, ':failed'),
-        concat('pgflow:run:', cascade_resolve_conditions.run_id),
-        false
-      );
+      IF v_run_transitioned THEN
+        UPDATE pgflow.step_states
+        SET status = 'failed',
+            failed_at = now(),
+            error_message = 'Condition not met'
+        WHERE pgflow.step_states.run_id = cascade_resolve_conditions.run_id
+          AND pgflow.step_states.step_slug = v_first_fail.step_slug;
 
-      PERFORM realtime.send(
-        jsonb_build_object(
-          'event_type', 'run:failed',
-          'run_id', cascade_resolve_conditions.run_id,
-          'flow_slug', v_first_fail.flow_slug,
-          'status', 'failed',
-          'error_message', 'Condition not met',
-          'failed_at', now()
-        ),
-        'run:failed',
-        concat('pgflow:run:', cascade_resolve_conditions.run_id),
-        false
-      );
+        PERFORM realtime.send(
+          jsonb_build_object(
+            'event_type', 'step:failed',
+            'run_id', cascade_resolve_conditions.run_id,
+            'step_slug', v_first_fail.step_slug,
+            'status', 'failed',
+            'error_message', 'Condition not met',
+            'failed_at', now()
+          ),
+          concat('step:', v_first_fail.step_slug, ':failed'),
+          concat('pgflow:run:', cascade_resolve_conditions.run_id),
+          false
+        );
 
-      PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
-      FROM pgflow.step_tasks st
-      JOIN pgflow.runs r ON st.run_id = r.run_id
-      WHERE st.run_id = cascade_resolve_conditions.run_id
-        AND st.status IN ('queued', 'started')
-        AND st.message_id IS NOT NULL
-      GROUP BY r.flow_slug
-      HAVING COUNT(st.message_id) > 0;
+        PERFORM realtime.send(
+          jsonb_build_object(
+            'event_type', 'run:failed',
+            'run_id', cascade_resolve_conditions.run_id,
+            'flow_slug', v_first_fail.flow_slug,
+            'status', 'failed',
+            'error_message', 'Condition not met',
+            'failed_at', now()
+          ),
+          'run:failed',
+          concat('pgflow:run:', cascade_resolve_conditions.run_id),
+          false
+        );
+
+        -- Terminalize every unfinished task across all branches as cancelled,
+        -- capturing their message ids for archival below. Lock-order invariant:
+        -- always lock/update step_tasks before PGMQ queue rows.
+        WITH cancelled_tasks AS (
+          UPDATE pgflow.step_tasks AS task
+          SET status = 'cancelled'
+          WHERE task.run_id = cascade_resolve_conditions.run_id
+            AND task.status IN ('queued', 'started')
+          RETURNING task.message_id
+        )
+        SELECT ARRAY_AGG(ct.message_id) INTO v_cancelled_message_ids
+        FROM cancelled_tasks ct
+        WHERE ct.message_id IS NOT NULL;
+
+        -- Archive the cancelled task messages captured above (only after their
+        -- task rows are terminalized)
+        IF v_cancelled_message_ids IS NOT NULL THEN
+          PERFORM pgmq.archive(v_first_fail.flow_slug, v_cancelled_message_ids);
+        END IF;
+      END IF;
 
       RETURN false;
     END IF;

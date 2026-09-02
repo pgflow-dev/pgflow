@@ -17,31 +17,18 @@ DECLARE
   v_task_exhausted boolean;
   v_flow_slug_for_deps text;
   v_prev_step_status text;
+  v_run_status text;
   v_flow_slug text;
   v_skipped_message_ids bigint[];
+  v_cancelled_message_ids bigint[];
 begin
 
--- If run is already failed, no retries allowed
+-- If run is already failed, no retries allowed.
+-- Cancellation wins: tasks terminalized by the run failure (failed culprit or
+-- cancelled siblings) keep their terminal status. This late callback only
+-- archives any still-active message and returns the current row unchanged.
 IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id AND pgflow.runs.status = 'failed') THEN
-  UPDATE pgflow.step_tasks
-  SET status = 'failed',
-      failed_at = now(),
-      error_message = fail_task.error_message
-  WHERE pgflow.step_tasks.run_id = fail_task.run_id
-    AND pgflow.step_tasks.step_slug = fail_task.step_slug
-    AND pgflow.step_tasks.task_index = fail_task.task_index
-    AND pgflow.step_tasks.status = 'started';
-
-  -- Archive the task's message
-  PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
-  FROM pgflow.step_tasks st
-  JOIN pgflow.runs r ON st.run_id = r.run_id
-  WHERE st.run_id = fail_task.run_id
-    AND st.step_slug = fail_task.step_slug
-    AND st.task_index = fail_task.task_index
-    AND st.message_id IS NOT NULL
-  GROUP BY r.flow_slug
-  HAVING COUNT(st.message_id) > 0;
+  PERFORM pgflow._archive_task_message(fail_task.run_id, fail_task.step_slug, fail_task.task_index);
 
   RETURN QUERY SELECT * FROM pgflow.step_tasks
   WHERE pgflow.step_tasks.run_id = fail_task.run_id
@@ -50,14 +37,26 @@ IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id
   RETURN;
 END IF;
 
--- Late callback guard: lock run + step rows and use current step status
+-- Late callback guard: lock run + step rows and use current statuses
 -- under lock so concurrent fail_task calls cannot read stale status.
-SELECT ss.status, r.flow_slug INTO v_prev_step_status, v_flow_slug
+SELECT ss.status, r.status, r.flow_slug INTO v_prev_step_status, v_run_status, v_flow_slug
 FROM pgflow.runs r
 JOIN pgflow.step_states ss ON ss.run_id = r.run_id
 WHERE ss.run_id = fail_task.run_id
   AND ss.step_slug = fail_task.step_slug
 FOR UPDATE OF r, ss;
+
+-- Recheck under lock: the run may have failed while this callback waited
+-- for the lock (the EXISTS guard above ran before the failure committed).
+IF v_run_status = 'failed' THEN
+  PERFORM pgflow._archive_task_message(fail_task.run_id, fail_task.step_slug, fail_task.task_index);
+
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+  WHERE pgflow.step_tasks.run_id = fail_task.run_id
+    AND pgflow.step_tasks.step_slug = fail_task.step_slug
+    AND pgflow.step_tasks.task_index = fail_task.task_index;
+  RETURN;
+END IF;
 
 IF v_prev_step_status IS NOT NULL AND v_prev_step_status != 'started' THEN
   -- Archive the task message if present
@@ -327,16 +326,26 @@ IF v_run_failed THEN
   END;
 END IF;
 
--- Archive all active messages (both queued and started) when run fails
+-- Terminalize unfinished tasks as cancelled when the run fails, then archive
+-- their messages. Lock-order invariant: always lock/update step_tasks before
+-- PGMQ queue rows. The culprit task is already terminal (failed or requeued by
+-- fail_or_retry_task), so only unfinished queued/started siblings are cancelled.
 IF v_run_failed THEN
-  PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
-  FROM pgflow.step_tasks st
-  JOIN pgflow.runs r ON st.run_id = r.run_id
-  WHERE st.run_id = fail_task.run_id
-    AND st.status IN ('queued', 'started')
-    AND st.message_id IS NOT NULL
-  GROUP BY r.flow_slug
-  HAVING COUNT(st.message_id) > 0;
+  WITH cancelled_tasks AS (
+    UPDATE pgflow.step_tasks AS task
+    SET status = 'cancelled'
+    WHERE task.run_id = fail_task.run_id
+      AND task.status IN ('queued', 'started')
+    RETURNING task.message_id
+  )
+  SELECT ARRAY_AGG(ct.message_id) INTO v_cancelled_message_ids
+  FROM cancelled_tasks ct
+  WHERE ct.message_id IS NOT NULL;
+
+  -- Archive the cancelled task messages captured above (only after their task rows are terminalized)
+  IF v_cancelled_message_ids IS NOT NULL THEN
+    PERFORM pgmq.archive(v_flow_slug, v_cancelled_message_ids);
+  END IF;
 END IF;
 
 -- For queued tasks: delay the message for retry with exponential backoff

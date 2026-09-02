@@ -14,6 +14,7 @@ declare
   v_dependent_map_slug text;
   v_run_record pgflow.runs%ROWTYPE;
   v_step_record pgflow.step_states%ROWTYPE;
+  v_violation_archived_ids bigint[];
 begin
 
 -- ==========================================
@@ -39,6 +40,27 @@ SELECT * INTO v_step_record FROM pgflow.step_states
 WHERE pgflow.step_states.run_id = complete_task.run_id
   AND pgflow.step_states.step_slug = complete_task.step_slug
 FOR UPDATE;
+
+-- ==========================================
+-- GUARD: Run failed while this callback waited for the lock
+-- ==========================================
+-- The failed-run guard above ran before the failure committed. Recheck under
+-- lock so cancellation wins: archived message stays archived, task row keeps
+-- its terminal status, and no events or counters are emitted.
+IF v_run_record.status = 'failed' THEN
+  -- Archive the task message if present (no-op when already archived)
+  PERFORM pgflow._archive_task_message(
+    complete_task.run_id,
+    complete_task.step_slug,
+    complete_task.task_index
+  );
+  -- Return the current task row without any mutations
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+    WHERE pgflow.step_tasks.run_id = complete_task.run_id
+      AND pgflow.step_tasks.step_slug = complete_task.step_slug
+      AND pgflow.step_tasks.task_index = complete_task.task_index;
+  RETURN;
+END IF;
 
 -- ==========================================
 -- GUARD: Late callback - step not started
@@ -84,6 +106,20 @@ LIMIT 1;
 
 -- Handle type violation if detected
 IF v_dependent_map_slug IS NOT NULL THEN
+  -- Mark current task as failed FIRST and store the output that caused the
+  -- violation, so the task row is terminal before any queue row is touched.
+  UPDATE pgflow.step_tasks
+  SET status = 'failed',
+      failed_at = now(),
+      output = complete_task.output,  -- Store the output that caused the violation
+      error_message = '[TYPE_VIOLATION] Produced ' ||
+                     CASE WHEN complete_task.output IS NULL THEN 'null'
+                          ELSE jsonb_typeof(complete_task.output) END ||
+                     ' instead of array'
+  WHERE pgflow.step_tasks.run_id = complete_task.run_id
+    AND pgflow.step_tasks.step_slug = complete_task.step_slug
+    AND pgflow.step_tasks.task_index = complete_task.task_index;
+
   -- Mark run as failed immediately
   UPDATE pgflow.runs
   SET status = 'failed',
@@ -104,30 +140,6 @@ IF v_dependent_map_slug IS NOT NULL THEN
     concat('pgflow:run:', complete_task.run_id),
     false
   );
-
-  -- Archive all active messages (both queued and started) to prevent orphaned messages
-  PERFORM pgmq.archive(
-    v_run_record.flow_slug,
-    array_agg(st.message_id)
-  )
-  FROM pgflow.step_tasks st
-  WHERE st.run_id = complete_task.run_id
-    AND st.status IN ('queued', 'started')
-    AND st.message_id IS NOT NULL
-  HAVING count(*) > 0;  -- Only call archive if there are messages to archive
-
-  -- Mark current task as failed and store the output
-  UPDATE pgflow.step_tasks
-  SET status = 'failed',
-      failed_at = now(),
-      output = complete_task.output,  -- Store the output that caused the violation
-      error_message = '[TYPE_VIOLATION] Produced ' ||
-                     CASE WHEN complete_task.output IS NULL THEN 'null'
-                          ELSE jsonb_typeof(complete_task.output) END ||
-                     ' instead of array'
-  WHERE pgflow.step_tasks.run_id = complete_task.run_id
-    AND pgflow.step_tasks.step_slug = complete_task.step_slug
-    AND pgflow.step_tasks.task_index = complete_task.task_index;
 
   -- Mark step state as failed
   UPDATE pgflow.step_states
@@ -159,16 +171,37 @@ IF v_dependent_map_slug IS NOT NULL THEN
     false
   );
 
-  -- Archive the current task's message (it was started, now failed)
-  PERFORM pgmq.archive(
-    v_run_record.flow_slug,
-    st.message_id  -- Single message, use scalar form
+  -- Terminalize every other unfinished task as cancelled, capturing their
+  -- message ids for archival below. Lock-order invariant: always lock/update
+  -- step_tasks before PGMQ queue rows. The culprit task is already terminal
+  -- (failed above), so it is excluded from the cancellation set.
+  WITH cancelled_tasks AS (
+    UPDATE pgflow.step_tasks AS task
+    SET status = 'cancelled'
+    WHERE task.run_id = complete_task.run_id
+      AND task.status IN ('queued', 'started')
+    RETURNING task.message_id
+  ),
+  culprit_task AS (
+    -- Terminal culprit row: safe to read for its message id after terminalization
+    SELECT st.message_id
+    FROM pgflow.step_tasks st
+    WHERE st.run_id = complete_task.run_id
+      AND st.step_slug = complete_task.step_slug
+      AND st.task_index = complete_task.task_index
+      AND st.message_id IS NOT NULL
   )
-  FROM pgflow.step_tasks st
-  WHERE st.run_id = complete_task.run_id
-    AND st.step_slug = complete_task.step_slug
-    AND st.task_index = complete_task.task_index
-    AND st.message_id IS NOT NULL;
+  SELECT ARRAY_AGG(ids.message_id) INTO v_violation_archived_ids
+  FROM (
+    SELECT message_id FROM culprit_task
+    UNION ALL
+    SELECT message_id FROM cancelled_tasks WHERE message_id IS NOT NULL
+  ) ids;
+
+  -- Archive the culprit and cancelled task messages (only after their task rows are terminalized)
+  IF v_violation_archived_ids IS NOT NULL THEN
+    PERFORM pgmq.archive(v_run_record.flow_slug, v_violation_archived_ids);
+  END IF;
 
   -- Return the failed task row (API contract: always return task row)
   RETURN QUERY
