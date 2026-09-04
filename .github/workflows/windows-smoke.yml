@@ -52,4 +52,4 @@ jobs:
 
       - name: Run npm-created pgflow.cmd shim
         shell: bash
-        run: "$RUNNER_TEMP/pgflow-smoke/node_modules/.bin/pgflow.cmd" --version
+        run: $RUNNER_TEMP/pgflow-smoke/node_modules/.bin/pgflow.cmd --version
