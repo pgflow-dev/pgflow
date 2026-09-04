@@ -4,6 +4,13 @@ name: Windows Smoke
 # `npm install pgflow` must succeed on Windows with lifecycle scripts enabled,
 # and the npm-created pgflow.cmd shim must run. The rest of CI runs on Ubuntu
 # and invokes `node dist/index.js` directly, so it never exercises this.
+#
+# The packed CLI depends on @pgflow/core (workspace:* becomes an exact version
+# after `pnpm pack`), and @pgflow/core depends on @pgflow/dsl. On the Version
+# Packages branch those versions are bumped but not yet published on npm, so
+# all three tarballs (dsl, core, cli) are packed locally and installed in one
+# `npm install` command. That makes npm resolve @pgflow/core and @pgflow/dsl
+# from the local tarballs in both branch shapes (see #669).
 on:
   workflow_dispatch:
   pull_request:
@@ -32,23 +39,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Build CLI
-        run: pnpm nx build cli
+      - name: Build CLI and its workspace dependencies
+        run: pnpm nx run-many -t build --projects=dsl,core,cli
 
-      - name: Pack CLI tarball
+      - name: Pack tarballs
         shell: bash
-        working-directory: pkgs/cli
-        run: pnpm pack
+        run: |
+          (cd pkgs/dsl && pnpm pack)
+          (cd pkgs/core && pnpm pack)
+          (cd pkgs/cli && pnpm pack)
 
-      # Install the tarball into a clean directory with lifecycle scripts
+      # Install the tarballs into a clean directory with lifecycle scripts
       # enabled (no --ignore-scripts): this is the step that failed in #610.
-      - name: Install tarball into a clean directory
+      # All three tarballs go into ONE npm install so npm resolves the
+      # @pgflow/core and @pgflow/dsl dependencies from the local tarballs.
+      - name: Install tarballs into a clean directory
         shell: bash
         run: |
           SMOKE_DIR="$RUNNER_TEMP/pgflow-smoke"
           mkdir -p "$SMOKE_DIR"
           cd "$SMOKE_DIR"
-          npm install "$GITHUB_WORKSPACE/pkgs/cli"/pgflow-*.tgz
+          npm install \
+            "$GITHUB_WORKSPACE/pkgs/dsl"/pgflow-dsl-*.tgz \
+            "$GITHUB_WORKSPACE/pkgs/core"/pgflow-core-*.tgz \
+            "$GITHUB_WORKSPACE/pkgs/cli"/pgflow-*.tgz
 
       - name: Run npm-created pgflow.cmd shim
         shell: bash
