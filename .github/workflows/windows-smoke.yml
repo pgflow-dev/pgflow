@@ -1,0 +1,55 @@
+name: Windows Smoke
+
+# Regression test for https://github.com/pgflow-dev/pgflow/issues/610:
+# `npm install pgflow` must succeed on Windows with lifecycle scripts enabled,
+# and the npm-created pgflow.cmd shim must run. The rest of CI runs on Ubuntu
+# and invokes `node dist/index.js` directly, so it never exercises this.
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-package-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.20.0'
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: |
+            **/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Build CLI
+        run: pnpm nx build cli
+
+      - name: Pack CLI tarball
+        shell: bash
+        working-directory: pkgs/cli
+        run: pnpm pack
+
+      # Install the tarball into a clean directory with lifecycle scripts
+      # enabled (no --ignore-scripts): this is the step that failed in #610.
+      - name: Install tarball into a clean directory
+        shell: bash
+        run: |
+          SMOKE_DIR="$RUNNER_TEMP/pgflow-smoke"
+          mkdir -p "$SMOKE_DIR"
+          cd "$SMOKE_DIR"
+          npm install "$GITHUB_WORKSPACE/pkgs/cli"/pgflow-*.tgz
+
+      - name: Run npm-created pgflow.cmd shim
+        shell: bash
+        run: $RUNNER_TEMP/pgflow-smoke/node_modules/.bin/pgflow.cmd --version
