@@ -8,8 +8,7 @@ next:
   label: Operate
 ---
 
-import { Aside, Code, CardGrid, LinkCard } from "@astrojs/starlight/components";
-import deleteFlowFunctionCode from '@/../../core/supabase/tests/_shared/delete_flow_and_data.sql.raw?raw';
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 During development, you may want to completely remove a flow and all its data to make breaking changes, clean up test data, or start fresh after experimenting. This operation is destructive and should **only be used in development environments**.
 
@@ -25,7 +24,9 @@ This permanently deletes all flow data including:
 
 ## Using the Delete Function
 
-The delete function accepts a flow slug parameter and removes all associated data:
+`pgflow.delete_flow_and_data` is a built-in helper installed automatically by pgflow migrations. It is available since pgflow v0.10.0, so there is no manual SQL setup.
+
+The function accepts a flow slug parameter and removes all associated data:
 
 ```sql
 pgflow.delete_flow_and_data(flow_slug TEXT)
@@ -38,20 +39,6 @@ SELECT pgflow.delete_flow_and_data('analyzeWebsite');
 ```
 
 This deletes the flow definition, all runs, queued messages, and task outputs for the specified flow.
-
-## Installing the Function
-
-<Aside type="caution" title="Manual Installation Required">
-This function is not included in default pgflow migrations to prevent accidental deployment to production. It has been thoroughly unit tested, but you must manually add it to your development database using the SQL in the [Delete Function](#the-delete-function) section below.
-</Aside>
-
-Install by running the SQL directly in your database using `psql` or Supabase Studio.
-
-## The Delete Function
-
-Run this SQL to install the delete function:
-
-<Code lang="sql" code={deleteFlowFunctionCode} />
 
 ## After Deleting
 
