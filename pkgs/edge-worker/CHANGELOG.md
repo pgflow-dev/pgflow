@@ -1,5 +1,16 @@
 # @pgflow/edge-worker
 
+## 0.15.1
+
+### Patch Changes
+
+- Updated dependencies [7903661]
+- Updated dependencies [078aa1e]
+- Updated dependencies [daadcac]
+- Updated dependencies [35d261b]
+  - @pgflow/core@0.15.1
+  - @pgflow/dsl@0.15.1
+
 ## 0.15.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # pgflow
 
+## 0.15.1
+
+### Patch Changes
+
+- 4ac87c9: Remove the postinstall `chmod` script that broke `npm install pgflow` on Windows; npm sets the executable bit for `bin` files automatically.
+- Updated dependencies [7903661]
+- Updated dependencies [078aa1e]
+- Updated dependencies [daadcac]
+- Updated dependencies [35d261b]
+  - @pgflow/core@0.15.1
+
 ## 0.15.0
 
 ### Minor Changes
