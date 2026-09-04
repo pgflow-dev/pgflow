@@ -1,0 +1,57 @@
+---
+title: 'pgflow 0.15.1: Reliable Task Finalization and Recovery'
+description: 'Tasks now reach a terminal state on every completion path: skipped steps, failed runs, correct stalled recovery, and a Windows install fix'
+date: 2026-09-04
+authors:
+  - jumski
+tags:
+  - bugfix
+  - patch
+featured: false
+---
+
+This patch release hardens the task lifecycle. Tasks now reach a terminal state on every completion path, stalled-task recovery uses the right timeout, claimed tasks keep their queue visibility before handlers run, and `npm install pgflow` works again on Windows.
+
+## Tasks Under Skipped Steps
+
+When a step was skipped via `whenExhausted: 'skip'` or `'skip-cascade'` (or skipped by a cascade), sibling task rows stayed `queued` or `started` forever. The step was skipped, but its task rows never ended. This was reported in [#638](https://github.com/pgflow-dev/pgflow/issues/638).
+
+Task rows under a skipped step are now terminalized as `skipped`. Two ordering details make this safe:
+
+- Tasks are terminalized before their queue messages are archived, preserving the task-before-queue lock order.
+- `start_tasks` only returns rows it actually claimed, so workers no longer execute tasks that a concurrent skip already marked `skipped`.
+
+## Tasks on Failed Runs
+
+When a run failed, unfinished task rows on that run stayed active. A late step callback or the stalled-task recovery job could then "finish" a task after its run had already failed. This was reported in [#645](https://github.com/pgflow-dev/pgflow/issues/645).
+
+Unfinished tasks are now marked `cancelled` when their run fails, and late callbacks and stalled recovery can no longer revive them.
+
+## Stalled-Task Recovery Uses the Step Timeout
+
+Stalled tasks were requeued only after their *flow* timeout expired, so recovery for a short step inside a long flow waited far longer than necessary. This was reported in [#621](https://github.com/pgflow-dev/pgflow/issues/621).
+
+Requeue now uses the effective step timeout: the step timeout when set, otherwise the flow timeout.
+
+## Claim Visibility Before Handlers Run
+
+`start_tasks()` claimed tasks but applied the PGMQ visibility extension in a way PostgreSQL could skip, so a claimed task sometimes kept only the initial read visibility. A handler that ran longer than that window made the queue message visible again, so a second worker could pick up the same task. This was reported in [#656](https://github.com/pgflow-dev/pgflow/issues/656).
+
+The visibility update is now structurally required (a referenced CTE instead of an unreferenced `SELECT` CTE), so every claimed task keeps the effective timeout (`coalesce(step timeout, flow timeout) + 2`) before handlers run, and a visibility-update failure rolls back the whole claim.
+
+## Windows Install Fixed
+
+The CLI package's postinstall script ran `chmod` on its bin file, which broke `npm install pgflow` on Windows. This was reported in [#610](https://github.com/pgflow-dev/pgflow/issues/610).
+
+The postinstall script is gone. npm sets the executable bit for `bin` files automatically, so a plain `npm install pgflow` works on Windows again.
+
+## Automatic Repair of Existing Data
+
+The single consolidated migration `20260904095427_pgflow_task_lifecycle_hardening` repairs existing task rows in the same order:
+
+1. Active task rows (`queued`/`started`) under skipped steps become `skipped`.
+2. Remaining active task rows on failed runs become `cancelled`.
+
+Completed and genuinely failed tasks keep their outcomes, and all history fields are preserved. No manual action is required.
+
+To pick up these fixes, follow [Update pgflow](/deploy/update-pgflow/).
