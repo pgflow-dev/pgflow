@@ -15,12 +15,12 @@ cover:
   image: '../../../assets/cover-images/pgflow-0-8-0-modernizing-dependencies-pgmq-1-5-0-and-postgresql-17.png'
 ---
 
-import { Aside, Steps } from '@astrojs/starlight/components';
+import { Aside } from "@astrojs/starlight/components";
 
 pgflow 0.8.0 requires pgmq 1.5.0 or higher and PostgreSQL 17. This release removes the pgmq compatibility layer and prepares the foundation for upcoming flow auto-compilation features.
 
 :::danger[Breaking Change]
-This version **will NOT work with pgmq 1.4.x or earlier**. The migration includes a compatibility check that will abort with a clear error message if pgmq 1.5.0 is not detected.
+  This version **will NOT work with pgmq 1.4.x or earlier**. The migration includes a compatibility check that will abort with a clear error message if pgmq 1.5.0 is not detected.
 :::
 
 ## What's Changing
@@ -84,47 +84,39 @@ This safety check prevents partial migrations and data corruption.
 
 ## Migration Guide
 
-:::caution[Older Supabase Projects Need a Platform Upgrade]
-If your existing Supabase project has pgmq 1.4.x, you must **upgrade your Supabase project first** - projects don't auto-upgrade. Follow the [Supabase Platform Upgrade Guide](https://supabase.com/docs/guides/platform/upgrading) to get pgmq 1.5.0+.
-
-pgflow tracks current Supabase platform releases and does not support older versions. If you cannot upgrade immediately, stay on pgflow 0.7.x until you're ready.
-:::
-
 ### Supabase Cloud Users
 
-Supabase CLI version 2.50.3 or higher includes pgmq 1.5.0 by default.
+Supabase CLI version 2.50.3 or higher includes pgmq 1.5.0 by default. To upgrade:
 
-<Steps>
 1. Update your Supabase CLI if needed:
    ```bash
    supabase -v  # Check current version
    npm install -g supabase  # Update if below 2.50.3
    ```
-
 2. Verify your pgmq version using the SQL query above
-
-3. Run your migrations:
+3. If you have pgmq 1.5.0+, run your migrations normally:
    ```bash
    supabase db push
    ```
-</Steps>
+4. If you have pgmq 1.4.x, wait for your Supabase instance to upgrade before updating pgflow
 
 ### Self-Hosted Users
 
-You must upgrade pgmq to 1.5.0+ before upgrading pgflow.
+You must upgrade pgmq to 1.5.0+ before upgrading pgflow:
 
-<Steps>
 1. Check your current pgmq version
-
 2. Upgrade pgmq to 1.5.0 or higher following the [pgmq upgrade guide](https://github.com/tembo-io/pgmq)
-
 3. Upgrade PostgreSQL to version 17 if not already running it
-
 4. Run your pgflow migrations:
    ```bash
    supabase db push
    ```
-</Steps>
+
+## What If I Can't Upgrade?
+
+If you cannot upgrade to pgmq 1.5.0 immediately, stay on pgflow 0.7.x. The migration safety check ensures you cannot accidentally upgrade to an incompatible version.
+
+Your existing pgflow 0.7.x installation will continue working until you are ready to upgrade your infrastructure.
 
 ---
 
