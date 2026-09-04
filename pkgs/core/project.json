@@ -16,6 +16,12 @@
     "pgtapTests": [
       "{projectRoot}/supabase/tests/**/*.sql",
       "{projectRoot}/scripts/run-test-with-colors"
+    ],
+    "upgradeFixture": [
+      "{projectRoot}/supabase/upgrade_fixture/**",
+      "{projectRoot}/scripts/run-upgrade-fixture",
+      "{projectRoot}/atlas/atlas.hcl",
+      "{projectRoot}/atlas/supabase-baseline-schema.sql"
     ]
   },
   "targets": {
@@ -115,7 +121,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
+          "sqruff --config=../../.sqruff fix --parsing-errors schemas/"
         ],
         "parallel": false
       }
@@ -198,13 +204,14 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["verify-migrations"],
-      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "inputs": ["schemas", "migrations", "pgtapTests", "upgradeFixture"],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
-          "scripts/run-test-with-colors"
+          "scripts/run-test-with-colors",
+          "scripts/run-upgrade-fixture"
         ],
         "parallel": false
       }

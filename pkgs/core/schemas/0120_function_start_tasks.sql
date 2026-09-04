@@ -90,14 +90,36 @@ as $$
     join pgflow.flows flow on flow.flow_slug = task.flow_slug
     join pgflow.steps step on step.flow_slug = task.flow_slug and step.step_slug = task.step_slug
   ),
-  -- Batch update visibility timeouts for all messages
-  set_vt_batch as (
+  -- Batch update visibility timeouts for all messages.
+  -- The final statement must force this CTE to run: an unreferenced SELECT
+  -- CTE is not guaranteed to execute, which would leave a claimed task with
+  -- only the shorter initial PGMQ read visibility (#656).
+  visibility_reset as (
     select pgflow.set_vt_batch(
       start_tasks.flow_slug,
       array_agg(t.message_id order by t.message_id),
       array_agg(t.vt_delay order by t.message_id)
     )
     from timeouts t
+  ),
+  -- Force execution of the visibility_reset CTE (same pattern as
+  -- requeue_stalled_tasks) and guard completeness: set_vt_batch updates
+  -- only queue rows it finds, so fewer returned rows than claimed tasks
+  -- means a visibility extension did not run (#656). SQL functions cannot
+  -- RAISE, so the mismatch branch casts a descriptive message to int4:
+  -- the cast error fails the whole statement, rolling back the task
+  -- transition and attempt increment, and returns nothing.
+  _vr as (
+    select case
+      when updated.updated_count = claimed.claimed_count then updated.updated_count
+      else format(
+          'start_tasks(): visibility updated %s of %s claimed messages',
+          updated.updated_count,
+          claimed.claimed_count
+        )::int4
+    end as visibility_updates
+    from (select count(*) as updated_count from visibility_reset) as updated
+    cross join (select count(*) as claimed_count from tasks) as claimed
   )
   select
     st.flow_slug,
@@ -190,4 +212,6 @@ as $$
   left join deps_outputs dep_out on
     dep_out.run_id = st.run_id and
     dep_out.step_slug = st.step_slug
+  cross join _vr
+  where _vr.visibility_updates >= 0
 $$;

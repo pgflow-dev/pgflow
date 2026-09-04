@@ -1,0 +1,68 @@
+#!/bin/bash
+set -euo pipefail
+
+# 0.15.0 upgrade fixture for the consolidated task_lifecycle_hardening migration.
+#
+# Proves on a fresh database that:
+#   1. a database at 0.15.0 (migrations up to 20260607175525) upgrades cleanly,
+#   2. both migration-only data repairs run, in the required order,
+#   3. final runtime behavior works (start_tasks extends PGMQ visibility).
+#
+# Uses the same postgres image and baseline schema as the atlas dev database
+# (pg_cron / pg_net cannot be created in a non-postgres database of the
+# Supabase dev instance, so the fixture gets its own container).
+# Runs as part of `pnpm nx test:pgtap core`.
+
+cd "$(dirname "$0")/.."
+
+IMAGE="jumski/atlas-postgres-pgflow:17.6.1.054"
+CONTAINER=pgflow-upgrade-fixture
+# Last migration released in 0.15.0; everything after it is replaced by the
+# consolidated migration.
+BASELINE_MIGRATION="20260607175525_pgflow_worker_start_mode.sql"
+
+cleanup() { docker rm -f "$CONTAINER" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+cleanup
+
+echo "upgrade fixture: starting postgres container"
+docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+
+for _ in $(seq 1 30); do
+  if docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+psql_in() {
+  docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -X -q -U postgres -d postgres
+}
+
+echo "upgrade fixture: applying supabase baseline schema"
+psql_in < atlas/supabase-baseline-schema.sql
+
+echo "upgrade fixture: applying pgflow migrations up to 0.15.0 ($BASELINE_MIGRATION)"
+reached_baseline=false
+for f in supabase/migrations/*.sql; do
+  echo "  $(basename "$f")"
+  psql_in < "$f"
+  if [[ "$(basename "$f")" == "$BASELINE_MIGRATION" ]]; then
+    reached_baseline=true
+    break
+  fi
+done
+if [[ "$reached_baseline" != true ]]; then
+  echo "upgrade fixture: baseline migration $BASELINE_MIGRATION not found" >&2
+  exit 1
+fi
+
+echo "upgrade fixture: seeding stale 0.15.0 data"
+psql_in < supabase/upgrade_fixture/seed.sql
+
+consolidated=$(ls supabase/migrations/*_pgflow_task_lifecycle_hardening.sql)
+echo "upgrade fixture: applying consolidated migration $(basename "$consolidated")"
+psql_in < "$consolidated"
+
+psql_in < supabase/upgrade_fixture/assertions.sql
+echo "upgrade fixture: PASS"
