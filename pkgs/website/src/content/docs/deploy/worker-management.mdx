@@ -39,6 +39,13 @@ SET deprecated_at = now()
 WHERE function_name = 'my-worker';
 ```
 
+<Aside type="caution" title="Updating a deployed worker?">
+Deprecation alone does not keep a worker stopped. While the function's row in
+`pgflow.worker_functions` stays `enabled`, the `ensure_workers()` cron restarts the
+function, and the restarted worker runs the currently deployed code. Follow
+[Update Deployed Flows](/deploy/supabase/update-deployed-flows/) for the safe sequence.
+</Aside>
+
 ```d2
 ...@../../../assets/pgflow-theme.d2
 
