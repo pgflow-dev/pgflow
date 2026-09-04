@@ -18,7 +18,7 @@ select pgflow_tests.read_and_start('vt_step_short', 30, 1);
 
 -- Expected vt delay: 10 (step) + 2 = 12
 select ok(
-  (select abs(extract(epoch from (q.vt - now()))::int - 12) <= 2
+  (select abs(extract(epoch from (q.vt - clock_timestamp()))::int - 12) <= 2
    from pgmq.q_vt_step_short q
    join pgflow.step_tasks st on st.message_id = q.msg_id
    where st.flow_slug = 'vt_step_short'),
@@ -37,7 +37,7 @@ select pgflow_tests.read_and_start('vt_step_long', 30, 1);
 
 -- Expected vt delay: 90 (step) + 2 = 92
 select ok(
-  (select abs(extract(epoch from (q.vt - now()))::int - 92) <= 2
+  (select abs(extract(epoch from (q.vt - clock_timestamp()))::int - 92) <= 2
    from pgmq.q_vt_step_long q
    join pgflow.step_tasks st on st.message_id = q.msg_id
    where st.flow_slug = 'vt_step_long'),
@@ -56,7 +56,7 @@ select pgflow_tests.read_and_start('vt_step_null', 30, 1);
 
 -- Expected vt delay: 7 (flow fallback) + 2 = 9
 select ok(
-  (select abs(extract(epoch from (q.vt - now()))::int - 9) <= 2
+  (select abs(extract(epoch from (q.vt - clock_timestamp()))::int - 9) <= 2
    from pgmq.q_vt_step_null q
    join pgflow.step_tasks st on st.message_id = q.msg_id
    where st.flow_slug = 'vt_step_null'),
@@ -96,7 +96,7 @@ select is(
 
 -- Expected vt delay: 5 (step) + 2 = 7, already applied to the queue row
 select ok(
-  (select abs(extract(epoch from (q.vt - now()))::int - 7) <= 2
+  (select abs(extract(epoch from (q.vt - clock_timestamp()))::int - 7) <= 2
    from pgmq.q_vt_formula q
    join pgflow.step_tasks st on st.message_id = q.msg_id
    where st.flow_slug = 'vt_formula'),

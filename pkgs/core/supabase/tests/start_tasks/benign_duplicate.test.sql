@@ -2,7 +2,7 @@
 -- Re-reading it consumes no attempt, returns no task, and does not block
 -- fresh claims in the same batch.
 begin;
-select plan(9);
+select plan(10);
 
 select pgflow_tests.reset_db();
 
@@ -58,7 +58,7 @@ select is(
 -- Fresh task returns with its vt extended to the claim-time delay
 -- (flow 5 + 2 = 7s), not the initial PGMQ read visibility (30s)
 select ok(
-  (select abs(extract(epoch from (q.vt - now()))::int - 7) <= 2
+  (select abs(extract(epoch from (q.vt - clock_timestamp()))::int - 7) <= 2
    from pgmq.q_mixeddup q
    join pgflow.step_tasks st on st.message_id = q.msg_id
    where st.step_slug != (select first_claimed from mixeddup_first)),
@@ -107,6 +107,13 @@ select is(
     '11111111-1111-1111-1111-111111111111'::uuid)),
   0,
   'repeatedly visible started message returns no task'
+);
+
+select is(
+  (select attempts_count::int from pgflow.step_tasks
+   where step_slug = (select first_claimed from mixeddup_first)),
+  1,
+  'repeatedly visible started message still consumes no attempt'
 );
 
 select finish();

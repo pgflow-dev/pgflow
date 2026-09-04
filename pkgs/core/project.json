@@ -121,7 +121,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
+          "sqruff --config=../../.sqruff fix --parsing-errors schemas/"
         ],
         "parallel": false
       }
