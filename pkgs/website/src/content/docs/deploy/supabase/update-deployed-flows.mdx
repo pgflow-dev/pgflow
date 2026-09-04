@@ -1,6 +1,6 @@
 ---
 title: Update Deployed Flows
-description: Safe workflow for deploying flow updates to production using worker deprecation
+description: Disable restarts, deprecate workers, drain, deploy, then re-enable to update deployed flows safely
 sidebar:
   order: 110
 banner:
@@ -10,7 +10,9 @@ banner:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-When updating flows that are already deployed to production, use the deprecation workflow to prevent old and new worker versions from processing tasks simultaneously.
+When updating flows that are already deployed to production, follow this sequence to prevent old and new worker versions from processing tasks simultaneously. The order matters: the `ensure_workers()` cron restarts any function whose `worker_functions` row is `enabled`, so you must disable the row before you deprecate workers.
+
+See [Worker Management](/deploy/worker-management/) for how worker registration, deprecation, and heartbeats work.
 
 <Aside type="note" title="First Time Deployment?">
 If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/) for initial setup instructions.
@@ -18,41 +20,176 @@ If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/
 
 ## Update Workflow
 
+Throughout, replace `your-worker-name` with your Edge Function name.
+
 <Steps>
 
-1. **Deprecate old workers**
+1. ### Record the current enabled state
+
+   ```sql
+   SELECT function_name, enabled
+   FROM pgflow.worker_functions
+   WHERE function_name = 'your-worker-name';
+   ```
+
+   Note the `enabled` value. You restore exactly this value in step 6, even if it is `false`.
+
+2. ### Disable automatic restarts
+
+   ```sql
+   UPDATE pgflow.worker_functions
+   SET enabled = false
+   WHERE function_name = 'your-worker-name';
+   ```
+
+   While `enabled` is `false`, the cron stops pinging this function. Disable the row before deprecating workers, otherwise the cron restarts the old worker within a second of the deprecation.
+
+3. ### Deprecate live workers
+
    ```sql
    UPDATE pgflow.workers
-   SET deprecated_at = NOW()
+   SET deprecated_at = now()
    WHERE function_name = 'your-worker-name'
      AND deprecated_at IS NULL;
    ```
-   This stops old workers from polling for new tasks while they finish current work.
 
-2. **Deploy new version**
+   Workers check their deprecation status every 5 seconds. A deprecated worker stops polling for new tasks and finishes the tasks it already claimed.
+
+4. ### Wait for the drain to finish
+
+   A worker stopped polling when none of its function's workers has a current heartbeat:
+
+   ```sql
+   SELECT worker_id, deprecated_at, last_heartbeat_at
+   FROM pgflow.workers
+   WHERE function_name = 'your-worker-name'
+     AND last_heartbeat_at > now() - interval '6 seconds';
+   ```
+
+   This returns no rows once every worker of the function stopped polling.
+
+   In-flight work finished when no task claimed by a deprecated worker is still running:
+
+   ```sql
+   SELECT run_id, step_slug, task_index, started_at
+   FROM pgflow.step_tasks
+   WHERE status = 'started'
+     AND last_worker_id IN (
+       SELECT worker_id
+       FROM pgflow.workers
+       WHERE function_name = 'your-worker-name'
+         AND deprecated_at IS NOT NULL
+     );
+   ```
+
+   This returns no rows when every claimed task reached a terminal state (`completed` or `failed`) or was requeued back to `queued`.
+
+   <Aside type="note">
+   pgflow does not record completion callbacks as separate rows. The observable signal is the task row leaving `started`: the worker writes the final task state only after the handler and its completion callbacks finish.
+   </Aside>
+
+   Repeat both queries until they return no rows. The drain takes as long as the longest in-flight task. If the function had no live workers, both queries return no rows immediately.
+
+5. ### Deploy the new version
+
    ```bash frame="none"
    npx supabase functions deploy your-worker-name
    ```
 
-3. **Wait for new worker to start**
+   The function row stays disabled during deployment, so nothing restarts the worker while the new code deploys.
 
-   The pgflow cron automatically starts the new worker within seconds.
+6. ### Restore the recorded enabled state
 
-   See [Worker Management](/deploy/worker-management/) for details.
+   ```sql "true"
+   UPDATE pgflow.worker_functions
+   SET enabled = true
+   WHERE function_name = 'your-worker-name';
+   ```
+
+   Set the value you recorded in step 1. The example restores `true`. If you recorded `false`, restore `false`: pgflow then keeps the worker stopped, which preserves an intentionally disabled function.
+
+7. ### Confirm the new worker runs
+
+   ```sql
+   SELECT worker_id, started_at, last_heartbeat_at
+   FROM pgflow.workers
+   WHERE function_name = 'your-worker-name'
+     AND deprecated_at IS NULL
+     AND last_heartbeat_at > now() - interval '6 seconds';
+   ```
+
+   Expect a row with a current heartbeat and a `started_at` after your deploy. The cron pings the re-enabled function within seconds and the new worker starts.
 
 </Steps>
 
-## Deployment Details
+## Why the Order Matters
 
-### Why Worker Deprecation
+Two mechanisms overlap during an update:
 
-Without deprecation, old workers run for up to 150s (free tier) or 400s (paid) after deployment, causing both versions to process tasks simultaneously.
+- **Worker lifetime.** An Edge Function keeps running for up to 150s (free tier) or 400s (paid) after deployment. Without deprecation, the old worker keeps processing tasks while the new version starts, so both versions run simultaneously.
+- **Automatic restart.** The `ensure_workers()` cron runs every second and pings every function whose `worker_functions` row is `enabled` and has no alive worker. Deprecated workers do not count as alive. If you deprecate workers while the row stays enabled, the cron pings the function within a second and starts another worker with the old, still-deployed code. The deprecation undoes itself.
 
-Deprecation fixes this: workers check their status every 5 seconds and immediately stop polling for new tasks when deprecated, while finishing current work.
+This is why the sequence disables the function row first: deprecation then drains the workers, deployment swaps the code, and re-enabling starts exactly one worker with the new code.
 
-### Monitoring Workers
+## When the Drain or Restart Does Not Complete
 
-Track deployment progress with this query:
+### A deprecated worker keeps a current heartbeat
+
+By default a deprecated worker stops heartbeating within about 11 seconds: 5s deprecation check plus the 6s freshness window. If the heartbeat stays current, list the workers of the function:
+
+```sql
+SELECT worker_id, started_at, deprecated_at, last_heartbeat_at
+FROM pgflow.workers
+WHERE function_name = 'your-worker-name'
+ORDER BY started_at DESC;
+```
+
+A row with `deprecated_at IS NULL` and a `started_at` after your deprecation means something started the function again. Two sources do this: the cron (the function row was re-enabled) and any direct HTTP request to the function (this starts a worker even while the row is disabled, because the function is still deployed). Confirm `enabled = false`, find the source of the restart, then repeat step 3 to deprecate the new worker.
+
+### Tasks stay in started
+
+A task that keeps matching the in-flight query means the deprecated worker stopped before the task finished. Inspect it:
+
+```sql
+SELECT run_id, step_slug, task_index, requeued_count, last_requeued_at, permanently_stalled_at
+FROM pgflow.step_tasks
+WHERE status = 'started'
+  AND last_worker_id IN (
+    SELECT worker_id
+    FROM pgflow.workers
+    WHERE function_name = 'your-worker-name'
+      AND deprecated_at IS NOT NULL
+  );
+```
+
+The stalled-task cron requeues such tasks after the step timeout plus 30 seconds, up to 3 attempts, then marks them with `permanently_stalled_at`. Requeued tasks return to `queued` and the next worker picks them up. Check the step handler logs for the root cause. See [Troubleshooting Stalled Tasks](/deploy/troubleshooting-stalled-tasks/).
+
+### No new worker after re-enabling
+
+Check whether the cron is pinging the function:
+
+```sql
+SELECT function_name, enabled, last_invoked_at
+FROM pgflow.worker_functions
+WHERE function_name = 'your-worker-name';
+```
+
+- `enabled` is `false`: step 6 did not restore the row. Restore it.
+- `last_invoked_at` does not advance: the cron is not invoking the function. Check the cron job exists and the vault secrets are set, because the cron builds the function URL and authorizes the ping from them:
+
+  ```sql
+  SELECT jobname, schedule, command
+  FROM cron.job
+  WHERE jobname = 'pgflow_ensure_workers';
+  ```
+
+  See [Configure Secrets](/deploy/supabase/configure-secrets/).
+
+- `last_invoked_at` advances but no worker row appears: the ping reaches Supabase but the function fails to start. Check the Edge Function logs in the Supabase dashboard. See [Monitor workers health](/deploy/monitor-workers-health/).
+
+## Monitoring Workers
+
+Track all functions with this query:
 
 ```sql
 SELECT
@@ -63,4 +200,3 @@ FROM pgflow.workers
 WHERE last_heartbeat_at > now() - interval '6 seconds'
 GROUP BY function_name;
 ```
-
