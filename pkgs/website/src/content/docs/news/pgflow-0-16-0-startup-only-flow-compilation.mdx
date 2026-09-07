@@ -17,6 +17,19 @@ This release makes worker startup the only supported way to deploy a flow. Every
 
 Read [Startup Compilation](/concepts/startup-compilation/) for how deployment works now, and [Versioning Flows](/build/version-flows/) for when a flow needs a new slug.
 
+<Aside type="danger" title="Breaking change — check your project before upgrading">
+  This release removes features that existing projects may still use:
+
+  - the `pgflow compile` command and scripts or CI jobs that call it;
+  - `compileFlow()` and migration-based flow deployment;
+  - `compareFlowShapes()` from `@pgflow/dsl`;
+  - ControlPlane, including the `ControlPlane` export, deployed `supabase/functions/pgflow`, and its `[functions.pgflow]` configuration;
+  - `FlowWorkerConfig.compilation`, including `compilation: false` and `allowDataLoss`;
+  - `pgflow.ensure_flow_compiled(text, jsonb, boolean)`.
+
+  **Do not apply the database migration while old workers are running.** Stop and drain them first, update all pgflow packages and worker code together, remove the legacy configuration, apply the migration, then deploy the new workers. Old workers cannot start after the migration.
+</Aside>
+
 ## What is removed
 
 - `compileFlow()` and `compareFlowShapes()` from `@pgflow/dsl` — SQL text generation and the TypeScript comparator are gone. Shape comparison lives only in PostgreSQL (`_compare_flow_shapes()`).
@@ -24,10 +37,6 @@ Read [Startup Compilation](/concepts/startup-compilation/) for how deployment wo
 - The `pgflow compile` CLI command.
 - The `FlowWorkerConfig.compilation` option in all its forms (`false`, `{}`, `{ allowDataLoss: true }`). Stale properties in already-deployed JavaScript are ignored.
 - The production data-loss path: `pgflow.ensure_flow_compiled(text, jsonb, boolean)`. The database migration drops this overload, so production can no longer authorize destructive recompilation. Local development keeps automatic destructive recompilation for same-slug mismatches (hot reload).
-
-<Aside type="caution">
-  This is a fenced upgrade. The migration removes the old three-argument SQL signature, so old workers cannot start after it is applied. Stop old workers first, upgrade the pgflow package set together, then restart.
-</Aside>
 
 ## Upgrading HTTP worker functions
 
