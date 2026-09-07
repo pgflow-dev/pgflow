@@ -37,10 +37,6 @@ This guide walks you through deploying your pgflow worker to Supabase.com produc
 
    Replace the highlighted value with your actual worker function name (e.g., `greet-user-worker`).
 
-   <Aside type="note">
-   You only need to deploy your worker functions. The `pgflow` ControlPlane function is for local compilation only and is not needed in production.
-   </Aside>
-
 3. ### Register the worker
 
    Register your worker so pgflow can manage it automatically:
@@ -50,6 +46,8 @@ This guide walks you through deploying your pgflow worker to Supabase.com produc
    ```
 
    Run this in the SQL Editor in your Supabase Dashboard.
+
+   After registration, the first worker invocation compiles or verifies the imported flow before its worker row appears in `pgflow.workers`.
 
 </Steps>
 

@@ -1,4 +1,4 @@
-import { assertEquals } from '@std/assert';
+import { assertEquals, assertRejects } from '@std/assert';
 import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
 import { Queries, type EnsureFlowCompiledResult } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
@@ -6,20 +6,44 @@ import { Flow, type FlowShape } from '@pgflow/dsl';
 import type { Logger } from '../../src/platform/types.ts';
 import type { postgres } from '../sql.ts';
 
-// Mock Queries
+// Mock Queries that records each database action in startup order
 class MockQueries extends Queries {
-  public ensureFlowCompiledCallCount = 0;
+  readonly calls: string[] = [];
   public trackWorkerFunctionCallCount = 0;
   public lastTrackedFunctionName: string | null = null;
   public lastTrackedStartMode: string | null = null;
-  public lastAllowDataLoss: boolean | null = null;
+  nextCompilationResult: EnsureFlowCompiledResult = {
+    status: 'verified',
+    differences: [],
+  };
 
   constructor() {
     // Pass null as sql since we'll override all methods
     super(null as unknown as postgres.Sql);
   }
 
-  override onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
+  override ensureFlowCompiled(
+    _flowSlug: string,
+    _shape: FlowShape
+  ): Promise<EnsureFlowCompiledResult> {
+    this.calls.push('compile');
+    return Promise.resolve(this.nextCompilationResult);
+  }
+
+  override trackWorkerFunction(functionName: string, startMode = 'http'): Promise<void> {
+    this.calls.push('track');
+    this.trackWorkerFunctionCallCount++;
+    this.lastTrackedFunctionName = functionName;
+    this.lastTrackedStartMode = startMode;
+    return Promise.resolve();
+  }
+
+  override onWorkerStarted(params: {
+    workerId: string;
+    edgeFunctionName: string;
+    queueName: string;
+  }): Promise<WorkerRow> {
+    this.calls.push('worker');
     return Promise.resolve({
       worker_id: params.workerId,
       queue_name: params.queueName,
@@ -32,23 +56,6 @@ class MockQueries extends Queries {
 
   override sendHeartbeat(_workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
     return Promise.resolve({ is_deprecated: false });
-  }
-
-  override ensureFlowCompiled(
-    _flowSlug: string,
-    _shape: FlowShape,
-    allowDataLoss: boolean = false
-  ): Promise<EnsureFlowCompiledResult> {
-    this.ensureFlowCompiledCallCount++;
-    this.lastAllowDataLoss = allowDataLoss;
-    return Promise.resolve({ status: 'verified', differences: [] });
-  }
-
-  override trackWorkerFunction(functionName: string, startMode = 'http'): Promise<void> {
-    this.trackWorkerFunctionCallCount++;
-    this.lastTrackedFunctionName = functionName;
-    this.lastTrackedStartMode = startMode;
-    return Promise.resolve();
   }
 }
 
@@ -74,202 +81,59 @@ const createLogger = (): Logger => ({
 });
 
 // ==================================================
-// Tests for new compilation config API
+// Tests for mandatory startup compilation
 // ==================================================
 
-Deno.test('FlowWorkerLifecycle - calls ensureFlowCompiled by default (no config)', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+Deno.test('FlowWorkerLifecycle - compiles before registration', async () => {
+  const queries = new MockQueries();
+  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
 
   await lifecycle.acknowledgeStart({
     workerId: 'test-worker-id',
     edgeFunctionName: 'test-function',
   });
 
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 1, 'ensureFlowCompiled should be called by default');
-  assertEquals(mockQueries.lastAllowDataLoss, false, 'allowDataLoss should default to false');
+  assertEquals(queries.calls, ['compile', 'track', 'worker']);
 });
 
-Deno.test('FlowWorkerLifecycle - calls ensureFlowCompiled by default (empty config)', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger, {});
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 1, 'ensureFlowCompiled should be called with empty config');
-  assertEquals(mockQueries.lastAllowDataLoss, false, 'allowDataLoss should default to false');
-});
-
-Deno.test('FlowWorkerLifecycle - calls ensureFlowCompiled with compilation: {}', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger, {
-    compilation: {}
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 1, 'ensureFlowCompiled should be called with compilation: {}');
-  assertEquals(mockQueries.lastAllowDataLoss, false, 'allowDataLoss should default to false');
-});
-
-Deno.test('FlowWorkerLifecycle - skips ensureFlowCompiled when compilation: false', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger, {
-    compilation: false
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 0, 'ensureFlowCompiled should NOT be called');
-});
-
-Deno.test('FlowWorkerLifecycle - passes allowDataLoss: true to SQL', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger, {
-    compilation: { allowDataLoss: true }
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 1, 'ensureFlowCompiled should be called');
-  assertEquals(mockQueries.lastAllowDataLoss, true, 'allowDataLoss should be true');
-});
-
-Deno.test('FlowWorkerLifecycle - passes allowDataLoss: false to SQL (explicit)', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger, {
-    compilation: { allowDataLoss: false }
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  assertEquals(mockQueries.ensureFlowCompiledCallCount, 1, 'ensureFlowCompiled should be called');
-  assertEquals(mockQueries.lastAllowDataLoss, false, 'allowDataLoss should be false');
-});
-
-Deno.test('FlowWorkerLifecycle - logs skip message when compilation: false', async () => {
-  const logs: string[] = [];
-  const testLogger: Logger = {
-    debug: () => {},
-    verbose: () => {},
-    info: (msg: string) => logs.push(msg),
-    error: () => {},
-    warn: () => {},
-    taskStarted: () => {},
-    taskCompleted: () => {},
-    taskFailed: () => {},
-    polling: () => {},
-    taskCount: () => {},
-    startupBanner: () => {},
-    shutdown: () => {},
+Deno.test('FlowWorkerLifecycle - compilation failure does not register', async () => {
+  const queries = new MockQueries();
+  queries.nextCompilationResult = {
+    status: 'mismatch',
+    differences: ['Step count differs: 1 vs 2'],
   };
+  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
 
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
+  await assertRejects(
+    () =>
+      lifecycle.acknowledgeStart({
+        workerId: 'test-worker-id',
+        edgeFunctionName: 'test-function',
+      }),
+    Error,
+    'shape mismatch'
+  );
 
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, testLogger, {
-    compilation: false
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  const skipLog = logs.find(log => log.includes('Skipping compilation'));
-  assertEquals(skipLog !== undefined, true, 'Should log skip message');
-  assertEquals(skipLog?.includes('compilation: false'), true, 'Skip message should mention the config flag');
-});
-
-Deno.test('FlowWorkerLifecycle - does not log skip message when compilation is enabled', async () => {
-  const logs: string[] = [];
-  const testLogger: Logger = {
-    debug: () => {},
-    verbose: () => {},
-    info: (msg: string) => logs.push(msg),
-    error: () => {},
-    warn: () => {},
-    taskStarted: () => {},
-    taskCompleted: () => {},
-    taskFailed: () => {},
-    polling: () => {},
-    taskCount: () => {},
-    startupBanner: () => {},
-    shutdown: () => {},
-  };
-
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, testLogger, {
-    compilation: {}
-  });
-
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
-
-  const skipLog = logs.find(log => log.includes('Skipping compilation'));
-  assertEquals(skipLog, undefined, 'Should NOT log skip message when compilation is enabled');
+  assertEquals(queries.calls, ['compile']);
 });
 
 Deno.test('FlowWorkerLifecycle - calls trackWorkerFunction during startup', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const queries = new MockQueries();
+  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
 
   await lifecycle.acknowledgeStart({
     workerId: 'test-worker-id',
     edgeFunctionName: 'my-edge-function',
   });
 
-  assertEquals(mockQueries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
-  assertEquals(mockQueries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
-  assertEquals(mockQueries.lastTrackedStartMode, 'http', 'trackWorkerFunction should default start mode to http');
+  assertEquals(queries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
+  assertEquals(queries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
+  assertEquals(queries.lastTrackedStartMode, 'http', 'trackWorkerFunction should default start mode to http');
 });
 
 Deno.test('FlowWorkerLifecycle - passes process start mode during startup', async () => {
-  const mockQueries = new MockQueries();
-  const mockFlow = createMockFlow();
-  const logger = createLogger();
-
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const queries = new MockQueries();
+  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
 
   const workerBootstrap = {
     workerId: 'test-worker-id',
@@ -279,7 +143,7 @@ Deno.test('FlowWorkerLifecycle - passes process start mode during startup', asyn
 
   await lifecycle.acknowledgeStart(workerBootstrap);
 
-  assertEquals(mockQueries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
-  assertEquals(mockQueries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
-  assertEquals(mockQueries.lastTrackedStartMode, 'process', 'trackWorkerFunction should receive process start mode');
+  assertEquals(queries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
+  assertEquals(queries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
+  assertEquals(queries.lastTrackedStartMode, 'process', 'trackWorkerFunction should receive process start mode');
 });

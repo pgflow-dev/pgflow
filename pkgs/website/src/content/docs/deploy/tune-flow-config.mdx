@@ -31,7 +31,7 @@ pgflow uses a two-level configuration approach where flow-level options set defa
 
 ## Updating Options Manually
 
-Since the compiler doesn't support updating existing flows, you must manually update options in the database:
+Startup compilation only verifies the flow shape, never options, so you must update options manually in the database:
 
 ### Flow Level (Affects All Steps)
 ```sql
@@ -64,7 +64,7 @@ WHERE flow_slug = 'analyzeWebsite' AND step_slug = 'website';
 ```
 
 <Aside type="caution">
-After updating options in the database, remember to update your flow definition code to keep them in sync. Otherwise, the next time you recompile and deploy migrations, your manual changes will be overwritten.
+After updating options in the database, remember to update your flow definition code to keep them in sync. Otherwise, the next time your flow recompiles from your code — a shape change in local development — your manual changes will be overwritten.
 </Aside>
 
 ## Learn More

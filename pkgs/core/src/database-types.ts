@@ -538,7 +538,7 @@ export type Database = {
         Returns: undefined
       }
       ensure_flow_compiled: {
-        Args: { allow_data_loss?: boolean; flow_slug: string; shape: Json }
+        Args: { flow_slug: string; shape: Json }
         Returns: Json
       }
       ensure_workers: {

@@ -3,7 +3,6 @@ import { intro, log, confirm, cancel, outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
-import { createEdgeFunction } from './create-edge-function.js';
 import { createFlowsDirectory } from './create-flows-directory.js';
 import { createExampleWorker } from './create-example-worker.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
@@ -36,7 +35,6 @@ export default (program: Command) => {
         `  • Update ${chalk.cyan('supabase/config.toml')} ${chalk.dim('(enable pooler, per_worker runtime)')}`,
         `  • Add pgflow migrations to ${chalk.cyan('supabase/migrations/')}`,
         `  • Create ${chalk.cyan('supabase/flows/')} ${chalk.dim('(flow definitions with GreetUser example)')}`,
-        `  • Create Control Plane in ${chalk.cyan('supabase/functions/pgflow/')}`,
         `  • Create ${chalk.cyan('supabase/functions/greet-user-worker/')} ${chalk.dim('(example worker)')}`,
         '',
         `  ${chalk.green('✓ Safe to re-run - completed steps will be skipped')}`,
@@ -80,11 +78,6 @@ export default (program: Command) => {
         autoConfirm: true,
       });
 
-      const edgeFunction = await createEdgeFunction({
-        supabasePath,
-        autoConfirm: true,
-      });
-
       const exampleWorker = await createExampleWorker({
         supabasePath,
         autoConfirm: true,
@@ -93,7 +86,7 @@ export default (program: Command) => {
       // Step 4: Show completion message
       const outroMessages: string[] = [];
 
-      if (migrations || configUpdate || flowsDirectory || edgeFunction || exampleWorker) {
+      if (migrations || configUpdate || flowsDirectory || exampleWorker) {
         outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(

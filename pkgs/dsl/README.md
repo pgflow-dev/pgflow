@@ -165,7 +165,7 @@ new Flow<{}>({ slug: 'dataPipeline' })
 - Handler signature is `(item, context) => result` instead of `(input, context) => result`
 - Return type is always an array
 - Map steps can have at most one dependency (the array source)
-- Generates SQL with `step_type => 'map'` parameter for pgflow's map processing
+- Records `stepType: 'map'` in the flow shape; PostgreSQL's `_create_flow_from_shape` stores it as `step_type = 'map'`
 
 **Type Safety:**
 The `.map()` method provides full TypeScript type inference for array elements:
@@ -314,22 +314,11 @@ new Flow<Input>({
 });
 ```
 
-## Compiling Flows
+## Deploying Flows
 
-Use the `compileFlow` utility to convert a flow definition into SQL statements:
+Flow workers deploy definitions during startup. The worker extracts the complete flow shape, then PostgreSQL compiles a missing definition or verifies an existing one before polling begins.
 
-```typescript
-import { compileFlow } from '@pgflow/dsl';
-
-const sqlStatements = compileFlow(MyFlow);
-console.log(sqlStatements.join('\n'));
-```
-
-Alternatively, use the pgflow CLI to compile flows directly to migration files:
-
-```bash
-npx pgflow compile path/to/flow.ts
-```
+See [Startup Compilation](https://pgflow.dev/concepts/startup-compilation/) for local recompilation and production versioning behavior.
 
 ## Requirements
 

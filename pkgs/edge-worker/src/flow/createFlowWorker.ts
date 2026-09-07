@@ -104,10 +104,7 @@ export function createFlowWorker<
   const lifecycle = new FlowWorkerLifecycle<TFlow>(
     queries,
     flow,
-    createLogger('FlowWorkerLifecycle'),
-    {
-      compilation: config.compilation,
-    }
+    createLogger('FlowWorkerLifecycle')
   );
 
   // Create frozen worker config ONCE for reuse across all task executions

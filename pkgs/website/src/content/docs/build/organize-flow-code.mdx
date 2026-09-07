@@ -11,7 +11,7 @@ import { FileTree } from '@astrojs/starlight/components';
 This guide outlines best practices for organizing your pgflow codebase to improve maintainability, reusability, and clarity.
 
 :::note[Flexible Structure]
-The directory structure shown here is a **recommendation**, not a requirement. pgflow works with any file organization - what matters is that your flows are imported into the Control Plane (for compilation) and into your worker Edge Functions (for execution). Feel free to adapt the structure to your project's needs.
+The directory structure shown here is a **recommendation**, not a requirement. pgflow works with any file organization - what matters is that your flows are imported into your worker Edge Functions, where startup compilation deploys them and the handlers run. Feel free to adapt the structure to your project's needs.
 :::
 
 ## Recommended structure
@@ -34,9 +34,6 @@ mkdir -p supabase/tasks
     - saveWebsite.ts
     - index.ts (optional - re-exports tasks)
   - functions
-    - pgflow
-      - index.ts (Control Plane)
-      - deno.json
     - analyze-website-worker
       - index.ts (worker for this flow)
       - deno.json
@@ -47,7 +44,7 @@ This structure enables:
 
 - **First-class concepts**: Flows and tasks are not hidden in underscore-prefixed folders
 - **Self-documenting**: Structure clearly shows where things go
-- **Clean imports**: `../../flows/index.ts` from Control Plane, `../tasks/` from flows
+- **Clean imports**: `../../flows/index.ts` from worker functions, `../tasks/` from flows
 - **Scalable**: Ready for multiple flows and workers
 - **Barrel exports**: Each directory has an `index.ts` for clean re-exports
 

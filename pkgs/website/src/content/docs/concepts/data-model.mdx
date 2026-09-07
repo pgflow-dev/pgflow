@@ -60,7 +60,7 @@ These tables store the flow structure - the "blueprint" of what flows exist and 
 🔗 **`deps`** - DAG edges defining step dependencies
 - Determines execution order and data flow
 
-Populated during deployment through migrations. Change only when flow definitions change.
+Populated by worker startup compilation. Change only when flow definitions change.
 
 ### Runtime State Tables
 

@@ -391,10 +391,6 @@ export default defineConfig({
                       link: '/concepts/startup-compilation/',
                     },
                     {
-                      label: 'Manual Compilation',
-                      link: '/concepts/manual-compilation/',
-                    },
-                    {
                       label: 'Worker lifecycle',
                       link: '/concepts/worker-lifecycle/',
                     },
@@ -445,11 +441,6 @@ export default defineConfig({
                       link: '/reference/pgflow-client/',
                     },
                     { label: 'Context API', link: '/reference/context/' },
-                    { label: 'Compile API', link: '/reference/compile-api/' },
-                    {
-                      label: 'ControlPlane API',
-                      link: '/reference/control-plane-api/',
-                    },
                     {
                       label: 'Manual installation',
                       link: '/reference/manual-installation/',

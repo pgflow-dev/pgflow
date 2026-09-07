@@ -27,7 +27,7 @@
     "Root map steps omit `array:`, dependent maps require it - Root maps process flow input directly without `array:` property (e.g., `new Flow<string[]>().map({ slug: 'process' }, ...)`); dependent maps must specify `array:` to indicate which step's output to process.",
     "Steps with the same dependencies run in parallel - pgflow automatically maximizes parallelism by running independent steps concurrently once their dependencies are satisfied.",
     "Handler functions receive context as second parameter - Root steps: `(flowInput, ctx)`, dependent steps: `(deps, ctx)`. Context provides platform resources like `ctx.sql`, `ctx.supabase`, `ctx.env`, `ctx.flowInput`, `ctx.stepTask`, and `ctx.rawMessage` without requiring global imports or connection setup.",
-    "Flows must be compiled before execution - Run `npx pgflow@latest compile` to convert TypeScript flow definitions into SQL migrations that register the flow structure in the database.",
+    "Flows are deployed by worker startup - A worker compiles or verifies its imported flow definition in the database before registration and polling; there is no separate compile command or migration.",
     "Registered flows are immutable - Once a flow is registered in the database, its structure cannot be modified; use versioning or deletion (development only) to make changes.",
     "Use camelCase for step slugs - Step slugs follow JavaScript naming conventions (e.g., `fetchData`, not `fetch_data`) since they become property names in TypeScript for accessing outputs.",
     "Name steps based on their primary purpose - Use nouns when downstream steps process the returned data (e.g., `website`, `userProfiles`); use verb-noun when the side effect is primary (e.g., `sendEmails`, `saveToDb`).",

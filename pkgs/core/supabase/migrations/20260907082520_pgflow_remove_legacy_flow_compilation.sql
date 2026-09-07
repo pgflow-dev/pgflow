@@ -1,15 +1,8 @@
--- Ensure a flow is compiled in the database
--- Auto-detects environment via is_local(): local -> auto-recompile, production -> fail on mismatch
--- Returns: { status: 'compiled' | 'verified' | 'recompiled' | 'mismatch', differences: text[] }
-create or replace function pgflow.ensure_flow_compiled(
-  flow_slug text,
-  shape jsonb
-)
-returns jsonb
-language plpgsql
-volatile
-set search_path to ''
-as $$
+-- Drop the legacy three-argument overload removed by issue #647
+DROP FUNCTION pgflow.ensure_flow_compiled(text, jsonb, boolean);
+
+-- Create "ensure_flow_compiled" function
+CREATE FUNCTION "pgflow"."ensure_flow_compiled" ("flow_slug" text, "shape" jsonb) RETURNS jsonb LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   v_lock_key int;
   v_flow_exists boolean;

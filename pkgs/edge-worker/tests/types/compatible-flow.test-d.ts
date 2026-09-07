@@ -180,3 +180,8 @@ const interfaceDtoMapFlow = new SupabaseFlow<{ ids: string[] }>({
   }));
 
 EdgeWorker.start(interfaceDtoMapFlow);
+
+// @ts-expect-error - flow compilation is mandatory and no longer configurable
+EdgeWorker.start(validFlow, {
+  compilation: false,
+});

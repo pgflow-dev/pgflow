@@ -78,7 +78,11 @@ export const redirects = {
   '/concepts/context/': '/concepts/context-object/',
   '/concepts/flow-dsl/': '/concepts/understanding-flows/',
   '/concepts/compilation/': '/concepts/startup-compilation/',
-  '/reference/compilation-workflow/': '/concepts/manual-compilation/',
+  '/concepts/manual-compilation/': '/concepts/startup-compilation/',
+  '/reference/compile-api/': '/concepts/startup-compilation/',
+  '/reference/control-plane-api/': '/concepts/startup-compilation/',
+  '/reference/compilation-workflow/': '/concepts/startup-compilation/',
+  '/how-to/manually-compile-flow/': '/concepts/startup-compilation/',
 
   // ============================================================================
   // MAIN BRANCH PATH MIGRATIONS (how-to split to build/deploy/reference/concepts)
@@ -91,7 +95,6 @@ export const redirects = {
   '/how-to/keep-workers-up/': '/deploy/worker-management/',
   '/deploy/supabase/keep-workers-running/': '/deploy/worker-management/',
   '/how-to/manual-installation/': '/reference/manual-installation/',
-  '/how-to/manually-compile-flow/': '/reference/compile-api/',
   '/how-to/monitor-flow-execution/': '/deploy/monitor-execution/',
   '/how-to/naming-steps/': '/concepts/naming-conventions/',
   '/concepts/naming-steps/': '/concepts/naming-conventions/',
