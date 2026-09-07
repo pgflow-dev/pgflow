@@ -132,29 +132,9 @@ The original timestamp allows pgflow to search for and detect which migrations h
 
 ## Remove manual flow compilation
 
-This release removes `compileFlow()`, ControlPlane, `pgflow compile`, and the `FlowWorkerConfig.compilation` option. It also replaces `pgflow.ensure_flow_compiled(text, jsonb, boolean)` with a two-argument startup-only signature. Old workers cannot start after the database migration.
+pgflow 0.16.0 removed `compileFlow()`, ControlPlane, `pgflow compile`, and the `FlowWorkerConfig.compilation` option, and replaced `pgflow.ensure_flow_compiled(text, jsonb, boolean)` with a two-argument startup-only signature. Old workers cannot start after the database migration.
 
-For each HTTP worker function:
-
-1. Record its exact `worker_functions.enabled` value.
-2. Set `enabled = false`, deprecate its workers, and wait for heartbeats and in-flight tasks to drain by following [Update Deployed Flows](/deploy/supabase/update-deployed-flows/).
-3. Update `pgflow`, `@pgflow/core`, `@pgflow/dsl`, `@pgflow/client`, and `@pgflow/edge-worker` to the same version.
-4. Run `npx pgflow@latest install`, review the copied migration, and apply it while old workers remain stopped.
-5. Deploy workers that import their complete flow definitions.
-6. Restore each recorded `enabled` value and check a fresh heartbeat.
-
-For process workers, stop the processes and external supervisors before applying the migration. Update the packages and database, then restart the supervisors.
-
-Remove legacy project files and configuration:
-
-```bash frame="none"
-rm -rf supabase/functions/pgflow
-npx supabase@latest functions delete pgflow --project-ref your-project-ref
-```
-
-Replace `your-project-ref` with your Supabase project reference. The remote delete command is required only when the ControlPlane function was deployed.
-
-Also remove any `[functions.pgflow]` block, every `pgflow compile` script or CI step, and every worker `compilation` property. Keep existing generated flow migration files as immutable migration history; do not delete or rewrite migrations that a database already applied.
+The one-time upgrade procedure lives in the [pgflow 0.16.0 release notes](/news/pgflow-0-16-0-startup-only-flow-compilation/): disable and drain each HTTP worker function, upgrade the pgflow packages together, apply the migration with workers stopped, then redeploy and restore `enabled` values.
 
 ## Troubleshooting Updates
 

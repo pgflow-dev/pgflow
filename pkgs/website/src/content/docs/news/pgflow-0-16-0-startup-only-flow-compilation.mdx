@@ -1,0 +1,55 @@
+---
+title: 'pgflow 0.16.0: Startup-Only Flow Compilation'
+description: 'Workers now deploy flows themselves: every worker compiles or verifies its imported definition before registration. compileFlow(), ControlPlane, pgflow compile, and production allowDataLoss are removed.'
+date: 2026-09-07
+authors:
+  - jumski
+tags:
+  - release
+  - breaking
+featured: false
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This release makes worker startup the only supported way to deploy a flow. Every flow worker compiles or verifies its imported definition in the database before it registers itself and starts polling. A failed compilation registers nothing — no worker function is tracked, no worker row appears, and existing registrations stay untouched.
+
+Read [Startup Compilation](/concepts/startup-compilation/) for how deployment works now, and [Versioning Flows](/build/version-flows/) for when a flow needs a new slug.
+
+## What is removed
+
+- `compileFlow()` and `compareFlowShapes()` from `@pgflow/dsl` — SQL text generation and the TypeScript comparator are gone. Shape comparison lives only in PostgreSQL (`_compare_flow_shapes()`).
+- ControlPlane — the HTTP SQL-compiler edge function, its export from `@pgflow/edge-worker`, and the `supabase/functions/pgflow/` folder the installer used to create.
+- The `pgflow compile` CLI command.
+- The `FlowWorkerConfig.compilation` option in all its forms (`false`, `{}`, `{ allowDataLoss: true }`). Stale properties in already-deployed JavaScript are ignored.
+- The production data-loss path: `pgflow.ensure_flow_compiled(text, jsonb, boolean)`. The database migration drops this overload, so production can no longer authorize destructive recompilation. Local development keeps automatic destructive recompilation for same-slug mismatches (hot reload).
+
+<Aside type="caution">
+  This is a fenced upgrade. The migration removes the old three-argument SQL signature, so old workers cannot start after it is applied. Stop old workers first, upgrade the pgflow package set together, then restart.
+</Aside>
+
+## Upgrading HTTP worker functions
+
+For each HTTP worker function:
+
+1. Record its exact `worker_functions.enabled` value.
+2. Set `enabled = false`, deprecate its workers, and wait for heartbeats and in-flight tasks to drain by following [Update Deployed Flows](/deploy/supabase/update-deployed-flows/).
+3. Update `pgflow`, `@pgflow/core`, `@pgflow/dsl`, `@pgflow/client`, and `@pgflow/edge-worker` to the same version.
+4. Run `npx pgflow@latest install`, review the copied migration, and apply it while old workers remain stopped.
+5. Deploy workers that import their complete flow definitions.
+6. Restore each recorded `enabled` value and check a fresh heartbeat.
+
+## Upgrading process workers
+
+Stop the processes and external supervisors before applying the migration. Update the packages and database, then restart the supervisors.
+
+## Remove legacy project files and configuration
+
+```bash frame="none"
+rm -rf supabase/functions/pgflow
+npx supabase@latest functions delete pgflow --project-ref your-project-ref
+```
+
+`your-project-ref` is your Supabase project reference. The remote delete command is required only when the ControlPlane function was deployed.
+
+Also remove any `[functions.pgflow]` block from `supabase/config.toml`, every `pgflow compile` script or CI step, and every worker `compilation` property. Keep existing generated flow migration files as immutable migration history — do not delete or rewrite migrations that a database already applied.
