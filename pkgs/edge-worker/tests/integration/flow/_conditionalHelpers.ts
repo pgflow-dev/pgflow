@@ -1,6 +1,7 @@
 import type { postgres } from '../../sql.ts';
-import { compileFlow } from '@pgflow/dsl';
 import type { AnyFlow } from '@pgflow/dsl';
+import { extractFlowShape } from '@pgflow/dsl';
+import { Queries } from '../../../src/core/Queries.ts';
 
 // ============= Test Helpers for Conditional Flow Integration Tests =============
 
@@ -8,10 +9,7 @@ import type { AnyFlow } from '@pgflow/dsl';
  * Compiles a Flow and executes SQL statements to create it in the database.
  */
 export const createFlowInDb = async (sql: postgres.Sql, flow: AnyFlow) => {
-  const statements = compileFlow(flow);
-  for (const stmt of statements) {
-    await sql.unsafe(stmt);
-  }
+  await new Queries(sql).ensureFlowCompiled(flow.slug, extractFlowShape(flow));
 };
 
 /**

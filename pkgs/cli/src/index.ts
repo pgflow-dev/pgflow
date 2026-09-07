@@ -2,7 +2,6 @@
 
 import { Command } from 'commander';
 import installCommand from './commands/install/index.js';
-import compileCommand from './commands/compile/index.js';
 import { getVersion } from './utils/get-version.js';
 
 // Create a function to handle errors
@@ -32,7 +31,6 @@ program
 
 // Register commands
 installCommand(program);
-compileCommand(program);
 
 import chalk from 'chalk';
 // Tokyo Night inspired colors

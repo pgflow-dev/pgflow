@@ -144,7 +144,7 @@ export { GreetUser } from './greet-user.ts';
 
 ### 5. Create example worker
 
-The worker executes the tasks defined in your flows. Workers use auto-compilation to build flows from files in the mounted flows directory.
+The worker executes the tasks defined in your flows. At startup, the worker compiles or verifies its imported flow definition in the database.
 
 Create the directory:
 

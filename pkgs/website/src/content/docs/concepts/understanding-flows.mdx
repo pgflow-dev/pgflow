@@ -262,11 +262,10 @@ This execution model maximizes parallelism when possible, ensures proper orderin
 The flow lifecycle has distinct phases:
 
 1. **Definition** (TypeScript): Flow structure defined using the DSL
-2. **Compilation**: Conversion from TypeScript to SQL
-3. **Registration**: Storage of flow structure in the database
-4. **Execution**: Runtime processing of tasks based on the database definition
+2. **Compilation** (worker startup): The worker sends the flow shape to the database, which compiles or verifies it before registration and polling (see [Startup Compilation](/concepts/startup-compilation/))
+3. **Execution**: Runtime processing of tasks based on the database definition
 
-The TypeScript code is used only for definition and compilation, not for execution. This separation allows for versioning of flow definitions and persistence of workflow state in the database.
+The TypeScript DSL defines the flow, while step handlers execute in workers and the database orchestrates execution. This separation allows for versioning of flow definitions and persistence of workflow state in the database.
 
 ## Example: Multi-Step Data Flow
 

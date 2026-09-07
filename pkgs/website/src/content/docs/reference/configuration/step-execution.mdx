@@ -7,10 +7,10 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual steps are executed, delayed, and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
+These settings are defined in your TypeScript flow code. Startup compilation stores them in the database when it creates a flow or recompiles it in local development; verification of an existing flow does not sync option changes. They control how individual steps are executed, delayed, and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
 
 <Aside type="tip">
-  After deployment, you can update these settings without recompiling your flow.
+  After deployment, you can update these settings directly in the database without changing your flow definition.
   See [Tune Deployed Flows](/deploy/tune-flow-config/) for details.
 </Aside>
 

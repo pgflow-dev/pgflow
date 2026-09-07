@@ -130,6 +130,12 @@ Where:
 
 The original timestamp allows pgflow to search for and detect which migrations have already been installed, while the new timestamp prefix ensures Supabase can apply the migration without timestamp ordering errors.
 
+## Remove manual flow compilation
+
+pgflow 0.16.0 removed `compileFlow()`, ControlPlane, `pgflow compile`, and the `FlowWorkerConfig.compilation` option, and replaced `pgflow.ensure_flow_compiled(text, jsonb, boolean)` with a two-argument startup-only signature. Old workers cannot start after the database migration.
+
+The one-time upgrade procedure lives in the pgflow 0.16.0 release notes (see News at the top of the site): disable and drain each HTTP worker function, upgrade the pgflow packages together, apply the migration with workers stopped, then redeploy and restore `enabled` values.
+
 ## Troubleshooting Updates
 
 ### No migrations to install

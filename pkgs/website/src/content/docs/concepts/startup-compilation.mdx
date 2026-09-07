@@ -1,15 +1,27 @@
 ---
 title: Startup Compilation
-description: How pgflow automatically compiles flows when workers start
+description: How worker startup deploys and verifies flow definitions
 sidebar:
   order: 25
 ---
 
 import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-When an Edge Worker starts, pgflow automatically verifies and compiles flows. This eliminates manual compilation steps in most workflows.
+When a flow worker starts, the worker compiles or verifies its imported flow definition before any registration or polling. Worker startup is the only supported flow deployment path.
 
 ## How It Works
+
+Every startup follows this ordered contract:
+
+```text
+extract complete shape
+  -> compile or verify under the flow lock
+  -> track the worker function
+  -> insert the worker row
+  -> start polling
+```
+
+Compilation happens under the flow's advisory lock, so concurrent workers for the same flow serialize safely. If compilation fails, the worker performs no registration write: the `worker_functions` row and the `pgflow.workers` row stay unchanged, and startup fails.
 
 ```d2
 ...@../../../assets/pgflow-theme.d2
@@ -37,111 +49,81 @@ local: "Local\ndev?"
 local.shape: diamond
 local.class: warning
 
-allowLoss: "allowDataLoss?"
-allowLoss.shape: diamond
-allowLoss.class: warning
-
 recompile: "Delete old\n& compile new"
 recompile.class: step_completed
 
 fail: "Fail\nto start"
 fail.class: step_failed
 
+register: "Register\nworker"
+register.class: step_started
+
 polling: "Start\npolling"
 polling.class: step_completed
 
-start -> exists: "lookup flow\nin DB by slug"
-exists -> compile: "no"
-exists -> match: "yes"
-match -> verified: "yes"
-match -> local: "no"
-local -> recompile: "yes"
-local -> allowLoss: "prod"
-allowLoss -> recompile: "true"
-allowLoss -> fail: "false"
-compile -> polling
-verified -> polling
-recompile -> polling
+start -> exists: "lookup by slug"
+exists -> compile: "missing"
+exists -> match: "found"
+match -> verified: "same shape"
+match -> local: "different"
+local -> recompile: "local"
+local -> fail: "production"
+compile -> register
+verified -> register
+recompile -> register
+register -> polling
 ```
 
 When a worker starts, it:
-1. **Looks up the flow** in the database by slug
-2. **Compiles if missing** - If the flow doesn't exist, compiles and creates it
-3. **Verifies shape** - If the flow exists, compares the TypeScript definition with the database schema
-4. **Handles mismatches** - Behavior depends on environment (see below)
+
+1. **Extracts the complete flow shape** from the imported TypeScript definition
+2. **Compiles the flow if missing** - PostgreSQL creates the flow, steps, and queue from the shape
+3. **Verifies the shape if the flow exists** - PostgreSQL compares the worker's shape with the database definition
+4. **Registers the worker** - tracks the edge function, inserts the worker row, then starts polling
 
 ## Local Development
 
 In local development, startup compilation enables seamless iteration:
 
 1. **No flow exists** - compiles and creates it
-2. **Flow exists with same shape** - uses existing schema
+2. **Flow exists with same shape** - uses the existing definition
 3. **Flow exists with different shape** - **deletes the existing flow and all its run data**, then compiles the new version
 
 The workflow is fully automatic:
+
 1. You change your flow code
 2. Edge runtime detects the change and restarts the function
 3. pgflow cron triggers the function via HTTP request
 4. Worker starts, detects shape mismatch, deletes old flow, compiles new one
 
 <Aside type="caution">
-**Warning:** In local development, recompiling **deletes the existing flow and all its run data**. This is intentional for fast iteration but means you lose all previous runs.
+**Warning:** In local development, recompiling **deletes the existing flow, its runs, task state, and queue** before rebuilding it. This is intentional for fast iteration but means you lose all previous runs.
 </Aside>
-
-To disable startup compilation, set `compilation: false` in worker options.
 
 ## Production
 
-In production, shape mismatches cause the worker to **refuse to start**:
-- This prevents accidental data loss from running flows
+In production, shape mismatches leave flow data unchanged and cause the worker to **refuse to start**:
+
+- No flow definition, run, or task data is deleted
+- No worker registration is created or changed
 - Worker fails with `FlowShapeMismatchError`
-- Resolution: create a versioned flow (e.g., `processOrderV2`) and deploy a new worker
+- Resolution: create a new concrete flow version (see [Version Flows](/build/version-flows/))
 
-## Configuration Options
-
-The `compilation` option controls startup behavior:
-
-```typescript
-// Default: auto-detect environment
-EdgeWorker.start(MyFlow);
-
-// Skip compilation (flows pre-compiled via CLI)
-EdgeWorker.start(MyFlow, { compilation: false });
-
-// Allow destructive recompile in production
-EdgeWorker.start(MyFlow, { compilation: { allowDataLoss: true } });
-```
-
-### Skip Compilation
-
-Use `compilation: false` when flows are pre-compiled via CLI or HTTP API. The worker will start immediately without verifying flow shape.
-
-### Allow Data Loss
-
-The `allowDataLoss: true` option enables local-development behavior in production:
-- On shape mismatch, **deletes the existing flow and all its data**
-- Then compiles and creates the new flow version
-- Worker continues normally
-
-<Aside type="danger" title="When to Use allowDataLoss">
-Only use `allowDataLoss: true` on **rapid iteration platforms** like Lovable where:
-- You're actively developing and changing flow structure frequently
-- You don't need to preserve execution history
-- Speed of iteration matters more than data durability
-
-**Never use in production with real user data.**
-</Aside>
+For breaking pgflow upgrades that change the compilation SQL signature, follow the fenced migration procedure in [Update pgflow](/deploy/update-pgflow/#remove-manual-flow-compilation).
 
 ## What is "Flow Shape"?
 
-**Changes that affect shape (require versioning):**
-- Step slugs
-- Step order / dependencies
-- Step types (single vs map)
+**Shape comparison detects:**
+- step slugs and order;
+- step types;
+- dependencies;
+- `if` and `ifNot` patterns;
+- `whenUnmet` and `whenExhausted` behavior.
 
-**Changes that DON'T affect shape (safe to change):**
-- Step options (timeout, retries, maxConcurrency)
-- Handler code logic
+**Shape comparison does not detect:**
+- handler implementation changes;
+- TypeScript input or output contract changes;
+- tunable retry, delay, and timeout options.
 
 ## Related
 
@@ -152,8 +134,8 @@ Only use `allowDataLoss: true` on **rapid iteration platforms** like Lovable whe
     description="How workers poll, heartbeat, and restart"
   />
   <LinkCard
-    title="Manual Compilation"
-    href="/concepts/manual-compilation/"
-    description="HTTP-based compilation for CI/CD workflows"
+    title="Version Flows"
+    href="/build/version-flows/"
+    description="Create a new flow version when shape or handlers change"
   />
 </CardGrid>

@@ -241,12 +241,10 @@ Step handlers use **asymmetric signatures** based on whether they have dependenc
 | Command                            | Description                              |
 | ---------------------------------- | ---------------------------------------- |
 | `npx pgflow@latest install`        | Install pgflow in Supabase project       |
-| `npx pgflow@latest compile <file>` | Compile TypeScript flow to SQL migration |
 
 **Common Options**:
 
 - `--supabase-path <path>` - Custom Supabase directory
-- `--deno-json <path>` - Custom deno.json config
 - `--yes` / `-y` - Skip confirmation prompts
 
 ## Client API

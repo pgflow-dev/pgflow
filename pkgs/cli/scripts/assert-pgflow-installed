@@ -29,6 +29,10 @@ if ! grep -A1 'db.pooler' "${SUPABASE_PATH}/config.toml" | grep -q 'enabled = tr
   error "db.pooler enabled = true not found in ${SUPABASE_PATH}/config.toml"
 fi
 
+if [ -e "${SUPABASE_PATH}/functions/pgflow" ]; then
+  error "Legacy ControlPlane found in ${SUPABASE_PATH}/functions/pgflow"
+fi
+
 # All checks passed
 echo -e "${GREEN}All verification checks passed successfully!${NC}"
 exit 0

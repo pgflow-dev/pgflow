@@ -35,7 +35,7 @@ worker -> core: Results
 
 The diagram shows two key distinctions:
 
-**Build-time** - Write flows in TypeScript, compile to SQL migrations
+**Definition-time** - Write flows in TypeScript; workers deploy the definition to the database at startup ([startup compilation](/concepts/startup-compilation/))
 
 **Run-time** - Postgres orchestrates (SQL Core), workers execute your functions (Worker)
 
@@ -60,7 +60,7 @@ The key insight: each layer solves problems at its own abstraction level without
 The TypeScript DSL provides:
 - Type-safe method chaining (`.step()`, `.array()`, `.map()`)
 - Pattern recognition for complex workflows
-- Compilation from high-level concepts to DAG primitives
+- Translation from high-level concepts to DAG primitives
 - Full type inference across step dependencies
 
 **What it doesn't think about:** How tasks execute, database state management, or queue mechanics
@@ -154,7 +154,7 @@ The SQL Core manages which tasks to enqueue, the Worker executes them, and Postg
 Each layer provides reliable primitives for the layer above:
 
 **DSL → SQL Core**
-- DSL compiles to step definitions with clear semantics
+- DSL translates to step definitions with clear semantics
 - SQL Core doesn't parse TypeScript or understand user intent
 - Contract: step definitions with `step_type`, dependencies, options
 

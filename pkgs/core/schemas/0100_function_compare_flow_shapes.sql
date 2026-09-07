@@ -1,5 +1,5 @@
 -- Compare two flow shapes and return array of difference descriptions
--- Mirrors TypeScript compareFlowShapes() function logic
+-- Authoritative structural comparison for startup compilation
 create or replace function pgflow._compare_flow_shapes(
   p_local jsonb,
   p_db jsonb

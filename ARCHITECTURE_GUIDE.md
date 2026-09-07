@@ -123,13 +123,7 @@ const CompleteExample = new Flow<{ urls: string[] }>({
 export default CompleteExample;
 ```
 
-**Compilation**:
-```bash
-npx pgflow compile path/to/flow.ts
-# Generates migration with:
-# - SELECT pgflow.create_flow(...)
-# - SELECT pgflow.add_step(...) for each step
-```
+**Compilation**: Worker startup extracts the complete flow shape (`extractFlowShape()`) and PostgreSQL compiles or verifies it via `pgflow.ensure_flow_compiled(flow_slug, shape)` before any registration.
 
 **Important**: See DSL package files for:
 - Type inference utilities: `ExtractFlowInput`, `ExtractFlowOutput`, `StepInput`, `StepOutput`
@@ -203,7 +197,10 @@ npx pgflow compile path/to/flow.ts
 **Mental model**: Execution engine. Doesn't know where tasks come from or overall workflow state.
 
 **Worker Lifecycle**:
-1. `acknowledgeStart()` - Register worker with `workerId` in database
+1. `acknowledgeStart()`:
+   - Compile or verify the imported flow shape (`ensureFlowCompiled`)
+   - Track the worker function (`track_worker_function`)
+   - Insert the worker row with `workerId` in the database
 2. Main loop:
    - `sendHeartbeat()` - Update status, check deprecation
    - If deprecated → exit gracefully
@@ -281,7 +278,6 @@ await worker.start();
 
 **Commands**:
 - `pgflow install [--supabase-path <path>] [-y, --yes]` - Sets up pgflow
-- `pgflow compile <flow.ts> [--deno-json <path>] [--supabase-path <path>]` - Compiles flows to SQL
 
 **See**: `/pkgs/cli/src/commands/` for implementation details
 
@@ -330,12 +326,13 @@ await worker.start();
 **Why**: Prevents infinite waiting on steps that will never have tasks.
 
 **How**:
-- DSL: Map steps compiled with `step_type => 'map'`
+- DSL: Map steps carry `stepType: 'map'` in the extracted shape; `_create_flow_from_shape` persists it as `step_type = 'map'`
 - SQL Core: `complete_task()` detects array parent completed with `[]`, sets dependent map `initial_tasks=0`
 - SQL Core: `cascade_complete_taskless_steps()` completes all `initial_tasks=0` steps in chain (max 50 iterations)
 
 **See**:
-- DSL compilation: `/pkgs/dsl/src/compiler/compileFlow.ts`
+- Shape extraction: `/pkgs/dsl/src/flow-shape.ts`
+- SQL compiler: `/pkgs/core/schemas/0100_function_create_flow_from_shape.sql`
 - Cascade logic: `/pkgs/core/src/migrations/` (function: `cascade_complete_taskless_steps`)
 
 ### 3. Realtime Events (SQL Core + Client)

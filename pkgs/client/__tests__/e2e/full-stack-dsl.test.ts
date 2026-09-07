@@ -5,15 +5,14 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
-import { Flow } from '@pgflow/dsl';
-import { compileFlow } from '@pgflow/dsl';
+import { Flow, extractFlowShape, type Json } from '@pgflow/dsl';
 import { readAndStart } from '../helpers/polling.js';
 import { cleanupFlow } from '../helpers/cleanup.js';
 import { log } from '../helpers/debug.js';
 
 describe('Full Stack DSL Integration', () => {
   it(
-    'compiles and executes DSL flow end-to-end with proper dependency handling',
+    'deploys and executes a DSL flow through startup compilation',
     withPgNoTransaction(async (sql) => {
       // 1. Define flow with DSL - simple 3-step dependent flow
       const SimpleFlow = new Flow<{ url: string }>({
@@ -40,14 +39,18 @@ describe('Full Stack DSL Integration', () => {
       
       await grantMinimalPgflowPermissions(sql);
 
-      // 2. Compile to SQL
-      const flowSql = compileFlow(SimpleFlow);
-      log('Generated SQL statements:', flowSql);
+      // 2. Compile the flow through startup compilation
+      // Remove any definition from previous test runs so compilation is deterministic.
+      await sql`SELECT pgflow.delete_flow_and_data(${SimpleFlow.slug})`;
+      const shape = extractFlowShape(SimpleFlow);
+      const [{ result }] = await sql<{ result: { status: string } }[]>`
+        SELECT pgflow.ensure_flow_compiled(
+          ${SimpleFlow.slug},
+          ${sql.json(shape as unknown as Json)}::jsonb
+        ) AS result
+      `;
 
-      // 3. Execute SQL to create flow definition
-      for (const statement of flowSql) {
-        await sql.unsafe(statement);
-      }
+      expect(result.status).toBe('compiled');
 
       // 4. Verify flow was created correctly
       const flows =

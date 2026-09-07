@@ -51,12 +51,6 @@ verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/max_concurrency/index.ts"
 
-[functions.pgflow]
-enabled = true
-verify_jwt = false
-import_map = "./functions/deno.json"
-entrypoint = "./functions/pgflow/index.ts"
-
 [functions.auth_test]
 enabled = true
 verify_jwt = false

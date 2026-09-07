@@ -84,8 +84,8 @@ See how pgflow compares to [Trigger.dev](https://pgflow.dev/comparisons/trigger/
 ## How it works
 
 1. **Define workflows** using the TypeScript DSL
-2. **Compile** them to SQL migrations
-3. **Deploy** as Supabase Edge Functions
+2. **Deploy** as Supabase Edge Functions
+3. **Compile & verify** automatically in the database at worker startup
 4. **Trigger** from your app, SQL, or pg_cron
 
 The execution engine handles scheduling, retries, and result aggregation automatically.
@@ -94,7 +94,7 @@ The execution engine handles scheduling, retries, and result aggregation automat
 
 | Package                                    | Version                                                                                             | Description                                             |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| [pgflow](./pkgs/cli/)                      | [![npm](https://img.shields.io/npm/v/pgflow)](https://www.npmjs.com/package/pgflow)                 | CLI for installing and compiling flows                  |
+| [pgflow](./pkgs/cli/)                      | [![npm](https://img.shields.io/npm/v/pgflow)](https://www.npmjs.com/package/pgflow)                 | CLI for installing pgflow into your Supabase project      |
 | [@pgflow/core](./pkgs/core/)               | [![npm](https://img.shields.io/npm/v/@pgflow/core)](https://www.npmjs.com/package/@pgflow/core)     | SQL Core - foundational tables and functions            |
 | [@pgflow/dsl](./pkgs/dsl/)                 | [![npm](https://img.shields.io/npm/v/@pgflow/dsl)](https://www.npmjs.com/package/@pgflow/dsl)       | TypeScript DSL for defining flows with type inference   |
 | [@pgflow/edge-worker](./pkgs/edge-worker/) | [![JSR](https://jsr.io/badges/@pgflow/edge-worker)](https://jsr.io/@pgflow/edge-worker)             | Task queue worker for Supabase Edge Functions           |

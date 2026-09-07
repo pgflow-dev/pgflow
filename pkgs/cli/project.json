@@ -58,47 +58,10 @@
         "parallel": false
       }
     },
-    "serve:functions:e2e": {
-      "executor": "nx:run-commands",
-      "continuous": true,
-      "dependsOn": ["^build"],
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "readyWhen": "Serving functions on http://",
-        "streamOutput": true,
-        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --no-verify-jwt --import-map supabase/functions/pgflow/deno.json"
-      }
-    },
-    "hang": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "dependsOn": ["build", "serve:functions:e2e"],
-      "inputs": ["default", "^production"],
-      "options": {
-        "command": "sleep 360",
-        "cwd": "{projectRoot}"
-      }
-    },
-    "e2e:compile": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "dependsOn": ["build", "serve:functions:e2e"],
-      "inputs": ["default", "^production"],
-      "options": {
-        "commands": [
-          "timeout 120 bash -c 'echo \"Waiting for functions server (port 50621)...\"; until nc -z localhost 50621 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"' || (echo 'TIMEOUT: Functions server not available on port 50621 after 120s' && exit 1)",
-          "vitest run __tests__/e2e/compile.test.ts"
-        ],
-        "cwd": "{projectRoot}",
-        "parallel": false
-      }
-    },
     "e2e": {
       "executor": "nx:noop",
       "local": true,
-      "dependsOn": ["e2e:install", "e2e:compile"]
+      "dependsOn": ["e2e:install"]
     },
     "prepush": {
       "executor": "nx:noop",

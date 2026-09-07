@@ -152,12 +152,9 @@ create table products (
 );
 ```
 
-## Compile and Deploy
+## Deploy
 
-```bash
-npx pgflow@latest compile supabase/functions/_flows/process_product.ts
-npx supabase migrations up --local
-```
+Deploy the flow by importing it into a worker Edge Function and starting the worker. On first start, the worker compiles the flow definition into the database and verifies it on every restart - see [Startup Compilation](/concepts/startup-compilation/).
 
 ## Usage
 

@@ -7,11 +7,10 @@ The Command Line Interface for pgflow - a PostgreSQL-native workflow engine.
 
 ## Overview
 
-This package provides essential tools for setting up, managing, and deploying pgflow workflows in your Supabase environment. The CLI handles:
+This package provides essential tools for setting up pgflow in your Supabase project. The CLI handles:
 
 - Installing pgflow in your Supabase project
-- Compiling TypeScript workflow definitions into SQL migrations
-- Managing workflow deployment and updates
+- Updating pgflow's project files (safe to re-run)
 
 ## Prerequisites
 
@@ -59,26 +58,6 @@ The installer will:
 3. Configure environment variables for Edge Functions
 4. Guide you through applying migrations
 
-### Compile Flow Definition
-
-Convert a TypeScript flow definition into a SQL migration:
-
-```bash
-npx pgflow@latest compile my_flow
-```
-
-Options:
-
-- `--supabase-path <path>` - Path to custom Supabase directory
-- `--control-plane-url <url>` - ControlPlane URL (default: `http://127.0.0.1:54321/functions/v1/pgflow`)
-
-The compiler will:
-
-1. Parse your TypeScript flow definition
-2. Extract step dependencies and configuration
-3. Generate SQL commands for database registration
-4. Create a timestamped migration file in your migrations folder
-
 ## Building
 
 Run `nx build cli` to build the library.
@@ -91,6 +70,6 @@ Run `nx test cli` to execute the unit tests via [Vitest](https://vitest.dev/).
 
 For detailed documentation, visit:
 
-- [Installation Guide](https://pgflow.dev/getting-started/install-pgflow/)
-- [Compiling Flows](https://pgflow.dev/getting-started/compile-to-sql/)
-- [Running Flows](https://pgflow.dev/getting-started/run-flow/)
+- [Installation Guide](https://pgflow.dev/get-started/installation/)
+- [Startup Compilation](https://pgflow.dev/concepts/startup-compilation/)
+- [Running Flows](https://pgflow.dev/get-started/flows/run-flow/)
