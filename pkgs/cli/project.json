@@ -69,6 +69,15 @@
     },
     "supabase:ci-marker": {
       "executor": "nx:noop"
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "supabase stop --no-backup"
+      }
     }
   }
 }

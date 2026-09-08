@@ -9,13 +9,23 @@
     "migrations": ["{projectRoot}/supabase/migrations/**/*.sql"],
     "atlasSetup": [
       "{projectRoot}/atlas/atlas.hcl",
+      "{projectRoot}/atlas/supabase-baseline-schema.sql",
       "{projectRoot}/supabase/migrations/atlas.sum",
       "{projectRoot}/scripts/atlas-verify-schemas-synced"
     ],
     "databaseTypes": ["{projectRoot}/src/database-types.ts"],
+    "supabaseSetup": [
+      "{projectRoot}/supabase/config.toml",
+      "{workspaceRoot}/scripts/get-enabled-services.mjs",
+      "{workspaceRoot}/scripts/supabase-start.sh",
+      "{workspaceRoot}/scripts/supabase-start-locked.sh"
+    ],
+    "supabaseReset": ["supabaseSetup", "{projectRoot}/supabase/seed.sql"],
     "pgtapTests": [
       "{projectRoot}/supabase/tests/**/*.sql",
-      "{projectRoot}/scripts/run-test-with-colors"
+      "{projectRoot}/supabase/seed.sql",
+      "{projectRoot}/scripts/run-test-with-colors",
+      "{projectRoot}/scripts/colorize-pgtap-output.awk"
     ],
     "upgradeFixture": [
       "{projectRoot}/supabase/upgrade_fixture/**",
@@ -30,11 +40,7 @@
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "inputs": [
-        "schemas",
-        "migrations",
-        "atlasSetup"
-      ],
+      "inputs": ["schemas", "migrations", "atlasSetup", "supabaseSetup"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
       "options": {
         "cwd": "{projectRoot}",
@@ -50,7 +56,7 @@
     "verify-migrations": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-schemas-synced"],
-      "inputs": ["migrations"],
+      "inputs": ["migrations", "supabaseReset"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
         "cwd": "{projectRoot}",
@@ -132,9 +138,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh ."
-        ],
+        "commands": ["../../scripts/supabase-start-locked.sh ."],
         "parallel": false
       }
     },
@@ -174,8 +178,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["supabase stop --no-backup", "supabase start"],
-        "parallel": false
+        "command": "../../scripts/supabase-start-locked.sh --restart ."
       }
     },
     "supabase:reset": {
@@ -204,7 +207,13 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["verify-migrations"],
-      "inputs": ["schemas", "migrations", "pgtapTests", "upgradeFixture"],
+      "inputs": [
+        "schemas",
+        "migrations",
+        "supabaseSetup",
+        "pgtapTests",
+        "upgradeFixture"
+      ],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
@@ -212,6 +221,24 @@
           "../../scripts/supabase-start-locked.sh .",
           "scripts/run-test-with-colors",
           "scripts/run-upgrade-fixture"
+        ],
+        "parallel": false
+      }
+    },
+    "test:pgtap:file": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "dependsOn": ["verify-migrations"],
+      "inputs": ["schemas", "migrations", "supabaseSetup", "pgtapTests"],
+      "cache": true,
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          {
+            "command": "../../scripts/supabase-start-locked.sh .",
+            "forwardAllArgs": false
+          },
+          "test -n \"{args.file}\" || (echo 'Usage: pnpm nx test:pgtap:file core --args=--file=supabase/tests/<file>.test.sql' >&2; exit 1); scripts/run-test-with-colors \"{args.file}\""
         ],
         "parallel": false
       }
@@ -229,7 +256,7 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-migrations"],
-      "inputs": ["migrations"],
+      "inputs": ["migrations", "supabaseSetup"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "cwd": "{projectRoot}",
@@ -248,7 +275,7 @@
     "verify-gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-migrations"],
-      "inputs": ["migrations", "databaseTypes"],
+      "inputs": ["migrations", "supabaseSetup", "databaseTypes"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-gen-types.txt"],
       "options": {
         "cwd": "{projectRoot}",

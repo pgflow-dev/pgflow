@@ -7,46 +7,33 @@ set -e
 # This script wraps supabase-start.sh with file-based locking using flock(1).
 #
 # PURPOSE:
-#   When multiple Nx targets run in parallel and all need Supabase running,
-#   we want to serialize the "ensure started" checks so only ONE process
-#   actually starts Supabase, while others wait and reuse the running instance.
+#   When multiple Nx targets need Supabase, serialize startup per project while
+#   allowing different projects to start in parallel. A shared environment lock
+#   lets test-env:fresh exclude every startup while it removes owned services.
 #
 # HOW IT WORKS:
-#   1. Computes a lock file path based on the project directory
-#   2. Uses flock to acquire an exclusive lock on that file
-#   3. Runs the worker script (supabase-start.sh) while holding the lock
-#   4. Lock is automatically released when this script exits
+#   1. Acquires a shared pgflow test-environment lock
+#   2. Computes a lock file path based on the project directory
+#   3. Acquires the project's exclusive startup lock
+#   4. Optionally stops Supabase, then runs supabase-start.sh while holding both locks
 #
-# WHAT HAPPENS WITH PARALLEL EXECUTION:
-#   Process A (first):
-#     - Acquires lock immediately
-#     - Runs worker → starts Supabase
-#     - Releases lock
+# LOCK FILE LOCATIONS:
+#   /tmp/pgflow-test-environment.lock coordinates startup with test-env:fresh.
+#   /tmp/supabase-start-<hash>.lock serializes startup for one project path.
 #
-#   Process B (milliseconds later):
-#     - Blocks waiting for lock
-#     - A releases lock
-#     - Acquires lock, runs worker → checks status → already running → fast exit
-#     - Releases lock
-#
-# WHY FORM 1 OF FLOCK:
-#   We use: flock <lockfile> <command>
-#   This is simpler than file descriptor manipulation (Form 3) and provides
-#   exactly what we need: serialize execution of the worker script per-project.
-#
-# LOCK FILE LOCATION:
-#   /tmp/supabase-start-<hash>.lock where <hash> is md5sum of absolute project path
-#   - Unique per project (core, client, edge-worker have separate locks)
-#   - Standard /tmp location (cleaned on reboot)
-#   - Linux-specific (fine for our use case)
-#
-# Usage: supabase-start-locked.sh <project-directory>
+# Usage: supabase-start-locked.sh [--restart] <project-directory>
 # ============================================================================
 
+RESTART=false
+if [ "${1:-}" = "--restart" ]; then
+  RESTART=true
+  shift
+fi
+
 # Validate project directory argument
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
   echo "Error: Project directory argument is required" >&2
-  echo "Usage: $0 <project-directory>" >&2
+  echo "Usage: $0 [--restart] <project-directory>" >&2
   exit 1
 fi
 
@@ -71,6 +58,14 @@ LOCK_FILE="/tmp/supabase-start-${PROJECT_LOCK_NAME}.lock"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKER_SCRIPT="$SCRIPT_DIR/supabase-start.sh"
 
-# Use flock (Form 1) to serialize access to the worker script
-# By default, flock blocks until the lock is available, then runs the command
-flock "$LOCK_FILE" "$WORKER_SCRIPT" "$PROJECT_DIR_ABS"
+# Different projects may start together, but a fresh-environment run excludes all starts.
+exec 9>/tmp/pgflow-test-environment.lock
+flock --shared 9
+exec 8>"$LOCK_FILE"
+flock 8
+
+if [ "$RESTART" = true ]; then
+  (cd "$PROJECT_DIR_ABS" && pnpm exec supabase stop --no-backup)
+fi
+
+exec "$WORKER_SCRIPT" "$PROJECT_DIR_ABS"

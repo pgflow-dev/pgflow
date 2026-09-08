@@ -3,9 +3,21 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "pkgs/edge-worker",
   "projectType": "library",
+  "namedInputs": {
+    "testInputs": ["default", "!{projectRoot}/**/*.md"]
+  },
   "targets": {
     "supabase:ci-marker": {
       "executor": "nx:noop"
+    },
+    "test-env:fresh": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "scripts/test-env-fresh.sh"
+      }
     },
     "build": {
       "executor": "@nx/js:tsc",
@@ -100,8 +112,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["supabase stop --no-backup", "supabase start"],
-        "parallel": false
+        "command": "../../scripts/supabase-start-locked.sh --restart ."
       }
     },
     "supabase:reset": {
@@ -179,13 +190,22 @@
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "local": true,
-      "inputs": ["default", "^production"],
+      "cache": true,
+      "inputs": ["testInputs", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": [
-          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
-        ],
-        "parallel": false
+        "command": "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
+      }
+    },
+    "test:integration:file": {
+      "dependsOn": ["db:ensure", "^build"],
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": true,
+      "inputs": ["testInputs", "^production"],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "command": "test -n \"{args.file}\" || (echo 'Usage: pnpm nx test:integration:file edge-worker --args=--file=tests/integration/<file>.test.ts' >&2; exit 1); deno test --config deno.test.json --allow-all --env=supabase/functions/.env \"{args.file}\""
       }
     },
     "serve:functions:e2e": {
@@ -204,11 +224,16 @@
       "executor": "nx:run-commands",
       "dependsOn": ["serve:functions:e2e"],
       "local": true,
-      "inputs": ["default", "^production"],
+      "cache": true,
+      "inputs": [
+        "testInputs",
+        "^production",
+        "{workspaceRoot}/scripts/wait-for-function.sh"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "timeout 120 bash -c 'echo \"Waiting for functions server (port 50321)...\"; until nc -z localhost 50321 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"' || (echo 'TIMEOUT: Functions server not available on port 50321 after 120s' && exit 1)",
+          "../../scripts/wait-for-function.sh http://127.0.0.1:50321/functions/v1/auth_test 401 '\"message\":\"Unauthorized\"'",
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false
@@ -223,7 +248,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno run --allow-net=localhost:50321 \"data:application/typescript,console.log(%22Waiting%20for%20functions%20server%20(port%2050321)...%22)%3B%20const%20deadline%20%3D%20Date.now()%20%2B%20120_000%3B%20while%20(Date.now()%20%3C%20deadline)%20%7B%20try%20%7B%20const%20conn%20%3D%20await%20Deno.connect(%7B%20hostname%3A%20%22localhost%22%2C%20port%3A%2050321%20%7D)%3B%20conn.close()%3B%20console.log(%22%20Ready!%22)%3B%20Deno.exit(0)%3B%20%7D%20catch%20%7B%20await%20new%20Promise((resolve)%20%3D%3E%20setTimeout(resolve%2C%20500))%3B%20%7D%20%7D%20console.error(%22TIMEOUT%3A%20Functions%20server%20not%20available%20on%20port%2050321%20after%20120s%22)%3B%20Deno.exit(1)%3B\"",
+          "../../scripts/wait-for-function.sh http://127.0.0.1:50321/functions/v1/auth_test 401 '\"message\":\"Unauthorized\"'",
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e-portable-runtimes/"
         ],
         "parallel": false

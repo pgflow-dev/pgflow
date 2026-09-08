@@ -72,7 +72,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/website",
-        "command": "supabase start"
+        "command": "../../scripts/supabase-start-locked.sh ."
       }
     },
     "supabase:stop": {
@@ -108,10 +108,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "astro dev"
-        ]
+        "commands": ["../../scripts/supabase-start-locked.sh .", "astro dev"]
       }
     }
   }

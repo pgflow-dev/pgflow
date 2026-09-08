@@ -1,9 +1,13 @@
+name: pgflow-edge-worker-tests
+
 services:
   db:
     # Must match image in pkgs/core/atlas/atlas.hcl for baseline compatibility
     image: jumski/atlas-postgres-pgflow:17.6.1.054
     ports:
       - '5432:5432'
+    labels:
+      dev.pgflow.migrations-hash: '${PGFLOW_MIGRATIONS_HASH:-unset}'
     volumes:
       - ./migrations/pgflow.sql:/docker-entrypoint-initdb.d/950_pgflow.sql
     environment:
