@@ -418,6 +418,8 @@ importers:
         specifier: ^4.20.3
         version: 4.47.0(@cloudflare/workers-types@4.20251118.0)
 
+  tools/nx-executors: {}
+
 packages:
 
   '@adobe/css-tools@4.3.3':

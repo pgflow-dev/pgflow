@@ -11,13 +11,29 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
+    "productionNoDocs": [
+      "production",
+      "!{projectRoot}/**/*.md"
+    ],
+    "denoRuntime": [{"runtime": "deno --version"}],
+    "supabaseRuntime": [{"runtime": "pnpm exec supabase --version"}],
     "sharedGlobals": [
       "{workspaceRoot}/.github/actions/setup/action.yml",
       "{workspaceRoot}/.github/actions/setup-sqruff/action.yml",
       "{workspaceRoot}/pnpm-lock.yaml",
       "{workspaceRoot}/tsconfig.base.json"
     ],
-    "sqruffConfig": ["{workspaceRoot}/.sqruff"]
+    "sqruffConfig": ["{workspaceRoot}/.sqruff"],
+    "supabaseSetup": [
+      "{projectRoot}/supabase/config.toml",
+      "{workspaceRoot}/scripts/get-enabled-services.mjs",
+      "{workspaceRoot}/scripts/supabase-start.sh",
+      "{workspaceRoot}/scripts/supabase-start-locked.sh",
+      "{workspaceRoot}/scripts/with-supabase-lock.sh",
+      "{workspaceRoot}/scripts/ensure-migrations.sh",
+      "{workspaceRoot}/scripts/ensure-migrations-body.sh",
+      "{workspaceRoot}/scripts/lock-dir.sh"
+    ]
   },
   "nxCloudId": "676490227393fa777407053a",
   "plugins": [

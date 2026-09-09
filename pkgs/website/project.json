@@ -72,7 +72,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/website",
-        "command": "supabase start"
+        "command": "../../scripts/supabase-start-locked.sh ."
       }
     },
     "supabase:stop": {
@@ -81,7 +81,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/website",
-        "command": "supabase stop --no-backup"
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase stop --no-backup"
       }
     },
     "supabase:status": {
@@ -99,7 +99,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/website",
-        "command": "supabase studio"
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase studio"
       }
     },
     "dev:full": {
@@ -108,10 +108,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "astro dev"
-        ]
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/supabase-start.sh .; astro dev'"
       }
     }
   }

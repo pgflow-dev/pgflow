@@ -1,28 +1,10 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Clean up any existing containers
-echo "Shutting down existing database containers..."
-docker compose -f tests/db/compose.yaml down --volumes --remove-orphans
+# Standalone entry point for integration database setup. Takes the exclusive
+# integration resource lock (plus the shared environment lock) and runs the
+# core setup, so a standalone ensure cannot race a full or focused
+# integration suite using the same resource.
 
-# Clean migrations
-echo "Cleaning migrations..."
-rm -f tests/db/migrations/*.sql || true
-
-# Copy migrations
-echo "Copying migrations..."
-./scripts/concatenate-migrations.sh
-
-# Start fresh containers
-echo "Starting database..."
-docker compose -f tests/db/compose.yaml up --detach
-
-# Wait for database to be ready
-echo "Waiting for database to be available..."
-./scripts/wait-for-localhost 5432
-
-# Additional pause to ensure database is fully initialized
-echo "Waiting for database initialization..."
-sleep 5
-
-echo "Database is ready!"
+cd "$(dirname "$0")/.."
+exec ../../scripts/with-integration-lock.sh scripts/ensure-db-core

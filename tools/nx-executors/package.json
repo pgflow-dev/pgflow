@@ -1,0 +1,8 @@
+{
+  "name": "@pgflow/nx-executors",
+  "private": true,
+  "version": "0.0.0",
+  "type": "commonjs",
+  "main": "./focused-file.cjs",
+  "executors": "./executors.json"
+}
