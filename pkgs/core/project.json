@@ -14,12 +14,6 @@
       "{projectRoot}/scripts/atlas-verify-schemas-synced"
     ],
     "databaseTypes": ["{projectRoot}/src/database-types.ts"],
-    "supabaseSetup": [
-      "{projectRoot}/supabase/config.toml",
-      "{workspaceRoot}/scripts/get-enabled-services.mjs",
-      "{workspaceRoot}/scripts/supabase-start.sh",
-      "{workspaceRoot}/scripts/supabase-start-locked.sh"
-    ],
     "supabaseReset": ["supabaseSetup", "{projectRoot}/supabase/seed.sql"],
     "pgtapTests": [
       "{projectRoot}/supabase/tests/**/*.sql",
@@ -40,34 +34,24 @@
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "inputs": ["schemas", "migrations", "atlasSetup", "supabaseSetup"],
+      "inputs": ["schemas", "migrations", "atlasSetup", "supabaseSetup", "supabaseRuntime"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "mkdir -p .nx-inputs",
-          "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/supabase-start.sh .; mkdir -p .nx-inputs; scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || { cat .nx-inputs/verify-schemas-synced.txt; exit 1; }'"
       },
       "cache": true
     },
     "verify-migrations": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-schemas-synced"],
-      "inputs": ["migrations", "supabaseReset"],
-      "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+      "inputs": ["migrations", "supabaseReset", "supabaseRuntime"],
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "mkdir -p .nx-inputs",
-          "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
-        ],
-        "parallel": false
-      },
-      "cache": true
+        "command": "../../scripts/with-supabase-lock.sh . ../../scripts/ensure-migrations-body.sh ."
+      }
     },
     "build": {
       "executor": "@nx/js:tsc",
@@ -158,8 +142,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["supabase stop --no-backup"],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase stop --no-backup"
       }
     },
     "supabase:status": {
@@ -187,11 +170,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "supabase db reset"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . ../../scripts/ensure-migrations-body.sh . --force-reset"
       }
     },
     "test": {
@@ -211,37 +190,32 @@
         "schemas",
         "migrations",
         "supabaseSetup",
+        "supabaseRuntime",
         "pgtapTests",
         "upgradeFixture"
       ],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "scripts/run-test-with-colors",
-          "scripts/run-upgrade-fixture"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; scripts/run-test-with-colors; scripts/run-upgrade-fixture'"
       }
     },
     "test:pgtap:file": {
-      "executor": "nx:run-commands",
+      "executor": "@pgflow/nx-executors:focused-file",
       "local": true,
       "dependsOn": ["verify-migrations"],
-      "inputs": ["schemas", "migrations", "supabaseSetup", "pgtapTests"],
-      "cache": true,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          {
-            "command": "../../scripts/supabase-start-locked.sh .",
-            "forwardAllArgs": false
-          },
-          "test -n \"{args.file}\" || (echo 'Usage: pnpm nx test:pgtap:file core --args=--file=supabase/tests/<file>.test.sql' >&2; exit 1); scripts/run-test-with-colors \"{args.file}\""
-        ],
-        "parallel": false
-      }
+      "inputs": [
+        "schemas",
+        "migrations",
+        "supabaseSetup",
+        "supabaseRuntime",
+        "pgtapTests",
+        "{workspaceRoot}/scripts/require-test-file.sh",
+        "{workspaceRoot}/scripts/nx-file-visible.cjs",
+        "{projectRoot}/scripts/run-pgtap-file",
+        "{workspaceRoot}/tools/nx-executors/**"
+      ],
+      "cache": true
     },
     "test:unit": {
       "executor": "@nx/vite:test",
@@ -256,39 +230,22 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-migrations"],
-      "inputs": ["migrations", "supabaseSetup"],
+      "inputs": ["migrations", "supabaseSetup", "supabaseRuntime"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "echo 'Generating database types...'",
-          "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
-          "echo 'Verifying generated types...'",
-          "grep -q 'pgflow' src/database-types.ts || (echo 'ERROR: Generated types file does not contain pgflow schema!' && exit 1)",
-          "[ -s src/database-types.ts ] || (echo 'ERROR: Generated types file is empty!' && exit 1)"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; echo \"Generating database types...\"; supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts; grep -q pgflow src/database-types.ts || { echo \"ERROR: Generated types file does not contain pgflow schema!\"; exit 1; }; test -s src/database-types.ts || { echo \"ERROR: Generated types file is empty!\"; exit 1; }'"
       },
       "cache": true
     },
     "verify-gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-migrations"],
-      "inputs": ["migrations", "supabaseSetup", "databaseTypes"],
+      "inputs": ["migrations", "supabaseSetup", "supabaseRuntime", "databaseTypes"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-gen-types.txt"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "mkdir -p .nx-inputs",
-          "echo 'Verifying database types are up-to-date...'",
-          "cp src/database-types.ts .nx-inputs/database-types.ts.backup",
-          "supabase gen types --local --schema pgflow --schema pgmq > .nx-inputs/database-types.ts.new",
-          "diff .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new > .nx-inputs/verify-gen-types.txt 2>&1 || (echo 'ERROR: Database types are out of date! Run \"nx gen-types core\" to update them.' && echo '=============================================' && echo 'Diff between current and generated types:' && echo '=============================================' && diff -u .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new || true && echo '=============================================' && exit 1)",
-          "echo 'Database types are up-to-date' > .nx-inputs/verify-gen-types.txt"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; mkdir -p .nx-inputs; cp src/database-types.ts .nx-inputs/database-types.ts.backup; supabase gen types --local --schema pgflow --schema pgmq > .nx-inputs/database-types.ts.new; if ! diff .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new > .nx-inputs/verify-gen-types.txt 2>&1; then echo \"ERROR: Database types are out of date! Run nx gen-types core to update them.\"; diff -u .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new || true; exit 1; fi; echo \"Database types are up-to-date\" > .nx-inputs/verify-gen-types.txt'"
       },
       "cache": true
     },

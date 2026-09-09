@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Focused test file",
+  "type": "object",
+  "properties": {
+    "args": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Runs one pgTAP file while the caller owns the core stack resource lock.
+set -euo pipefail
+
+[[ $# -eq 1 ]] || {
+  echo "Usage: $0 <supabase/tests/file.test.sql>" >&2
+  exit 2
+}
+
+scripts_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/scripts
+"$scripts_dir/require-test-file.sh" supabase/tests "$1"
+"$scripts_dir/ensure-migrations-body.sh" .
+exec scripts/run-test-with-colors "$1"

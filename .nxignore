@@ -1,2 +1,8 @@
 # Ignore Supabase Edge Functions from Nx dependency analysis
 # These are Deno runtime functions with their own import resolution
+
+# The committed local-test environment file is git-ignored (root .gitignore
+# `.env*`) but Nx must hash its contents: it is the --env-file for Deno unit,
+# integration, and E2E runs. Re-including it here makes it part of the
+# workspace file map and therefore of every affected input fileset.
+!pkgs/edge-worker/supabase/functions/.env

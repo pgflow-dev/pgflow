@@ -1,43 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-COMPOSE_FILE=tests/db/compose.yaml
-MIGRATIONS_FILE=tests/db/migrations/pgflow.sql
+# Standalone entry point for integration database setup. Takes the exclusive
+# integration resource lock (plus the shared environment lock) and runs the
+# core setup, so a standalone ensure cannot race a full or focused
+# integration suite using the same resource.
 
-exec 9>/tmp/pgflow-test-environment.lock
-flock --shared 9
-
-echo "Preparing integration database migrations..."
-rm -f tests/db/migrations/*.sql
-./scripts/concatenate-migrations.sh
-migration_hash=$(sed '/^-- Generated on /d' "$MIGRATIONS_FILE" | sha256sum | cut -d' ' -f1)
-config_hash=$(PGFLOW_MIGRATIONS_HASH="$migration_hash" docker compose -f "$COMPOSE_FILE" config --hash db | awk '$1 == "db" { print $2 }')
-[[ -n "$config_hash" ]] || { echo "Could not compute the integration database config hash." >&2; exit 1; }
-container=$(docker compose -f "$COMPOSE_FILE" ps -q db)
-
-if [[ -n "$container" \
-  && "$(docker inspect "$container" --format '{{.State.Running}}')" == "true" \
-  && "$(docker inspect "$container" --format '{{index .Config.Labels "dev.pgflow.migrations-hash"}}')" == "$migration_hash" \
-  && "$(docker inspect "$container" --format '{{index .Config.Labels "com.docker.compose.config-hash"}}')" == "$config_hash" \
-  ]] \
-  && docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then
-  echo "Integration database is already ready."
-  exit 0
-fi
-
-echo "Starting a fresh integration database..."
-docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans
-PGFLOW_MIGRATIONS_HASH="$migration_hash" docker compose -f "$COMPOSE_FILE" up --detach
-container=$(docker compose -f "$COMPOSE_FILE" ps -q db)
-
-for _ in $(seq 1 100); do
-  if docker exec "$container" pg_isready -U postgres >/dev/null 2>&1; then
-    sleep 5
-    echo "Integration database is ready."
-    exit 0
-  fi
-  sleep 0.1
-done
-
-echo "Integration database did not become ready." >&2
-exit 1
+cd "$(dirname "$0")/.."
+exec ../../scripts/with-integration-lock.sh scripts/ensure-db-core

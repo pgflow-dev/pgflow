@@ -88,8 +88,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["supabase stop --no-backup"],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase stop --no-backup"
       }
     },
     "supabase:status": {
@@ -116,13 +115,7 @@
       ],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "mkdir -p supabase/migrations/",
-          "rm -f supabase/migrations/*.sql",
-          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "cp ../core/supabase/seed.sql supabase/"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu 'mkdir -p supabase/migrations/; rm -f supabase/migrations/*.sql; cp ../core/supabase/migrations/*.sql supabase/migrations/; cp ../core/supabase/seed.sql supabase/'"
       }
     },
     "supabase:reset": {
@@ -132,11 +125,7 @@
       "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "supabase db reset"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . ../../scripts/ensure-migrations-body.sh . --force-reset"
       }
     },
     "e2e": {
@@ -146,12 +135,7 @@
       "dependsOn": ["supabase:prepare", "build"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/e2e/ --config vitest.e2e.config.ts --poolOptions.threads.singleThread"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; psql \"postgresql://postgres:postgres@localhost:50522/postgres\" -c \"SELECT pgflow_tests.reset_db()\"; vitest run __tests__/e2e/ --config vitest.e2e.config.ts --poolOptions.threads.singleThread'"
       }
     },
     "test:unit": {
@@ -176,12 +160,7 @@
       "dependsOn": ["supabase:prepare", "build"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "node scripts/performance-benchmark.mjs"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; psql \"postgresql://postgres:postgres@localhost:50522/postgres\" -c \"SELECT pgflow_tests.reset_db()\"; node scripts/performance-benchmark.mjs'"
       }
     },
     "test:types:vitest": {

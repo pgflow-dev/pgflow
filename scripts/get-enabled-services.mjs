@@ -18,6 +18,7 @@ const SERVICE_MAP = {
   'inbucket': 'inbucket',          // Email testing
   'storage': 'storage',            // File storage
   'analytics': 'analytics',        // Analytics backend
+  'auth': 'auth',                  // GoTrue authentication
 };
 
 const configPath = process.argv[2];
@@ -31,11 +32,15 @@ const config = parse(toml);
 
 const enabledServices = [];
 
-// Check each service
+// Check each service. Auth has no [auth].enabled flag in some Supabase CLI
+// config versions, but a present [auth] section still starts GoTrue unless it
+// explicitly opts out.
 for (const [configSection, containerName] of Object.entries(SERVICE_MAP)) {
   const serviceConfig = config[configSection];
-  // Service is enabled if: section exists AND enabled is not explicitly false
-  if (serviceConfig && serviceConfig.enabled !== false) {
+  const enabled = configSection === 'auth'
+    ? serviceConfig?.enabled !== false
+    : serviceConfig && serviceConfig.enabled !== false;
+  if (enabled) {
     enabledServices.push(containerName);
   }
 }

@@ -34,6 +34,8 @@
     "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
       "local": true,
+      "cache": true,
+      "inputs": ["default", "^productionNoDocs", "denoRuntime"],
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
       "options": {
         "coverageDirectory": "coverage/pkgs/edge-worker",
@@ -92,8 +94,7 @@
       "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["supabase stop --no-backup"],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase stop --no-backup"
       }
     },
     "supabase:status": {
@@ -122,14 +123,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "mkdir -p supabase/migrations/",
-          "rm -f supabase/migrations/*.sql",
-          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "../../scripts/supabase-start-locked.sh .",
-          "supabase db reset"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-supabase-lock.sh . ../../scripts/ensure-migrations-body.sh . --force-reset"
       }
     },
     "db:ensure": {
@@ -147,7 +141,7 @@
       "dependsOn": ["^build"],
       "executor": "nx:run-commands",
       "local": true,
-      "inputs": ["default", "^production"],
+      "inputs": ["testInputs", "^productionNoDocs", "denoRuntime"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -169,8 +163,8 @@
       "cache": true,
       "dependsOn": ["build"],
       "inputs": [
-        "production",
-        "^production",
+        "productionNoDocs",
+        "^productionNoDocs",
         "{workspaceRoot}/scripts/smoke-edge-worker-dist.mjs"
       ],
       "options": {
@@ -187,71 +181,110 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure", "^build"],
+      "dependsOn": ["^verify-migrations", "^build"],
       "executor": "nx:run-commands",
-      "local": true,
-      "cache": true,
-      "inputs": ["testInputs", "^production"],
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "command": "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
-      }
-    },
-    "test:integration:file": {
-      "dependsOn": ["db:ensure", "^build"],
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": true,
-      "inputs": ["testInputs", "^production"],
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "command": "test -n \"{args.file}\" || (echo 'Usage: pnpm nx test:integration:file edge-worker --args=--file=tests/integration/<file>.test.ts' >&2; exit 1); deno test --config deno.test.json --allow-all --env=supabase/functions/.env \"{args.file}\""
-      }
-    },
-    "serve:functions:e2e": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
-      "continuous": true,
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "readyWhen": "Serving functions on http://",
-        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
-      }
-    },
-    "e2e": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["serve:functions:e2e"],
       "local": true,
       "cache": true,
       "inputs": [
         "testInputs",
-        "^production",
-        "{workspaceRoot}/scripts/wait-for-function.sh"
+        "^productionNoDocs",
+        "denoRuntime",
+        "supabaseSetup",
+        "{workspaceRoot}/scripts/with-integration-lock.sh"
       ],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": [
-          "../../scripts/wait-for-function.sh http://127.0.0.1:50321/functions/v1/auth_test 401 '\"message\":\"Unauthorized\"'",
-          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
-        ],
-        "parallel": false
+        "command": "../../scripts/with-integration-lock.sh ./scripts/run-integration.sh"
+      }
+    },
+    "test:integration:file": {
+      "dependsOn": ["^verify-migrations", "^build"],
+      "executor": "@pgflow/nx-executors:focused-file",
+      "local": true,
+      "cache": true,
+      "inputs": [
+        "testInputs",
+        "^productionNoDocs",
+        "denoRuntime",
+        "supabaseSetup",
+        "{workspaceRoot}/scripts/with-integration-lock.sh",
+        "{workspaceRoot}/scripts/require-test-file.sh",
+        "{workspaceRoot}/scripts/nx-file-visible.cjs",
+        "{projectRoot}/scripts/run-integration.sh",
+        "{workspaceRoot}/tools/nx-executors/**"
+      ]
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "local": true,
+      "cache": true,
+      "inputs": [
+        "testInputs",
+        "^productionNoDocs",
+        "denoRuntime",
+        "supabaseRuntime",
+        "supabaseSetup",
+        "{workspaceRoot}/scripts/run-e2e.sh",
+        "{workspaceRoot}/scripts/functions-server.sh",
+        "{workspaceRoot}/scripts/ensure-migrations.sh",
+        "{workspaceRoot}/scripts/wait-for-function.sh",
+        "{projectRoot}/scripts/sync-e2e-deps.sh"
+      ],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "command": "../../scripts/run-e2e.sh tests/e2e"
       }
     },
     "e2e:portable-runtimes": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build", "serve:functions:e2e"],
+      "dependsOn": ["build"],
       "local": true,
       "cache": false,
-      "inputs": ["default", "^production"],
+      "inputs": [
+        "testInputs",
+        "^productionNoDocs",
+        "denoRuntime",
+        "supabaseRuntime",
+        "supabaseSetup",
+        "{workspaceRoot}/scripts/run-e2e.sh",
+        "{workspaceRoot}/scripts/functions-server.sh",
+        "{workspaceRoot}/scripts/ensure-migrations.sh",
+        "{workspaceRoot}/scripts/wait-for-function.sh",
+        "{projectRoot}/scripts/sync-e2e-deps.sh"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": [
-          "../../scripts/wait-for-function.sh http://127.0.0.1:50321/functions/v1/auth_test 401 '\"message\":\"Unauthorized\"'",
-          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e-portable-runtimes/"
-        ],
-        "parallel": false
+        "command": "../../scripts/run-e2e.sh tests/e2e-portable-runtimes"
+      }
+    },
+    "test:lifecycle": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/scripts/test-lifecycle.sh",
+        "{workspaceRoot}/scripts/lock-dir.sh",
+        "{workspaceRoot}/scripts/with-supabase-lock.sh",
+        "{workspaceRoot}/scripts/with-integration-lock.sh",
+        "{workspaceRoot}/scripts/require-test-file.sh",
+        "{workspaceRoot}/scripts/nx-file-visible.cjs",
+        "{workspaceRoot}/scripts/test-env-fresh.sh",
+        "{workspaceRoot}/pkgs/client/project.json",
+        "{workspaceRoot}/scripts/functions-server.sh",
+        "{workspaceRoot}/scripts/supabase-start.sh",
+        "{workspaceRoot}/scripts/get-enabled-services.mjs",
+        "{workspaceRoot}/scripts/ensure-migrations.sh",
+        "{workspaceRoot}/scripts/ensure-migrations-body.sh",
+        "{workspaceRoot}/scripts/run-e2e.sh",
+        "{projectRoot}/scripts/ensure-db-core",
+        "{projectRoot}/scripts/run-integration.sh",
+        "{workspaceRoot}/pkgs/core/scripts/run-pgtap-file",
+        "{workspaceRoot}/tools/nx-executors/**"
+      ],
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "scripts/test-lifecycle.sh"
       }
     },
     "test": {
@@ -262,7 +295,7 @@
       "executor": "nx:run-commands",
       "cache": true,
       "dependsOn": ["^build"],
-      "inputs": ["production", "^production"],
+      "inputs": ["production", "^productionNoDocs", "denoRuntime"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "deno check --config deno.test.json src/examples/*.example.ts tests/types/*.test-d.ts"

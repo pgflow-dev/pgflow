@@ -1,0 +1,8 @@
+{
+  "executors": {
+    "focused-file": {
+      "implementation": "./focused-file.cjs",
+      "schema": "./schema.json"
+    }
+  }
+}

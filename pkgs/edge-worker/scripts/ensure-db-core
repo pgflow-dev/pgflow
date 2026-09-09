@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Core integration database setup. Invoked under the exclusive integration
+# resource lock (scripts/with-integration-lock.sh), which also holds the
+# shared environment lock, so this file takes no locks itself.
+#
+# Database identity is certified twice: container labels record WHAT should
+# be applied, and a fingerprint stored in the live database records that
+# initialization actually completed with that content. The official postgres
+# image runs init scripts on a socket-only temporary server and only then
+# starts the real TCP server, so pg_isready over TCP (-h 127.0.0.1) is the
+# readiness signal that 950_pgflow.sql finished; a fixed sleep is not.
+#
+# `--self-test` exercises the control flow with stubbed docker/compose.
+
+COMPOSE_FILE=tests/db/compose.yaml
+MIGRATIONS_FILE=tests/db/migrations/pgflow.sql
+DB_READY_TIMEOUT_SEC=${PGFLOW_DB_READY_TIMEOUT_SEC:-180}
+
+compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
+
+concatenate_migrations() { ./scripts/concatenate-migrations.sh; }
+
+prepare_migrations() {
+  echo "Preparing integration database migrations..."
+  rm -f tests/db/migrations/*.sql
+  concatenate_migrations
+  migration_hash=$(sed '/^-- Generated on /d' "$MIGRATIONS_FILE" | sha256sum | cut -d' ' -f1)
+  config_hash=$(PGFLOW_MIGRATIONS_HASH="$migration_hash" compose config --hash db | awk '$1 == "db" { print $2 }')
+  [[ -n "$config_hash" ]] || { echo "Could not compute the integration database config hash." >&2; return 1; }
+  container=$(compose ps -q db)
+}
+
+db_fingerprint() {
+  docker exec "$container" psql -U postgres -d postgres -tA -c \
+    "SELECT value FROM public.pgflow_setup_fingerprint WHERE key = 'migrations'" 2>/dev/null || true
+}
+
+write_db_fingerprint() {
+  docker exec "$container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -c "
+    CREATE TABLE IF NOT EXISTS public.pgflow_setup_fingerprint (
+      key text PRIMARY KEY,
+      value text NOT NULL
+    );
+    INSERT INTO public.pgflow_setup_fingerprint (key, value)
+    VALUES ('migrations', '$migration_hash')
+    ON CONFLICT (key) DO UPDATE SET value = excluded.value;
+  "
+}
+
+container_running() {
+  [[ "$(docker inspect "$container" --format '{{.State.Running}}' 2>/dev/null || true)" == "true" ]]
+}
+
+container_label() { # container_label <label>
+  docker inspect "$container" --format "{{index .Config.Labels \"$1\"}}" 2>/dev/null || true
+}
+
+container_logs() {
+  docker logs --tail 50 "$container" >&2 2>/dev/null || true
+}
+
+tcp_ready() {
+  docker exec "$container" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1
+}
+
+wait_for_database() {
+  echo "Waiting for the integration database to become ready (TCP)..."
+  local deadline=$((SECONDS + DB_READY_TIMEOUT_SEC))
+  while ((SECONDS < deadline)); do
+    if ! container_running; then
+      echo "Integration database container exited during initialization. Last logs:" >&2
+      container_logs
+      return 1
+    fi
+    if tcp_ready; then
+      write_db_fingerprint || {
+        echo "Writing the integration database fingerprint failed." >&2
+        return 1
+      }
+      echo "Integration database is ready."
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "Integration database did not become ready within ${DB_READY_TIMEOUT_SEC}s." >&2
+  container_logs
+  return 1
+}
+
+ensure_db() {
+  # Note: container_running and tcp_ready must run as commands in an if/&&
+  # chain, never as bare words inside [[ ]] - there they are nonempty
+  # strings (always true) and the reuse decision would skip the live checks.
+  if [[ -n "$container" ]] \
+    && container_running \
+    && [[ "$(container_label dev.pgflow.migrations-hash)" == "$migration_hash" ]] \
+    && [[ "$(container_label com.docker.compose.config-hash)" == "$config_hash" ]] \
+    && tcp_ready \
+    && [[ "$(db_fingerprint)" == "$migration_hash" ]]; then
+    echo "Integration database is already ready."
+    return 0
+  fi
+
+  echo "Starting a fresh integration database..."
+  compose down --volumes --remove-orphans
+  PGFLOW_MIGRATIONS_HASH="$migration_hash" compose up --detach
+  container=$(compose ps -q db)
+  wait_for_database
+}
+
+self_test() {
+  local failures=0 status STUB_DIR DOCKER_CALLS
+  STUB_DIR=$(mktemp -d)
+  DOCKER_CALLS=$(mktemp)
+
+  migration_hash=aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111aaaa1111
+  config_hash=cccc3333
+  container=stub-container-id
+  concatenate_migrations() { :; }
+
+  docker() {
+    echo "docker $*" >>"$DOCKER_CALLS"
+    case "$*" in
+      compose*" ps -q db") echo stub-container-id ;;
+      compose*" up "*) [[ -f "$STUB_DIR/up-starts" ]] && touch "$STUB_DIR/running" ;;
+      compose*) : ;;
+      *"--format {{index .Config.Labels \"dev.pgflow.migrations-hash\"}}"*) cat "$STUB_DIR/label-hash" 2>/dev/null ;;
+      *"--format {{index .Config.Labels \"com.docker.compose.config-hash\"}}"*) cat "$STUB_DIR/label-config" 2>/dev/null ;;
+      *"{{.State.Running}}"*) [[ -f "$STUB_DIR/running" ]] && echo true || echo false ;;
+      *pg_isready*) [[ -f "$STUB_DIR/tcp-ready" ]] && return 0 || return 1 ;;
+      *"WHERE key = 'migrations'"*) cat "$STUB_DIR/db-fingerprint" 2>/dev/null ;;
+      *ON_ERROR_STOP*)
+        [[ -f "$STUB_DIR/write-fails" ]] && return 1
+        echo "$migration_hash" >"$STUB_DIR/db-fingerprint"
+        ;;
+    esac
+  }
+
+  expect_status() {
+    local name=$1 want=$2
+    shift 2
+    : >"$DOCKER_CALLS"
+    set +e
+    "$@" >/dev/null 2>&1
+    status=$?
+    set -e
+    if [[ "$status" == "$want" ]]; then
+      echo "ok   $name"
+    else
+      echo "FAIL $name (expected $want, got $status)"
+      failures=$((failures + 1))
+    fi
+  }
+  calls_match() {
+    if grep -qE "$2" "$DOCKER_CALLS"; then
+      echo "ok   $1"
+    else
+      echo "FAIL $1 (wanted /$2/ in: $(paste -sd';' <"$DOCKER_CALLS"))"
+      failures=$((failures + 1))
+    fi
+  }
+  calls_absent() {
+    if grep -qE "$2" "$DOCKER_CALLS"; then
+      echo "FAIL $1 (unwanted /$2/ in: $(paste -sd';' <"$DOCKER_CALLS"))"
+      failures=$((failures + 1))
+    else
+      echo "ok   $1"
+    fi
+  }
+
+  # Reuse: labels + TCP + live fingerprint all match -> no recreation. The
+  # reuse decision must actually invoke the running-state and TCP-readiness
+  # checks (they are commands in the if chain, not strings).
+  echo "$migration_hash" >"$STUB_DIR/label-hash"
+  echo "$config_hash" >"$STUB_DIR/label-config"
+  echo "$migration_hash" >"$STUB_DIR/db-fingerprint"
+  touch "$STUB_DIR/running" "$STUB_DIR/tcp-ready"
+  expect_status "reuse on complete identity match" 0 ensure_db
+  calls_match "reuse checks the live fingerprint" "WHERE key = 'migrations'"
+  calls_match "reuse verifies the container is running" '\{\{.State.Running}}'
+  calls_match "reuse probes TCP readiness" 'pg_isready'
+  calls_absent "reuse does not recreate" 'compose.* (down|up) '
+
+  # Running check fails (stopped leftover container) -> recreate and reach
+  # readiness through the fresh path.
+  rm -f "$STUB_DIR/running" "$STUB_DIR/db-fingerprint"
+  touch "$STUB_DIR/up-starts" "$STUB_DIR/tcp-ready"
+  expect_status "stopped container recreates" 0 ensure_db
+  calls_match "recreation after stopped container" 'compose.* up '
+  rm -f "$STUB_DIR/up-starts"
+
+  # Labels match but the live fingerprint is missing -> recreate; a container
+  # label created before initialization is not success evidence.
+  rm -f "$STUB_DIR/db-fingerprint"
+  expect_status "label without live fingerprint recreates" 0 ensure_db
+  calls_match "recreation performed" 'compose.* up '
+
+  # Initialization crash: container exits during the wait -> fast failure
+  # with logs, not a silent 180s timeout.
+  rm -f "$STUB_DIR/running" "$STUB_DIR/tcp-ready" "$STUB_DIR/db-fingerprint"
+  expect_status "container exit during initialization fails fast" 1 ensure_db
+  calls_match "failure dumps container logs" 'docker logs'
+
+  # Readiness timeout with a running but never-ready container.
+  touch "$STUB_DIR/running"
+  DB_READY_TIMEOUT_SEC=1
+  expect_status "readiness timeout fails" 1 ensure_db
+
+  # Fingerprint write failure after readiness propagates.
+  touch "$STUB_DIR/tcp-ready" "$STUB_DIR/write-fails"
+  expect_status "fingerprint write failure propagates" 1 ensure_db
+
+  rm -rf "$STUB_DIR" "$DOCKER_CALLS"
+  if [[ "$failures" -eq 0 ]]; then
+    echo "ensure-db-core self-test passed."
+    return 0
+  fi
+  echo "$failures ensure-db-core self-test check(s) failed." >&2
+  return 1
+}
+
+if [[ "${1:-}" == "--self-test" ]]; then
+  self_test
+elif [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  prepare_migrations
+  ensure_db
+fi

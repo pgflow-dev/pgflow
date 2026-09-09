@@ -76,7 +76,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "command": "supabase stop --no-backup"
+        "command": "../../scripts/with-supabase-lock.sh . pnpm exec supabase stop --no-backup"
       }
     }
   }
