@@ -18,7 +18,7 @@ select is(
           {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
           {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   'verified',
@@ -36,7 +36,7 @@ select is(
           {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
           {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   0,

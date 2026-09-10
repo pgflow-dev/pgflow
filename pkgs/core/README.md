@@ -93,7 +93,7 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 1. **Definition**: Workflows are defined using `create_flow` and `add_step`
 2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
-3. **Task Retrieval**: The [Edge Worker](../edge-worker/README.md) uses two-phase polling - first `read_with_poll` to reserve queue messages, then `start_tasks` to convert them to executable tasks
+3. **Task Retrieval**: The [Edge Worker](../edge-worker/README.md) uses two-phase polling - first `read_with_poll` to reserve queue messages, then `claim_tasks` to convert them to executable tasks
 4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
 
 [Flow lifecycle diagram (click to enlarge)](./assets/flow-lifecycle.svg)
@@ -282,21 +282,27 @@ SELECT * FROM pgmq.read_with_poll(
 );
 ```
 
-**Phase 2 - Start Tasks:**
+**Phase 2 - Claim Tasks:**
 
 ```sql
-SELECT * FROM pgflow.start_tasks(
+SELECT pgflow.claim_tasks(
+  queue_name => 'analyze_website',
   flow_slug => 'analyze_website',
-  msg_ids => ARRAY[101, 102, 103], -- message IDs from phase 1
+  message_ids => ARRAY[101, 102, 103]::bigint[], -- message IDs from phase 1
   worker_id => '550e8400-e29b-41d4-a716-446655440000'::uuid
 );
 ```
 
+The worker ID must identify a registered worker subscribed to this queue.
+
 **How it works:**
 
 1. **read_with_poll** reserves raw queue messages and hides them from other workers
-2. **start_tasks** finds matching step_tasks, increments attempts counter, and builds task inputs
-3. Task metadata and input are returned to the worker for execution
+2. **claim_tasks** validates the queue subscription and classifies the complete batch before it changes task state
+3. An `ok` result returns only tasks claimed by this transaction, plus body-free warnings for archived foreign messages
+4. A `fatal` result claims and archives nothing, resets batch visibility, pauses HTTP restarts, and tells the worker to stop
+
+`start_tasks(flow_slug, msg_ids, worker_id)` remains as a SQL compatibility wrapper for plain workers. New workers call `claim_tasks` directly.
 
 This two-phase approach ensures tasks always exist before processing begins, eliminating race conditions that could occur with single-phase polling.
 

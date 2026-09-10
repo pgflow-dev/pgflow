@@ -40,17 +40,26 @@ describe('Full Stack DSL Integration', () => {
       await grantMinimalPgflowPermissions(sql);
 
       // 2. Compile the flow through startup compilation
-      // Remove any definition from previous test runs so compilation is deterministic.
-      await sql`SELECT pgflow.delete_flow_and_data(${SimpleFlow.slug})`;
+      // Remove any definition from previous test runs so compilation is
+      // deterministic (delete_flow_and_data raises for absent flows).
+      await sql`
+        SELECT pgflow.delete_flow_and_data(flow_slug)
+        FROM pgflow.flows WHERE flow_slug = ${SimpleFlow.slug}
+      `;
       const shape = extractFlowShape(SimpleFlow);
-      const [{ result }] = await sql<{ result: { status: string } }[]>`
+      const [{ result }] = await sql<
+        { result: { status: string; queue_name: string; protocol_version: number } }[]
+      >`
         SELECT pgflow.ensure_flow_compiled(
           ${SimpleFlow.slug},
-          ${sql.json(shape as unknown as Json)}::jsonb
+          ${sql.json(shape as unknown as Json)}::jsonb,
+          '{"version": 1}'::jsonb
         ) AS result
       `;
 
       expect(result.status).toBe('compiled');
+      expect(result.queue_name).toBe(SimpleFlow.slug.toLowerCase());
+      expect(result.protocol_version).toBe(1);
 
       // 4. Verify flow was created correctly
       const flows =

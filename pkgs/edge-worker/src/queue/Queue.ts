@@ -42,7 +42,7 @@ export class Queue<TPayload extends Json> {
     `;
   }
 
-  async archive(msgId: number): Promise<void> {
+  async archive(msgId: string): Promise<void> {
     this.logger.debug(
       `Archiving message ${msgId} from queue '${this.queueName}'`
     );
@@ -51,7 +51,7 @@ export class Queue<TPayload extends Json> {
     `;
   }
 
-  async archiveBatch(msgIds: number[]): Promise<void> {
+  async archiveBatch(msgIds: string[]): Promise<void> {
     this.logger.debug(
       `Archiving ${msgIds.length} messages from queue '${this.queueName}'`
     );
@@ -77,8 +77,10 @@ export class Queue<TPayload extends Json> {
     this.logger.debug(
       `Reading messages from queue '${this.queueName}' with poll`
     );
+    // msg_id is projected to text so PGMQ bigint IDs cross the JavaScript
+    // boundary without precision loss (#650)
     return await this.sql<PgmqMessageRecord<TPayload>[]>`
-      SELECT *
+      SELECT msg_id::text as msg_id, read_ct, enqueued_at, vt, message, headers
       FROM pgmq.read_with_poll(
         queue_name => ${this.queueName},
         vt => ${visibilityTimeout},
@@ -99,17 +101,17 @@ export class Queue<TPayload extends Json> {
    * The only change made is now() replaced with clock_timestamp().
    */
   async setVt(
-    msgId: number,
+    msgId: string,
     vtOffsetSeconds: number
   ): Promise<PgmqMessageRecord<TPayload>> {
     this.logger.debug(
       `Setting visibility timeout for message ${msgId} to ${vtOffsetSeconds} seconds`
     );
-    const records = await this.sql<PgmqMessageRecord<TPayload>[]>`
+    const records = await this.sql<(PgmqMessageRecord<TPayload> & { msg_id: string })[]>`
       UPDATE ${this.sql('pgmq.q_' + this.queueName)}
       SET vt = (clock_timestamp() + make_interval(secs => ${vtOffsetSeconds}))
       WHERE msg_id = ${msgId}::bigint
-      RETURNING *;
+      RETURNING msg_id::text as msg_id, read_ct, enqueued_at, vt, message, headers;
     `;
     return records[0];
   }

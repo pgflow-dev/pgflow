@@ -13,7 +13,7 @@ select
 -- Test
 select throws_ok(
   $$ SELECT pgflow.add_step('test_flow', 'circular_step', ARRAY['fourth_step', 'circular_step']) $$,
-  'new row for relation "deps" violates check constraint "deps_check"',
+  'Flow test_flow: step "circular_step" has a dependency that does not exist',
   'Should not allow self-depending steps'
 );
 

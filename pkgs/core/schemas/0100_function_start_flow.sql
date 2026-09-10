@@ -14,6 +14,14 @@ declare
 begin
 
 -- ==========================================
+-- LOCK: Hold the concrete flow definition against deletion/recompilation
+-- while this producer reads step definitions (#650).
+-- ==========================================
+perform 1 from pgflow.flows f
+where f.flow_slug = start_flow.flow_slug
+for key share;
+
+-- ==========================================
 -- VALIDATION: Root map array input
 -- ==========================================
 WITH root_maps AS (

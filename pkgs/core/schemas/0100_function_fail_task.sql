@@ -19,8 +19,7 @@ DECLARE
   v_prev_step_status text;
   v_run_status text;
   v_flow_slug text;
-  v_skipped_message_ids bigint[];
-  v_cancelled_message_ids bigint[];
+  v_archive_batch record;
 begin
 
 -- If run is already failed, no retries allowed.
@@ -59,14 +58,9 @@ IF v_run_status = 'failed' THEN
 END IF;
 
 IF v_prev_step_status IS NOT NULL AND v_prev_step_status != 'started' THEN
-  -- Archive the task message if present
-  PERFORM pgmq.archive(v_flow_slug, ARRAY_AGG(st.message_id))
-  FROM pgflow.step_tasks st
-  WHERE st.run_id = fail_task.run_id
-    AND st.step_slug = fail_task.step_slug
-    AND st.task_index = fail_task.task_index
-    AND st.message_id IS NOT NULL
-  HAVING COUNT(st.message_id) > 0;
+  -- Archive the task message if present, through the locked single-task
+  -- helper (locks already held above)
+  PERFORM pgflow._archive_task_message(fail_task.run_id, fail_task.step_slug, fail_task.task_index);
 
   RETURN QUERY SELECT * FROM pgflow.step_tasks
   WHERE pgflow.step_tasks.run_id = fail_task.run_id
@@ -218,23 +212,25 @@ END IF;
   -- requeue_stalled_tasks() uses the same order; archiving queue rows first
   -- deadlocks the two transactions against each other.
   -- Terminalize all still-active sibling task rows for the skipped step,
-  -- capturing their message ids for archival below.
-  WITH skipped_tasks AS (
-    UPDATE pgflow.step_tasks AS task
-    SET status = 'skipped'
-    WHERE task.run_id = fail_task.run_id
-      AND task.step_slug = fail_task.step_slug
-      AND task.status IN ('queued', 'started')
-    RETURNING task.message_id
-  )
-  SELECT ARRAY_AGG(st.message_id) INTO v_skipped_message_ids
-  FROM skipped_tasks st
-  WHERE st.message_id IS NOT NULL;
-
-  -- Archive the sibling task messages captured above (only after their task rows are terminalized)
-  IF v_skipped_message_ids IS NOT NULL THEN
-    PERFORM pgmq.archive(v_flow_slug, v_skipped_message_ids);
-  END IF;
+  -- capturing their queue/message pairs for archival below.
+  FOR v_archive_batch IN
+    WITH skipped_tasks AS (
+      UPDATE pgflow.step_tasks AS task
+      SET status = 'skipped'
+      WHERE task.run_id = fail_task.run_id
+        AND task.step_slug = fail_task.step_slug
+        AND task.status IN ('queued', 'started')
+      RETURNING task.queue_name, task.message_id
+    )
+    SELECT
+      st.queue_name,
+      ARRAY_AGG(st.message_id ORDER BY st.message_id) AS ids
+    FROM skipped_tasks st
+    WHERE st.message_id IS NOT NULL
+    GROUP BY st.queue_name
+  LOOP
+    PERFORM pgmq.archive(v_archive_batch.queue_name, v_archive_batch.ids);
+  END LOOP;
 
   -- Send broadcast event for step skipped
   PERFORM realtime.send(
@@ -331,21 +327,23 @@ END IF;
 -- PGMQ queue rows. The culprit task is already terminal (failed or requeued by
 -- fail_or_retry_task), so only unfinished queued/started siblings are cancelled.
 IF v_run_failed THEN
-  WITH cancelled_tasks AS (
-    UPDATE pgflow.step_tasks AS task
-    SET status = 'cancelled'
-    WHERE task.run_id = fail_task.run_id
-      AND task.status IN ('queued', 'started')
-    RETURNING task.message_id
-  )
-  SELECT ARRAY_AGG(ct.message_id) INTO v_cancelled_message_ids
-  FROM cancelled_tasks ct
-  WHERE ct.message_id IS NOT NULL;
-
-  -- Archive the cancelled task messages captured above (only after their task rows are terminalized)
-  IF v_cancelled_message_ids IS NOT NULL THEN
-    PERFORM pgmq.archive(v_flow_slug, v_cancelled_message_ids);
-  END IF;
+  FOR v_archive_batch IN
+    WITH cancelled_tasks AS (
+      UPDATE pgflow.step_tasks AS task
+      SET status = 'cancelled'
+      WHERE task.run_id = fail_task.run_id
+        AND task.status IN ('queued', 'started')
+      RETURNING task.queue_name, task.message_id
+    )
+    SELECT
+      ct.queue_name,
+      ARRAY_AGG(ct.message_id ORDER BY ct.message_id) AS ids
+    FROM cancelled_tasks ct
+    WHERE ct.message_id IS NOT NULL
+    GROUP BY ct.queue_name
+  LOOP
+    PERFORM pgmq.archive(v_archive_batch.queue_name, v_archive_batch.ids);
+  END LOOP;
 END IF;
 
 -- For queued tasks: delay the message for retry with exponential backoff
@@ -361,32 +359,36 @@ PERFORM (
   ),
   queued_tasks AS (
     SELECT
-      r.flow_slug,
+      st.queue_name,
       st.message_id,
       pgflow.calculate_retry_delay((SELECT base_delay FROM retry_config), st.attempts_count) AS calculated_delay
     FROM pgflow.step_tasks st
-    JOIN pgflow.runs r ON st.run_id = r.run_id
     WHERE st.run_id = fail_task.run_id
       AND st.step_slug = fail_task.step_slug
       AND st.task_index = fail_task.task_index
       AND st.status = 'queued'
   )
-  SELECT pgmq.set_vt(qt.flow_slug, qt.message_id, qt.calculated_delay)
+  SELECT pgmq.set_vt(qt.queue_name, qt.message_id, qt.calculated_delay)
   FROM queued_tasks qt
   WHERE EXISTS (SELECT 1 FROM queued_tasks)
 );
 
--- For failed tasks: archive the message
-PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
-FROM pgflow.step_tasks st
-JOIN pgflow.runs r ON st.run_id = r.run_id
-WHERE st.run_id = fail_task.run_id
-  AND st.step_slug = fail_task.step_slug
-  AND st.task_index = fail_task.task_index
-  AND st.status = 'failed'
-  AND st.message_id IS NOT NULL
-GROUP BY r.flow_slug
-HAVING COUNT(st.message_id) > 0;
+-- For failed tasks: archive the message grouped by the task's queue snapshot
+FOR v_archive_batch IN
+  SELECT
+    st.queue_name,
+    ARRAY_AGG(st.message_id ORDER BY st.message_id) AS ids
+  FROM pgflow.step_tasks st
+  WHERE st.run_id = fail_task.run_id
+    AND st.step_slug = fail_task.step_slug
+    AND st.task_index = fail_task.task_index
+    AND st.status = 'failed'
+    AND st.message_id IS NOT NULL
+  GROUP BY st.queue_name
+  HAVING COUNT(st.message_id) > 0
+LOOP
+  PERFORM pgmq.archive(v_archive_batch.queue_name, v_archive_batch.ids);
+END LOOP;
 
 return query select *
 from pgflow.step_tasks st

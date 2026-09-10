@@ -16,3 +16,23 @@ export class FlowShapeMismatchError extends Error {
     this.name = 'FlowShapeMismatchError';
   }
 }
+
+/**
+ * Error thrown when the database's worker startup protocol does not match
+ * this worker's queue-capable protocol (#650). Old and new sides must be
+ * upgraded together; rolling old/new workers are unsupported.
+ */
+export class QueueProtocolMismatchError extends Error {
+  constructor(
+    public readonly flowSlug: string,
+    detail: string
+  ) {
+    super(
+      `Flow '${flowSlug}' requires a coordinated pgflow upgrade.\n` +
+      `${detail}\n` +
+      `Deploy the queue-aware pgflow packages and database migration together; ` +
+      `running old and new workers side by side is unsupported.`
+    );
+    this.name = 'QueueProtocolMismatchError';
+  }
+}

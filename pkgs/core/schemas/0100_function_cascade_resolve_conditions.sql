@@ -19,14 +19,17 @@ DECLARE
   v_processed_count int;
   v_run_transitioned boolean;
   v_flow_slug text;
-  v_cancelled_message_ids bigint[];
+  v_archive_batch record;
 BEGIN
   -- ==========================================
-  -- GUARD: Early return if run is already terminal
+  -- GUARD: lock the parent run at direct entry, then early-return if the
+  -- run is already terminal. Callers that already hold the run lock (for
+  -- example complete_task) re-acquire it harmlessly in the same transaction.
   -- ==========================================
   SELECT r.status, r.input INTO v_run_status, v_run_input
   FROM pgflow.runs r
-  WHERE r.run_id = cascade_resolve_conditions.run_id;
+  WHERE r.run_id = cascade_resolve_conditions.run_id
+  FOR UPDATE;
 
   IF v_run_status IN ('failed', 'completed') THEN
     RETURN v_run_status != 'failed';
@@ -158,24 +161,25 @@ BEGIN
         );
 
         -- Terminalize every unfinished task across all branches as cancelled,
-        -- capturing their message ids for archival below. Lock-order invariant:
-        -- always lock/update step_tasks before PGMQ queue rows.
-        WITH cancelled_tasks AS (
-          UPDATE pgflow.step_tasks AS task
-          SET status = 'cancelled'
-          WHERE task.run_id = cascade_resolve_conditions.run_id
-            AND task.status IN ('queued', 'started')
-          RETURNING task.message_id
-        )
-        SELECT ARRAY_AGG(ct.message_id) INTO v_cancelled_message_ids
-        FROM cancelled_tasks ct
-        WHERE ct.message_id IS NOT NULL;
-
-        -- Archive the cancelled task messages captured above (only after their
-        -- task rows are terminalized)
-        IF v_cancelled_message_ids IS NOT NULL THEN
-          PERFORM pgmq.archive(v_first_fail.flow_slug, v_cancelled_message_ids);
-        END IF;
+        -- capturing their queue/message pairs for archival below. Lock-order
+        -- invariant: always lock/update step_tasks before PGMQ queue rows.
+        FOR v_archive_batch IN
+          WITH cancelled_tasks AS (
+            UPDATE pgflow.step_tasks AS task
+            SET status = 'cancelled'
+            WHERE task.run_id = cascade_resolve_conditions.run_id
+              AND task.status IN ('queued', 'started')
+            RETURNING task.queue_name, task.message_id
+          )
+          SELECT
+            ct.queue_name,
+            ARRAY_AGG(ct.message_id ORDER BY ct.message_id) AS ids
+          FROM cancelled_tasks ct
+          WHERE ct.message_id IS NOT NULL
+          GROUP BY ct.queue_name
+        LOOP
+          PERFORM pgmq.archive(v_archive_batch.queue_name, v_archive_batch.ids);
+        END LOOP;
       END IF;
 
       RETURN false;

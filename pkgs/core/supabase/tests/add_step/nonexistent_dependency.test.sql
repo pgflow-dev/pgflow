@@ -8,7 +8,7 @@ select pgflow.create_flow('test_flow');
 -- Test
 select throws_ok(
   $$ SELECT pgflow.add_step('test_flow', 'invalid_dep_step', ARRAY['nonexistent_step']) $$,
-  'insert or update on table "deps" violates foreign key constraint "deps_flow_slug_dep_slug_fkey"',
+  'Flow test_flow: step "invalid_dep_step" has a dependency that does not exist',
   'Should detect and prevent dependency on non-existent step'
 );
 

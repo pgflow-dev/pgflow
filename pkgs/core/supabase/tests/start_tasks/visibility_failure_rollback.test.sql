@@ -96,7 +96,8 @@ select throws_ok(
        (select ids from vispartial_msgs),
        '11111111-1111-1111-1111-111111111111'::uuid
      ) $$,
-  'invalid input syntax for type integer: "start_tasks(): visibility updated 1 of 2 claimed messages"',
+  'P0001',
+  'claim_tasks(): visibility updated 1 of 2 claimed messages',
   'partial visibility mismatch fails the whole statement and returns nothing'
 );
 

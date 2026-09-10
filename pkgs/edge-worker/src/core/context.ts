@@ -1,6 +1,6 @@
 /* DSL‐level ------------------------------------------------------------ */
 import type { BaseContext, AnyFlow, AllStepInputs, ExtractFlowInput } from '@pgflow/dsl';
-import type { Json } from './types.js';
+import type { Json, MessageId } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { StepTaskRecord } from '@pgflow/core';
 import type { QueueWorkerConfig, FlowWorkerConfig } from './workerConfigTypes.js';
@@ -63,7 +63,7 @@ export type StepTaskContext<
  * immediately (if provided) or lazy-loads from the runs table.
  */
 export interface StepTaskWithMessage<TFlow extends AnyFlow> {
-  msg_id : number;
+  msg_id : MessageId;
   message: PgmqMessageRecord<AllStepInputs<TFlow>>;
   task   : StepTaskRecord<TFlow>;
   flowInput: ExtractFlowInput<TFlow> | null;

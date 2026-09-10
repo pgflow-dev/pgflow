@@ -379,13 +379,15 @@ Deno.test(
 
     try {
       // Fire all compilations simultaneously on separate connections
-      // Note: Must use conn.json() for proper jsonb parameter passing
+      // Note: Must use conn.json() for proper jsonb parameter passing; the
+      // required queue-capable protocol argument is part of the call (#650).
       const results = await Promise.all(
         connections.map(
           (conn) =>
             conn`SELECT pgflow.ensure_flow_compiled(
             ${flowSlug},
-            ${conn.json(shape)}
+            ${conn.json(shape)},
+            ${conn.json({ version: 1 })}::jsonb
           ) as result`
         )
       );

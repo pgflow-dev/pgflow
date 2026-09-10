@@ -31,6 +31,10 @@ export function validateSlug(slug: string): void {
       `Slug '${slug}' can only contain letters, numbers, and underscores`
     );
   }
+
+  if (slug.startsWith('_') || slug.endsWith('_') || slug.includes('__')) {
+    throw new Error(`Slug '${slug}' cannot start or end with an underscore or contain double underscores`);
+  }
 }
 
 /**

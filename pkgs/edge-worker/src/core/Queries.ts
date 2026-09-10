@@ -1,13 +1,23 @@
 import type postgres from 'postgres';
 import type { WorkerRow, WorkerStartMode } from './types.js';
 import type { FlowShape, Json } from '@pgflow/dsl';
+import { QueueProtocolMismatchError } from '../flow/errors.js';
 
 export type EnsureFlowCompiledStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
 
-export interface EnsureFlowCompiledResult {
-  status: EnsureFlowCompiledStatus;
-  differences: string[];
-}
+/**
+ * Startup handshake result (#650). Every non-mismatch status carries the
+ * checked canonical queue and protocol version; the worker validates both
+ * before registration/polling and does not trust an old-looking result.
+ */
+export type EnsureFlowCompiledResult =
+  | { status: 'mismatch'; differences: string[] }
+  | {
+      status: Exclude<EnsureFlowCompiledStatus, 'mismatch'>;
+      differences: string[];
+      protocol_version: 1;
+      queue_name: string;
+    };
 
 export class Queries {
   constructor(private readonly sql: postgres.Sql) {}
@@ -65,13 +75,32 @@ export class Queries {
     // TODO: If FlowShape ever becomes part of a public API or accepts external input,
     // add a runtime assertion function (assertJsonCompatible) to validate at the boundary.
     const shapeJson = this.sql.json(shape as unknown as Json);
-    const [result] = await this.sql<{ result: EnsureFlowCompiledResult }[]>`
-      SELECT pgflow.ensure_flow_compiled(
-        ${flowSlug},
-        ${shapeJson}::jsonb
-      ) as result
-    `;
-    return result.result;
+    const protocolJson = this.sql.json({ version: 1 } as Json);
+    let result: { result: EnsureFlowCompiledResult } | undefined;
+    try {
+      [result] = await this.sql<{ result: EnsureFlowCompiledResult }[]>`
+        SELECT pgflow.ensure_flow_compiled(
+          ${flowSlug},
+          ${shapeJson}::jsonb,
+          ${protocolJson}::jsonb
+        ) as result
+      `;
+    } catch (error) {
+      // Translate only the missing queue-capable startup function into an
+      // actionable coordinated-upgrade error; ordinary connection errors stay
+      // database errors and there is no fallback to the old signature.
+      if (
+        error instanceof Error &&
+        /function pgflow\.ensure_flow_compiled.*does not exist/.test(error.message)
+      ) {
+        throw new QueueProtocolMismatchError(
+          flowSlug,
+          `The database has no queue-capable pgflow.ensure_flow_compiled(text, jsonb, jsonb) function.`
+        );
+      }
+      throw error;
+    }
+    return result!.result;
   }
 
   /**

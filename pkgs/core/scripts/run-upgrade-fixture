@@ -65,4 +65,10 @@ echo "upgrade fixture: applying consolidated migration $(basename "$consolidated
 psql_in < "$consolidated"
 
 psql_in < supabase/upgrade_fixture/assertions.sql
+
 echo "upgrade fixture: PASS"
+
+# The 0.16.0 queue upgrade fixture runs only after this fixture passes. It
+# owns its own container and databases; it must not reacquire this
+# nonreentrant stack lock (the lock is already held here).
+scripts/run-queue-upgrade-fixture

@@ -34,12 +34,13 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   run_id: '123',
   step_slug: 'normalStep',
   task_index: 0,
+  queue_name: 'example_flow',
   input: {
     rootStep: { doubledValue: 23 },
     // thirdStep: { finalValue: 23 }, --- this should be an error
     // normalStep: { doubledValueArray: [1, 2, 3] }, --- this should be an error
   },
-  msg_id: 1,
+  msg_id: '1',
   flow_input: { value: 23 },
 };
 

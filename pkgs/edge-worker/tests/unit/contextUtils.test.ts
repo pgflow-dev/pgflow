@@ -29,7 +29,7 @@ const minimalEnv = {
 
 // Mock pgmq message record
 const mockMessage: PgmqMessageRecord<{ test: string }> = {
-  msg_id: 123,
+  msg_id: '123',
   read_ct: 1,
   enqueued_at: '2024-01-01T00:00:00Z',
   vt: '2024-01-01T00:01:00Z',
@@ -39,7 +39,7 @@ const mockMessage: PgmqMessageRecord<{ test: string }> = {
 
 // Mock pgmq message record with step input structure
 const mockStepMessage: PgmqMessageRecord<{ run: { test: string } }> = {
-  msg_id: 123,
+  msg_id: '123',
   read_ct: 1,
   enqueued_at: '2024-01-01T00:00:00Z',
   vt: '2024-01-01T00:01:00Z',
@@ -53,10 +53,11 @@ const mockFlowInput = { test: 'flow-input' };
 // Mock step task (using generic typing)
 const mockStepTask = {
   flow_slug: 'test-flow',
+  queue_name: 'test-flow',
   run_id: 'run-456',
   step_slug: 'test-step',
   input: { run: { test: 'input' } },
-  msg_id: 123,
+  msg_id: '123',
   flow_input: mockFlowInput,  // Can be actual value or null - test helper wraps in Promise
   task_index: 0
 } as unknown as StepTaskRecord<never>;
@@ -134,7 +135,7 @@ Deno.test('context - rawMessage is accessible', () => {
     sql: mockSql
   });
   
-  assertEquals(context.rawMessage.msg_id, 123);
+  assertEquals(context.rawMessage.msg_id, '123');
   assertEquals(context.rawMessage.message, { test: 'data' });
 });
 

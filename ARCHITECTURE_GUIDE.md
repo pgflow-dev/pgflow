@@ -60,7 +60,7 @@ const CompleteExample = new Flow<{ urls: string[] }>({
     async (input, context) => {
       // context.env - Environment variables
       // context.shutdownSignal - Graceful shutdown signal
-      // context.stepTask - Current task details (run_id, step_slug, input, msg_id, task_index)
+      // context.stepTask - Current task details (run_id, step_slug, input, msg_id as decimal string, task_index)
       // context.workerConfig - Worker configuration (read-only)
       // context.sql - PostgreSQL client (Supabase preset)
       // context.supabase - Supabase client (Supabase preset)
@@ -123,7 +123,7 @@ const CompleteExample = new Flow<{ urls: string[] }>({
 export default CompleteExample;
 ```
 
-**Compilation**: Worker startup extracts the complete flow shape (`extractFlowShape()`) and PostgreSQL compiles or verifies it via `pgflow.ensure_flow_compiled(flow_slug, shape)` before any registration.
+**Compilation**: Worker startup extracts the complete flow shape (`extractFlowShape()`) and PostgreSQL compiles or verifies it via `pgflow.ensure_flow_compiled(flow_slug, shape, worker_protocol)` before any registration. The database answers with its protocol version and the flow's canonical queue name; a mismatched or old-looking answer stops the worker before registration (`QueueProtocolMismatchError`). New workers and the queue-aware database must be upgraded together; rolling old/new workers are unsupported.
 
 **Important**: See DSL package files for:
 - Type inference utilities: `ExtractFlowInput`, `ExtractFlowOutput`, `StepInput`, `StepOutput`
@@ -172,7 +172,7 @@ export default CompleteExample;
 
 **Critical Cross-Cutting Concepts**:
 
-1. **Two-Phase Polling** - Worker calls `read_with_poll()` then `start_tasks(workerId)` to prevent race conditions
+1. **Two-Phase Polling** - Worker calls `read_with_poll()` then `claim_tasks(queue_name, flow_slug, message_ids, worker_id)` to prevent race conditions
 2. **Empty Array Cascade** - When `initial_tasks=0`, `cascade_complete_taskless_steps()` completes entire dependent chain in one transaction
 3. **Map Step `initial_tasks` Lifecycle**:
    - Root maps: Set at flow start from input array length
@@ -198,13 +198,13 @@ export default CompleteExample;
 
 **Worker Lifecycle**:
 1. `acknowledgeStart()`:
-   - Compile or verify the imported flow shape (`ensureFlowCompiled`)
+   - Compile or verify the imported flow shape (`ensureFlowCompiled`) with the worker protocol handshake
    - Track the worker function (`track_worker_function`)
-   - Insert the worker row with `workerId` in the database
+   - Insert the worker row with `workerId` and the flow's canonical queue in the database
 2. Main loop:
    - `sendHeartbeat()` - Update status, check deprecation
    - If deprecated → exit gracefully
-   - Two-phase polling: `readMessages()` then `startTasks(workerId)`
+   - Queue-aware claiming: `readMessages()` then `claimTasks()` on the flow's canonical queue
    - Execute handlers (up to `maxConcurrent` parallel)
    - `complete_task()` or `fail_task()`
 3. On shutdown:
@@ -227,17 +227,16 @@ const supabase = createClient(
 );
 
 // Create worker with all configuration options
-const worker = createFlowWorker(supabase, MyFlow, {
-  // Queue configuration
-  queueName: 'tasks',           // Default: 'tasks'
+const worker = createFlowWorker(
+  MyFlow,
+  {
+    // Polling configuration
+    maxPollSeconds: 2,            // Default: 2
+    pollIntervalMs: 100,          // Default: 100
+    batchSize: 10,                // Default: 10
+    visibilityTimeout: 2,         // Default: 2
 
-  // Polling configuration
-  maxPollSeconds: 2,            // Default: 2
-  pollIntervalMs: 100,          // Default: 100
-  batchSize: 10,                // Default: 10
-  visibilityTimeout: 2,         // Default: 2
-
-  // Concurrency configuration
+    // Concurrency configuration
   maxConcurrent: 10,            // Default: 10
   maxPgConnections: 4,          // Default: 4
 
@@ -247,7 +246,10 @@ const worker = createFlowWorker(supabase, MyFlow, {
     delay: 1000,                // Base delay in ms
     maxAttempts: 3,             // Max retry attempts
   },
-});
+  },
+  createLogger,
+  platformAdapter
+);
 
 // Start worker (runs until shutdown signal)
 await worker.start();
@@ -255,9 +257,9 @@ await worker.start();
 // Worker provides context to handlers:
 // - context.env - Environment variables
 // - context.shutdownSignal - Graceful shutdown detection
-// - context.stepTask - Current task (flow_slug, run_id, step_slug, input, msg_id, task_index)
+// - context.stepTask - Current task (flow_slug, run_id, step_slug, input, msg_id as decimal string, task_index)
 // - context.workerConfig - Configuration (read-only, frozen)
-// - context.rawMessage - Full pgmq message (msg_id, read_ct, enqueued_at, vt)
+// - context.rawMessage - Full pgmq message (msg_id as decimal string, read_ct, enqueued_at, vt)
 // - context.sql - PostgreSQL client (Supabase)
 // - context.supabase - Supabase client (Supabase)
 ```
@@ -307,17 +309,27 @@ await worker.start();
 
 ## Critical Cross-Package Concepts
 
-### 1. Two-Phase Polling (Worker + SQL Core)
+### 1. Queue-Aware Task Claiming (Worker + SQL Core)
 
-**Why**: Prevents race condition where worker processes message before `step_tasks` record exists.
+**Why**: Prevents race condition where worker processes message before `step_tasks` record exists, and binds every claim to the flow's canonical queue so message identity is unambiguous.
 
 **How**:
-- Phase 1: Worker calls `read_with_poll()` - reserves messages, returns `msg_id`s
-- Phase 2: Worker calls `start_tasks(flow_slug, msg_ids, workerId)` - creates `step_tasks`, returns details
+- Phase 1: Worker reads from the flow's canonical queue with `read_with_poll()` - reserves messages, returns decimal-string `msg_id`s
+- Phase 2: Worker calls `pgflow.claim_tasks(queue_name, flow_slug, msg_ids, workerId)` - validates the route, claims matching `step_tasks`, returns details
+
+Workers and the queue-aware database must be upgraded together; see [the queue identity upgrade](https://pgflow.dev/deploy/update-pgflow/#the-queue-identity-upgrade) for the fenced procedure.
+
+**Queue identity rules** (#650):
+- A task message is identified by `(queue_name, message_id)`, not `message_id` alone.
+- Flow and step slugs retain their accepted spelling; physical queue names are lowercase.
+- Do not send application messages directly into pgflow-owned queues.
+- Clearly foreign untracked messages are archived with body-free warnings.
+- Apparently genuine or ambiguous unsupported work stops the worker and pauses HTTP restarts.
+- PGMQ message IDs in JavaScript contexts are decimal strings.
 
 **See**:
-- Worker implementation: `/pkgs/edge-worker/src/worker/FlowWorkerLifecycle.ts`
-- SQL implementation: `/pkgs/core/src/migrations/pgflow--*.sql` (functions: `read_with_poll`, `start_tasks`)
+- Worker implementation: `/pkgs/edge-worker/src/flow/FlowWorkerLifecycle.ts`
+- SQL implementation: `/pkgs/core/schemas/0120_function_claim_tasks.sql` (functions: `read_with_poll`, `claim_tasks`)
 
 ### 2. Empty Array Cascade (DSL + SQL Core)
 
@@ -365,7 +377,7 @@ await worker.start();
 
 ## Non-Negotiable Conventions
 
-- **Slugs**: `[a-zA-Z_][a-zA-Z0-9_]*`, 1-128 chars (cannot be 'run')
+- **Slugs**: start with a letter, then letters, digits, or single internal underscores; no leading, trailing, or doubled underscores (cannot be `run`). Step slugs allow 1-128 characters; current flow slugs allow 1-47 because their lowercase value is the generated queue name
 - **DAG Only**: No cycles or conditional edges
 - **Topological Order**: Steps added in dependency order (FK enforced)
 - **JSON Serializable**: All inputs/outputs must be JSON-compatible

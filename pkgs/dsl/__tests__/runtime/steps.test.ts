@@ -25,6 +25,22 @@ describe('Steps', () => {
         'Step "test_step" already exists in flow "test_flow"'
       );
     });
+
+    it('rejects a case-only duplicate step', () => {
+      const stepFlow = new Flow({ slug: 'Orders' }).step({ slug: 'saveItem' }, () => null);
+      expect(() => stepFlow.step({ slug: 'SaveItem' }, () => null)).toThrow();
+    });
+
+    it('rejects case-only duplicate steps in map steps', () => {
+      const mapFlow = new Flow({ slug: 'orders' }).step({ slug: 'first' }, () => null);
+      expect(() => mapFlow.map({ slug: 'FIRST' }, () => null)).toThrow();
+    });
+
+    it.each(['_a', 'a_', 'a__b', '_', 'a___b'])('rejects step slug %s', (slug) => {
+      expect(() => flow.step({ slug }, noop)).toThrow();
+      expect(() => flow.map({ slug }, noop)).toThrow();
+      expect(() => flow.array({ slug }, noop)).toThrow();
+    });
   });
 
   describe('slug validation', () => {

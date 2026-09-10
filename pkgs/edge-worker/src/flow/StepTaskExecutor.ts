@@ -68,8 +68,7 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
     return {
       flowSlug: this.stepTask.flow_slug,
       stepSlug: this.stepTask.step_slug,
-      // Convert to string for logging (msg_id is number from PostgreSQL bigint)
-      msgId: String(this.stepTask.msg_id),
+      msgId: this.stepTask.msg_id,
       runId: this.stepTask.run_id,
       workerId: this.workerIdentity.workerId,
       workerName: this.workerIdentity.workerName,

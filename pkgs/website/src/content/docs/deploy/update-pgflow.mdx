@@ -8,7 +8,8 @@ sidebar:
     variant: tip
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside, Steps, Code } from "@astrojs/starlight/components";
+import preMigrationCheck650 from '../../../../../core/queries/PRE_MIGRATION_CHECK_650.sql?raw';
 
 This guide explains how to update pgflow to the latest version, including package updates and database migrations. pgflow updates involve two main components that need to be updated together.
 
@@ -99,6 +100,10 @@ pgflow is tested on PostgreSQL 17 for compatibility.
 
 ### 5. Apply new migrations
 
+<Aside type="caution" title="Apply migrations with workers stopped">
+Migrations apply schema changes to your database while it is running. For the queue identity upgrade described below, applying the migration while workers are still running is unsupported: stop and drain all pgflow workers first, and keep the installation offline until the upgrade completes.
+</Aside>
+
 Apply the new migrations to your database:
 
 ```bash frame="none"
@@ -129,6 +134,90 @@ Where:
 - `ORIGINAL_NAME` - The original migration file name
 
 The original timestamp allows pgflow to search for and detect which migrations have already been installed, while the new timestamp prefix ensures Supabase can apply the migration without timestamp ordering errors.
+
+## The queue identity upgrade
+
+The pgflow database migration `20260910104929_pgflow_persist_queue.sql` gives every flow a persisted, canonical queue: step and task rows store the queue name they will use, task messages are identified by `(queue_name, message_id)` instead of `message_id` alone, and physical queue names are the lowercase flow slug while your flow and step slugs keep their exact spelling.
+
+The migration also tightens flow and step slug validation. Leading or trailing underscores, doubled underscores, and case-only duplicates now block the upgrade, including definitions without active runs. Review the complete [naming rules](/concepts/naming-conventions/#exact-rules) before the maintenance window. The migration never renames incompatible definitions.
+
+This change is coordinated: new workers speak a new startup protocol, and old workers call startup functions the migrated database no longer provides. The two sides must move together.
+
+<Aside type="caution" title="Compatibility matrix">
+
+| Database state | New worker (queue-aware) | Old 0.16.0 worker |
+| --- | --- | --- |
+| Before migration (0.16.0 schema) | Stops at startup with `QueueProtocolMismatchError`; no polling | Works (pre-upgrade behavior) |
+| After migration | Works: claims tasks by canonical queue, decimal-string IDs | Fails at startup on the removed two-argument `ensure_flow_compiled`; no registration or polling |
+
+Rolling deployments that mix old and new workers against one database are unsupported. Upgrade the packages and the database in one maintenance window.
+</Aside>
+
+### 1. Audit the old database and resolve findings
+
+While writers are still paused or quiet, run the read-only audit. It reports invalid definitions, duplicate task pairs, queue ownership or topology problems, and the installed pruning helper - all as bounded JSON notices with samples. It changes nothing.
+
+<Code lang="sql" code={preMigrationCheck650} />
+
+Only `severity=info` rows means the audit found nothing to fix. `severity=error` rows name exact flow or step slugs and keys: resolve them manually before proceeding. The migration never renames, merges, deletes, or repairs anything on your behalf.
+
+### 2. Save worker and schedule state
+
+```sql frame="none"
+-- Save HTTP worker enabled flags and cron schedules so you can restore
+-- exact values afterwards. Nothing is restored to a default on=true.
+select function_name, enabled from pgflow.worker_functions;
+select jobid, jobname, schedule, active from cron.job;
+```
+
+### 3. Pause producers and maintenance
+
+Pause the producers that call `pgflow.start_flow`, and any jobs that change flow definitions, delete flows, run the installed pruning helper, or recover stalled tasks. Keep the old workers running while their current handlers finish.
+
+### 4. Stop and drain workers
+
+Disable HTTP worker restarts, and stop process-mode supervisors from starting new workers. Wait for active handlers to finish and commit, then stop the remaining worker processes. Queues do not need to be empty: the migration validates and preserves matched queued messages and task state. Do not delete queued messages to prepare the upgrade.
+
+### 5. Apply the migration transaction with a bounded lock wait
+
+Apply pending migrations through the Supabase CLI so it uses the installer-generated filename and records the migration in Supabase's history:
+
+```bash frame="none"
+npx supabase migration up --db-url "$DATABASE_URL"
+```
+
+The queue identity migration is self-transactional and refuses to start if another session holds a conflicting lock for longer than five seconds. On refusal or error the database is unchanged: fix the blocker and run the migration command again.
+
+### 6. Replace or adapt the installed pruning helper
+
+The migration never overwrites `pgflow.prune_data_older_than(interval)`. If you have the stock 0.16.0 helper installed, replace it explicitly with the current version from [the pruning function](/deploy/prune-records/#the-pruning-function) and keep maintenance paused until that is done. If you customized the helper, compare your installed source first:
+
+```sql frame="none"
+select pg_get_functiondef('pgflow.prune_data_older_than(interval)'::regprocedure);
+```
+
+Adapt your customization manually to the current source's queue-snapshot grouping and lock order instead of pasting over your custom behavior. Keep cron schedules disabled until the replacement or adaptation is complete.
+
+### 7. Deploy matching packages and workers
+
+Update all pgflow packages to the same version (see the update process above), redeploy each worker function, and start process-mode workers. Workers now register against their flow's canonical lowercase queue.
+
+### 8. Restore the saved state and verify
+
+Re-enable exactly the worker functions and cron jobs you saved in step 2 - nothing turns itself back on. Then verify the upgrade:
+
+```sql frame="none"
+-- Canonical snapshots are populated for every step and task.
+select step_slug, queue_name from pgflow.steps order by 1;
+select queue_name, count(*) from pgflow.step_tasks group by 1 order by 1;
+
+-- A fresh run completes through the canonical route.
+select run_id, status from pgflow.start_flow('YourFlow', '{}'::jsonb);
+```
+
+Handlers receive message IDs as exact decimal strings, including values above `Number.MAX_SAFE_INTEGER`. Compare IDs for equality as strings, or use `BigInt` when numeric ordering is necessary. Never convert them with `Number()`.
+
+Do not send application messages directly into pgflow-owned queues: clearly foreign untracked messages are archived with body-free warnings, and apparently genuine or ambiguous unsupported work stops the worker and pauses HTTP restarts.
 
 ## Remove manual flow compilation
 

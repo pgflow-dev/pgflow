@@ -20,6 +20,7 @@ create table pgflow.steps (
   step_type text not null default 'single',
   step_index int not null default 0,
   deps_count int not null default 0 check (deps_count >= 0),
+  queue_name text not null,
   opt_max_attempts int,
   opt_base_delay int,
   opt_timeout int,
@@ -44,7 +45,8 @@ create table pgflow.steps (
   constraint opt_timeout_is_positive check (opt_timeout is null or opt_timeout > 0),
   constraint opt_start_delay_is_nonnegative check (opt_start_delay is null or opt_start_delay >= 0),
   constraint when_unmet_is_valid check (when_unmet in ('fail', 'skip', 'skip-cascade')),
-  constraint when_exhausted_is_valid check (when_exhausted in ('fail', 'skip', 'skip-cascade'))
+  constraint when_exhausted_is_valid check (when_exhausted in ('fail', 'skip', 'skip-cascade')),
+  constraint queue_name_is_valid check (pgflow._is_valid_queue_name(queue_name))
 );
 
 -- Dependencies table - stores relationships between steps
@@ -63,3 +65,9 @@ create table pgflow.deps (
 
 create index if not exists idx_deps_by_flow_step on pgflow.deps (flow_slug, step_slug);
 create index if not exists idx_deps_by_flow_dep on pgflow.deps (flow_slug, dep_slug);
+
+-- Case-insensitive namespace uniqueness: concrete spelling is preserved, but
+-- case-only aliases would collide on generated queue names, so they are
+-- rejected atomically by declarative indexes (#650).
+create unique index if not exists idx_flows_slug_lower on pgflow.flows (lower(flow_slug));
+create unique index if not exists idx_steps_slug_lower on pgflow.steps (flow_slug, lower(step_slug));

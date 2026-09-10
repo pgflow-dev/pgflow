@@ -11,52 +11,159 @@
  *
  * WARNING: Ensure retention_interval is longer than your longest start_delay to avoid
  * deleting tasks before they have a chance to execute.
+ *
+ * #650: queue-aware version. Active-message cleanup groups by the task's
+ * queue_name snapshot (never by the denormalized flow slug), archive pruning
+ * enumerates persisted definition routes (including the empty compiled plain
+ * default), and task rows are locked/deleted before their queue rows.
+ * Lock order matches delete_flow_and_data: retained flow definitions are
+ * locked (FOR KEY SHARE, ordered) before any runtime row, then expired
+ * parent runs, their step states, and the complete affected task set -
+ * including tasks of still-active runs whose last_worker_id will be
+ * FK-set NULL by the worker deletion below - before any queue row is
+ * touched. After all runtime locks and before any queue access, every
+ * route this pass touches (task snapshots plus archive routes) is
+ * validated with _inspect_generated_queue(flow_slug, queue_name, true),
+ * which also checks metadata ambiguity, physical shape, sequence
+ * ownership, and extension membership under the pgmq.meta fence; a
+ * corrupted or replaced queue stops pruning instead of letting pgflow
+ * delete from a queue it does not own.
  */
 create or replace function pgflow.prune_data_older_than(
   retention_interval INTERVAL
 ) returns void language plpgsql as $$
 DECLARE
   cutoff_timestamp TIMESTAMPTZ := now() - retention_interval;
-  flow_record RECORD;
+  batch_record RECORD;
+  route_record RECORD;
+  bad_route RECORD;
+  validate_route RECORD;
+  archive_queue TEXT;
   archive_table TEXT;
   dynamic_sql TEXT;
 BEGIN
-  -- Delete old worker records
-  DELETE FROM pgflow.workers
-  WHERE last_heartbeat_at < cutoff_timestamp;
+  -- Lock retained flow definitions first (before any runtime row), the same
+  -- definition-first order delete_flow_and_data uses. Taking these locks
+  -- after runtime locks could deadlock with flow deletion.
+  PERFORM 1 FROM pgflow.flows f
+  ORDER BY f.flow_slug
+  FOR KEY SHARE;
 
-  -- Delete PGMQ messages from active queues BEFORE deleting step_tasks
-  -- This prevents orphaned messages that would appear after tasks are deleted
-  FOR flow_record IN
-    SELECT
-      r.flow_slug,
-      ARRAY_AGG(st.message_id) FILTER (WHERE st.message_id IS NOT NULL) as message_ids
-    FROM pgflow.runs r
-    JOIN pgflow.step_tasks st ON st.run_id = r.run_id
+  -- Validate every persisted route as the flow's canonical generated queue
+  -- before any queue access: a corrupted steps.queue_name must never direct
+  -- pruning into a queue pgflow does not own.
+  SELECT f.flow_slug, s.step_slug, s.queue_name INTO bad_route
+  FROM pgflow.flows f
+  JOIN pgflow.steps s ON s.flow_slug = f.flow_slug
+  WHERE s.queue_name IS DISTINCT FROM lower(f.flow_slug)
+  ORDER BY f.flow_slug, s.step_slug
+  LIMIT 1;
+  IF bad_route IS NOT NULL THEN
+    RAISE EXCEPTION 'prune_data_older_than(): flow "%" step "%" persists non-canonical route "%" (expected "%"); fix the corrupted definition before pruning',
+      bad_route.flow_slug, bad_route.step_slug, bad_route.queue_name, lower(bad_route.flow_slug);
+  END IF;
+
+  -- Lock parent runs of every task this pass will touch, then their step
+  -- states, then the complete affected task set. The task set includes
+  -- tasks of still-active runs whose last_worker_id references a worker
+  -- that will be deleted below (the FK ON DELETE SET NULL update touches
+  -- those task rows after this point, so they must already be locked).
+  PERFORM 1 FROM pgflow.runs r
+  WHERE (
+    (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
+    (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
+  )
+  ORDER BY r.run_id
+  FOR UPDATE;
+
+  PERFORM 1 FROM pgflow.step_states ss
+  WHERE ss.run_id IN (
+    SELECT r.run_id FROM pgflow.runs r
     WHERE (
       (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
       (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
     )
-    GROUP BY r.flow_slug
+  )
+  ORDER BY ss.run_id, ss.step_slug
+  FOR UPDATE;
+
+  PERFORM 1 FROM pgflow.step_tasks t
+  WHERE t.run_id IN (
+    SELECT r.run_id FROM pgflow.runs r
+    WHERE (
+      (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
+      (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
+    )
+  ) OR (
+    t.last_worker_id IS NOT NULL
+    AND t.last_worker_id IN (
+      SELECT w.worker_id FROM pgflow.workers w
+      WHERE w.last_heartbeat_at < cutoff_timestamp
+    )
+  )
+  ORDER BY t.run_id, t.step_slug, t.task_index
+  FOR UPDATE;
+
+  -- Delete old worker records (FK sets task.last_worker_id NULL on rows that
+  -- are already in the locked set above; no new task locks are taken after
+  -- queue access begins)
+  DELETE FROM pgflow.workers
+  WHERE last_heartbeat_at < cutoff_timestamp;
+
+  -- After all runtime locks and before any queue access, validate every
+  -- route this pass will touch with the shared ownership inspector (#650
+  -- review): the queue snapshots of tasks about to be deleted plus every
+  -- persisted archive route (including empty compiled plain defaults). The
+  -- inspector rejects metadata ambiguity, incomplete or malformed physical
+  -- shape (missing columns among them), sequence ownership, and extension
+  -- membership, so a dropped-and-recreated external queue with the same
+  -- canonical name stops pruning instead of being deleted from. It takes
+  -- the pgmq.meta topology fence here, after runtime locks, matching
+  -- delete_flow_and_data's lock order.
+  FOR validate_route IN
+    SELECT DISTINCT t.flow_slug, t.queue_name
+    FROM pgflow.step_tasks t
+    JOIN pgflow.runs r ON r.run_id = t.run_id
+    WHERE (
+      (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
+      (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
+    )
+    UNION
+    SELECT f.flow_slug, COALESCE(s.queue_name, lower(f.flow_slug))
+    FROM pgflow.flows f
+    LEFT JOIN pgflow.steps s ON s.flow_slug = f.flow_slug
   LOOP
-    -- Delete messages in batch (pgmq.delete ignores non-existent messages)
-    IF flow_record.message_ids IS NOT NULL AND array_length(flow_record.message_ids, 1) > 0 THEN
-      PERFORM pgmq.delete(flow_record.flow_slug, flow_record.message_ids);
-    END IF;
+    PERFORM pgflow._inspect_generated_queue(
+      validate_route.flow_slug, validate_route.queue_name, true
+    );
   END LOOP;
 
-  -- Delete ALL step_tasks for old runs (regardless of individual task status)
-  -- This fixes FK constraint violation when deleting runs with unexecuted steps
-  DELETE FROM pgflow.step_tasks
-  WHERE run_id IN (
-    SELECT run_id FROM pgflow.runs
-    WHERE (
-      (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
-      (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
+  -- Delete PGMQ messages from active queues BEFORE deleting step_tasks, using
+  -- each task's queue snapshot. This prevents orphaned messages that would
+  -- appear after tasks are deleted.
+  FOR batch_record IN
+    WITH removed AS (
+      DELETE FROM pgflow.step_tasks t
+      USING pgflow.runs r
+      WHERE r.run_id = t.run_id
+        AND (
+          (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
+          (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
+        )
+      RETURNING t.queue_name, t.message_id
     )
-  );
+    SELECT
+      removed.queue_name,
+      ARRAY_AGG(removed.message_id ORDER BY removed.message_id) AS message_ids
+    FROM removed
+    WHERE removed.message_id IS NOT NULL
+    GROUP BY removed.queue_name
+    ORDER BY removed.queue_name
+  LOOP
+    PERFORM pgmq.delete(batch_record.queue_name, batch_record.message_ids);
+  END LOOP;
 
-  -- Delete ALL step_states for old runs (regardless of individual step status)
+  -- Delete ALL step_states for old runs (regardless of individual task status)
   DELETE FROM pgflow.step_states
   WHERE run_id IN (
     SELECT run_id FROM pgflow.runs
@@ -73,26 +180,40 @@ BEGIN
     (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
   );
 
-  -- Prune archived messages from PGMQ archive tables (pgmq.a_{flow_slug})
-  -- For each flow, delete old archived messages
-  FOR flow_record IN SELECT DISTINCT flow_slug FROM pgflow.flows
+  -- Prune archived messages from PGMQ archive tables, enumerating validated
+  -- persisted definition routes (including the empty compiled plain default)
+  -- rather than deriving archive names from task IDs or only active runs.
+  -- The definitions above are still locked against deletion.
+  FOR route_record IN
+    SELECT COALESCE(
+      ARRAY_AGG(DISTINCT s.queue_name ORDER BY s.queue_name)
+        FILTER (WHERE s.queue_name IS NOT NULL),
+      ARRAY[lower(f.flow_slug)]
+    ) AS route_queues
+    FROM pgflow.flows f
+    LEFT JOIN pgflow.steps s ON s.flow_slug = f.flow_slug
+    GROUP BY f.flow_slug
+    ORDER BY f.flow_slug
   LOOP
-    -- Build the archive table name
-    archive_table := pgmq.format_table_name(flow_record.flow_slug, 'a');
+    FOREACH archive_queue IN ARRAY route_record.route_queues
+    LOOP
+      -- Build the archive table name
+      archive_table := pgmq.format_table_name(archive_queue, 'a');
 
-    -- Check if the archive table exists
-    IF EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = 'pgmq' AND table_name = archive_table
-    ) THEN
-      -- Build and execute a dynamic SQL statement to delete old archive records
-      dynamic_sql := format('
-        DELETE FROM pgmq.%I
-        WHERE archived_at < $1
-      ', archive_table);
+      -- Check if the archive table exists
+      IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'pgmq' AND table_name = archive_table
+      ) THEN
+        -- Build and execute a dynamic SQL statement to delete old archive records
+        dynamic_sql := format('
+          DELETE FROM pgmq.%I
+          WHERE archived_at < $1
+        ', archive_table);
 
-      EXECUTE dynamic_sql USING cutoff_timestamp;
-    END IF;
+        EXECUTE dynamic_sql USING cutoff_timestamp;
+      END IF;
+    END LOOP;
   END LOOP;
 END
 $$;

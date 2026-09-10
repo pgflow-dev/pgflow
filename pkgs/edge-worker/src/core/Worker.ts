@@ -1,5 +1,6 @@
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
 import type { Logger } from '../platform/types.js';
+import { FatalWorkerError } from './errors.js';
 
 /** Initial delay before retrying a failed main-loop iteration. */
 const RETRY_DELAY_MS = 100;
@@ -86,6 +87,18 @@ export class Worker {
         try {
           await this.batchProcessor.processBatch();
         } catch (error: unknown) {
+          // A committed fatal claim batch is terminal: log once and stop
+          // without a retry cycle. The scheduled stop below drains/aborts
+          // execution and cleans up after the loop exits. It must NOT be
+          // awaited here: performStop() waits for mainLoopPromise, creating
+          // a self-wait.
+          if (error instanceof FatalWorkerError) {
+            this.logger.error(error.message);
+            void this.stop().catch((stopError) => {
+              this.logger.error('Worker cleanup failed after fatal batch', stopError);
+            });
+            break;
+          }
           this.logger.error(`Error processing batch: ${error}`);
           iterationFailed = true;
         }

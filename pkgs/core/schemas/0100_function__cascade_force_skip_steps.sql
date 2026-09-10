@@ -12,10 +12,12 @@ DECLARE
   v_flow_slug text;
   v_total_skipped int := 0;
 BEGIN
-  -- Get flow_slug for this run
+  -- Lock the parent run at direct entry before any run-mutating work;
+  -- callers that already hold the run lock re-acquire it harmlessly.
   SELECT r.flow_slug INTO v_flow_slug
   FROM pgflow.runs r
-  WHERE r.run_id = _cascade_force_skip_steps.run_id;
+  WHERE r.run_id = _cascade_force_skip_steps.run_id
+  FOR UPDATE;
 
   IF v_flow_slug IS NULL THEN
     RAISE EXCEPTION 'Run not found: %', _cascade_force_skip_steps.run_id;
@@ -100,14 +102,17 @@ BEGIN
         FROM skipped AS skipped_step
       )
       AND task.status IN ('queued', 'started')
-    RETURNING task.message_id
+    RETURNING task.queue_name, task.message_id
   ),
   -- ---------- Archive queued/started task messages for skipped steps ----------
+  -- Grouped by the task's queue snapshot; only newly skipped steps' tasks are
+  -- archived (preexisting skipped steps were already archived) (#650)
   archived_messages AS (
-    SELECT pgmq.archive(v_flow_slug, ARRAY_AGG(task.message_id)) as result
-    FROM skipped_tasks AS task
-    WHERE task.message_id IS NOT NULL
-    HAVING COUNT(task.message_id) > 0
+    SELECT pgmq.archive(st.queue_name, ARRAY_AGG(st.message_id)) as result
+    FROM skipped_tasks AS st
+    WHERE st.message_id IS NOT NULL
+    GROUP BY st.queue_name
+    HAVING COUNT(st.message_id) > 0
   ),
   -- ---------- Update run counters ----------
   run_updates AS (

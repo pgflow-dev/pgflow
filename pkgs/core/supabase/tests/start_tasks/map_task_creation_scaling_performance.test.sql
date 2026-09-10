@@ -47,6 +47,10 @@ BEGIN
   v_end_time := clock_timestamp();
   v_task_creation_ms := EXTRACT(EPOCH FROM (v_end_time - v_flow_start)) * 1000;
 
+  -- Refresh planner stats so start_tasks timing measures steady-state
+  -- indexed plans, not autovacuum lag on the freshly inserted rows
+  ANALYZE pgflow.step_tasks;
+
   -- Get sample of message IDs for start_tasks test
   SELECT array_agg(message_id) INTO v_msg_ids FROM (
     SELECT message_id FROM pgflow.step_tasks
@@ -102,6 +106,10 @@ BEGIN
   );
   v_end_time := clock_timestamp();
   v_task_creation_ms := EXTRACT(EPOCH FROM (v_end_time - v_flow_start)) * 1000;
+
+  -- Refresh planner stats so start_tasks timing measures steady-state
+  -- indexed plans, not autovacuum lag on the freshly inserted rows
+  ANALYZE pgflow.step_tasks;
 
   -- Get sample of message IDs
   SELECT array_agg(message_id) INTO v_msg_ids FROM (
@@ -159,6 +167,10 @@ BEGIN
   v_end_time := clock_timestamp();
   v_task_creation_ms := EXTRACT(EPOCH FROM (v_end_time - v_flow_start)) * 1000;
 
+  -- Refresh planner stats so start_tasks timing measures steady-state
+  -- indexed plans, not autovacuum lag on the freshly inserted rows
+  ANALYZE pgflow.step_tasks;
+
   -- Get sample of message IDs
   SELECT array_agg(message_id) INTO v_msg_ids FROM (
     SELECT message_id FROM pgflow.step_tasks
@@ -214,6 +226,10 @@ BEGIN
   );
   v_end_time := clock_timestamp();
   v_task_creation_ms := EXTRACT(EPOCH FROM (v_end_time - v_flow_start)) * 1000;
+
+  -- Refresh planner stats so start_tasks timing measures steady-state
+  -- indexed plans, not autovacuum lag on the freshly inserted rows
+  ANALYZE pgflow.step_tasks;
 
   -- Get sample of message IDs
   SELECT array_agg(message_id) INTO v_msg_ids FROM (

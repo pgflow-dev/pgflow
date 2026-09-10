@@ -26,6 +26,23 @@
       "{projectRoot}/scripts/run-upgrade-fixture",
       "{projectRoot}/atlas/atlas.hcl",
       "{projectRoot}/atlas/supabase-baseline-schema.sql"
+    ],
+    "queueUpgradeFixture": [
+      "{projectRoot}/supabase/upgrade_queue_fixture/**",
+      "{projectRoot}/scripts/run-queue-upgrade-fixture",
+      "{projectRoot}/queries/PRE_MIGRATION_CHECK_650.sql",
+      "{projectRoot}/supabase/migrations/**",
+      "{projectRoot}/supabase/tests/_shared/prune_data_older_than.sql.raw",
+      "{workspaceRoot}/pkgs/edge-worker/src/**",
+      "{workspaceRoot}/pkgs/edge-worker/tests/fakes.ts",
+      "{workspaceRoot}/pkgs/edge-worker/tests/config.ts",
+      "{workspaceRoot}/pkgs/edge-worker/tests/sql.ts",
+      "{workspaceRoot}/pkgs/edge-worker/tests/integration/_helpers.ts",
+      "{workspaceRoot}/pkgs/edge-worker/tests/integration/upgrade/**",
+      "{workspaceRoot}/pkgs/edge-worker/deno.test.json",
+      "{workspaceRoot}/pkgs/edge-worker/deno.lock",
+      "{workspaceRoot}/pkgs/dsl/src/**",
+      "{workspaceRoot}/pkgs/core/src/**"
     ]
   },
   "targets": {
@@ -192,12 +209,23 @@
         "supabaseSetup",
         "supabaseRuntime",
         "pgtapTests",
-        "upgradeFixture"
+        "upgradeFixture",
+        "queueUpgradeFixture"
       ],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
         "command": "../../scripts/with-supabase-lock.sh . bash -ceu '../../scripts/ensure-migrations-body.sh .; scripts/run-test-with-colors; scripts/run-upgrade-fixture'"
+      }
+    },
+    "test:upgrade:queue": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "inputs": ["queueUpgradeFixture"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "../../scripts/with-supabase-lock.sh . scripts/run-queue-upgrade-fixture"
       }
     },
     "test:pgtap:file": {

@@ -29,7 +29,7 @@ Deno.test(
     };
 
     const mockMessage: PgmqMessageRecord<{test: string}> = {
-      msg_id: 123,
+      msg_id: '123',
       read_ct: 2,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',

@@ -104,6 +104,7 @@ Deno.test('StepTaskPoller caps limit at configured batchSize', async () => {
     {
       batchSize: 5,
       queueName: 'test_flow',
+      flowSlug: 'TestFlow',
       visibilityTimeout: 10,
       maxPollSeconds: 1,
       pollIntervalMs: 100,
@@ -137,6 +138,7 @@ Deno.test('StepTaskPoller uses smaller available slot limit', async () => {
     {
       batchSize: 5,
       queueName: 'test_flow',
+      flowSlug: 'TestFlow',
       visibilityTimeout: 10,
       maxPollSeconds: 1,
       pollIntervalMs: 100,
@@ -170,6 +172,7 @@ Deno.test('StepTaskPoller uses configured batchSize without limit', async () => 
     {
       batchSize: 5,
       queueName: 'test_flow',
+      flowSlug: 'TestFlow',
       visibilityTimeout: 10,
       maxPollSeconds: 1,
       pollIntervalMs: 100,
@@ -195,6 +198,7 @@ Deno.test('StepTaskPoller rethrows readMessages failures instead of returning an
     {
       batchSize: 5,
       queueName: 'test_flow',
+      flowSlug: 'TestFlow',
       visibilityTimeout: 10,
       maxPollSeconds: 1,
       pollIntervalMs: 100,

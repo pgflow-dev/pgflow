@@ -19,7 +19,7 @@ select is(
         "steps": [
           {"slug": "new_step", "stepType": "single", "dependencies": []}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   'mismatch',
@@ -36,7 +36,7 @@ select ok(
         "steps": [
           {"slug": "new_step", "stepType": "single", "dependencies": []}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   'Should return differences for production mismatch'

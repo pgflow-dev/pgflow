@@ -49,7 +49,7 @@ class MockQueries extends Queries {
     _flowSlug: string,
     _shape: FlowShape
   ): Promise<EnsureFlowCompiledResult> {
-    return Promise.resolve({ status: 'verified', differences: [] });
+    return Promise.resolve({ status: 'verified', differences: [], protocol_version: 1, queue_name: 'test_flow' });
   }
 
   override trackWorkerFunction(_functionName: string): Promise<void> {

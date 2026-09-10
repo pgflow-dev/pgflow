@@ -6,7 +6,18 @@ describe('validateSlug', () => {
     expect(() => validateSlug('valid_slug')).not.toThrowError();
     expect(() => validateSlug('valid_slug_123')).not.toThrowError();
     expect(() => validateSlug('validSlug123')).not.toThrowError();
-    expect(() => validateSlug('_valid_slug')).not.toThrowError();
+  });
+
+  it('rejects slugs with leading, trailing, or double underscores', () => {
+    expect(() => validateSlug('_valid_slug')).toThrowError(
+      `Slug '_valid_slug' cannot start or end with an underscore or contain double underscores`
+    );
+    expect(() => validateSlug('valid_slug_')).toThrowError(
+      `Slug 'valid_slug_' cannot start or end with an underscore or contain double underscores`
+    );
+    expect(() => validateSlug('valid__slug')).toThrowError(
+      `Slug 'valid__slug' cannot start or end with an underscore or contain double underscores`
+    );
   });
 
   it('rejects slugs that start with numbers', () => {
