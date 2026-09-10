@@ -4,7 +4,8 @@ import type { Logger, StartupContext } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
-import { FlowShapeMismatchError } from './errors.js';
+import { FlowShapeMismatchError, QueueProtocolMismatchError } from './errors.js';
+import type { EnsureFlowCompiledResult } from '../core/Queries.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
@@ -24,6 +25,8 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
+  /** Verified canonical physical queue returned by the startup handshake */
+  private verifiedQueueName?: string;
   // TODO: Temporary field for supplier pattern until we refactor initialization
   private _workerId?: string;
   private _edgeFunctionName?: string;
@@ -53,7 +56,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
 
     // Log startup banner with compilation status
-    this.logStartupBanner(compilationStatus);
+    this.logStartupBanner(compilationStatus.status);
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
@@ -63,16 +66,37 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     this.workerState.transitionTo(States.Running);
   }
 
-  private async ensureFlowCompiled(): Promise<CompilationStatus> {
+  private async ensureFlowCompiled(): Promise<Exclude<EnsureFlowCompiledResult, { status: 'mismatch' }>> {
     const shape = extractFlowShape(this.flow);
 
     const result = await this.queries.ensureFlowCompiled(this.flow.slug, shape);
 
+    // The runtime mismatch check narrows this union before the queue/version
+    // checks below.
     if (result.status === 'mismatch') {
       throw new FlowShapeMismatchError(this.flow.slug, result.differences);
     }
 
-    return result.status;
+    // The result is untrusted until these explicit checks pass: a
+    // queue-aware database must answer with protocol version 1 and the
+    // flow's canonical queue.
+    if (result.protocol_version !== 1) {
+      throw new QueueProtocolMismatchError(
+        this.flow.slug,
+        `ensure_flow_compiled() answered without queue-capable protocol version 1.`
+      );
+    }
+    const canonicalQueue = this.flow.slug.toLowerCase();
+    if (result.queue_name !== canonicalQueue) {
+      throw new QueueProtocolMismatchError(
+        this.flow.slug,
+        `ensure_flow_compiled() returned queue '${result.queue_name}' instead of the canonical '${canonicalQueue}'.`
+      );
+    }
+
+    this.verifiedQueueName = result.queue_name;
+
+    return result;
   }
 
   /**
@@ -111,8 +135,12 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     return this._edgeFunctionName ?? this.workerRow?.function_name;
   }
 
+  /**
+   * The canonical physical queue: only valid after the startup handshake
+   * verified it against the database.
+   */
   get queueName() {
-    return this.flow.slug;
+    return this.verifiedQueueName ?? this.flow.slug.toLowerCase();
   }
 
   // TODO: Temporary getter for supplier pattern until we refactor initialization

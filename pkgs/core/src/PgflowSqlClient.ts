@@ -1,10 +1,11 @@
 import type postgres from 'postgres';
 import type {
-  StepTaskRecord,
   IPgflowClient,
   StepTaskKey,
   RunRow,
   MessageRecord,
+  ClaimTasksResult,
+  MessageId,
 } from './types.js';
 import type { Json } from './types.js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
@@ -24,8 +25,10 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
     maxPollSeconds = 5,
     pollIntervalMs = 200
   ): Promise<MessageRecord[]> {
+    // msg_id is projected to text so PGMQ bigint IDs cross the JavaScript
+    // boundary without precision loss (#650)
     return await this.sql<MessageRecord[]>`
-      SELECT *
+      SELECT msg_id::text as msg_id, read_ct, enqueued_at, vt, message, headers
       FROM pgmq.read_with_poll(
         queue_name => ${queueName},
         vt => ${visibilityTimeout},
@@ -37,18 +40,20 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
   }
 
   async startTasks(
+    queueName: string,
     flowSlug: string,
-    msgIds: number[],
+    messageIds: MessageId[],
     workerId: string
-  ): Promise<StepTaskRecord<TFlow>[]> {
-    return await this.sql<StepTaskRecord<TFlow>[]>`
-      SELECT *
-      FROM pgflow.start_tasks(
+  ): Promise<ClaimTasksResult<TFlow>> {
+    const [row] = await this.sql<{ result: ClaimTasksResult<TFlow> }[]>`
+      select pgflow.claim_tasks(
+        queue_name => ${queueName},
         flow_slug => ${flowSlug},
-        msg_ids => ${msgIds}::bigint[],
+        message_ids => ${messageIds}::bigint[],
         worker_id => ${workerId}::uuid
-      );
+      ) as result
     `;
+    return row.result;
   }
 
   async completeTask(stepTask: StepTaskKey, output?: Json): Promise<void> {

@@ -14,6 +14,7 @@ BEGIN
   DELETE FROM pgflow.steps;
   DELETE FROM pgflow.flows;
   DELETE FROM pgflow.worker_functions;
+  DELETE FROM pgflow.workers;
 
   -- Also clear the realtime.messages table if it exists
   BEGIN
@@ -73,7 +74,7 @@ create or replace function pgflow_tests.ensure_worker(
   function_name text default 'test_worker'
 ) returns uuid as $$
   INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-  VALUES (worker_uuid, queue_name, function_name, now())
+  VALUES (worker_uuid, lower(queue_name), function_name, now())
   ON CONFLICT (worker_id) DO UPDATE SET
     last_heartbeat_at = now(),
     queue_name = EXCLUDED.queue_name,
@@ -93,18 +94,19 @@ create or replace function pgflow_tests.read_and_start(
 ) returns setof pgflow.step_task_record
 language sql
 as $$
-  -- 1. make sure the worker exists / update its heartbeat
+  -- 1. make sure the worker exists / update its heartbeat (canonical queue;
+  --    the concrete flow argument stays exact) (#650)
   WITH w AS (
     SELECT pgflow_tests.ensure_worker(
-             queue_name   => flow_slug,
+             queue_name   => lower(flow_slug),
              worker_uuid  => worker_uuid,
              function_name => function_name
            ) AS wid
   ),
-  -- 2. read messages from the queue
+  -- 2. read messages from the queue (canonical physical route)
   msgs AS (
     SELECT *
-      FROM pgmq.read_with_poll(flow_slug, vt, qty, 1, 50)
+      FROM pgmq.read_with_poll(lower(flow_slug), vt, qty, 1, 50)
      LIMIT qty
   ),
   -- 3. collect their msg_ids
@@ -191,10 +193,10 @@ BEGIN
       q.message,
       extract(epoch from (q.vt - q.enqueued_at))::int as vt_seconds
     FROM pgmq.%s q
-    JOIN pgflow.step_tasks st ON st.message_id = q.msg_id
+    JOIN pgflow.step_tasks st ON st.queue_name = lower($2) AND st.message_id = q.msg_id
     WHERE st.step_slug = $1', qtable);
 
-  RETURN QUERY EXECUTE query USING step_slug;
+  RETURN QUERY EXECUTE query USING step_slug, queue_name;
 END;
 $$;
 

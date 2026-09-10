@@ -208,6 +208,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string
@@ -227,6 +228,7 @@ export type Database = {
           message_id?: number | null
           output?: Json | null
           permanently_stalled_at?: string | null
+          queue_name: string
           queued_at?: string
           requeued_count?: number
           run_id: string
@@ -246,6 +248,7 @@ export type Database = {
           message_id?: number | null
           output?: Json | null
           permanently_stalled_at?: string | null
+          queue_name?: string
           queued_at?: string
           requeued_count?: number
           run_id?: string
@@ -295,6 +298,7 @@ export type Database = {
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          queue_name: string
           required_input_pattern: Json | null
           step_index: number
           step_slug: string
@@ -311,6 +315,7 @@ export type Database = {
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          queue_name: string
           required_input_pattern?: Json | null
           step_index?: number
           step_slug: string
@@ -327,6 +332,7 @@ export type Database = {
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          queue_name?: string
           required_input_pattern?: Json | null
           step_index?: number
           step_slug?: string
@@ -425,7 +431,24 @@ export type Database = {
         Args: { p_flow_slug: string; p_shape: Json }
         Returns: undefined
       }
+      _ensure_generated_queue: {
+        Args: { p_flow_slug: string; p_queue_name: string }
+        Returns: undefined
+      }
       _get_flow_shape: { Args: { p_flow_slug: string }; Returns: Json }
+      _inspect_generated_queue: {
+        Args: {
+          p_flow_slug: string
+          p_queue_name: string
+          p_require_existing: boolean
+        }
+        Returns: Json
+      }
+      _is_valid_queue_name: { Args: { queue_name: string }; Returns: boolean }
+      _validate_flow_shape: {
+        Args: { p_flow_slug: string; p_shape: Json }
+        Returns: undefined
+      }
       add_step: {
         Args: {
           base_delay?: number
@@ -433,6 +456,7 @@ export type Database = {
           flow_slug: string
           forbidden_input_pattern?: Json
           max_attempts?: number
+          queue_name?: string
           required_input_pattern?: Json
           start_delay?: number
           step_slug: string
@@ -450,6 +474,7 @@ export type Database = {
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          queue_name: string
           required_input_pattern: Json | null
           step_index: number
           step_slug: string
@@ -473,6 +498,15 @@ export type Database = {
         Returns: number
       }
       cascade_resolve_conditions: { Args: { run_id: string }; Returns: boolean }
+      claim_tasks: {
+        Args: {
+          flow_slug: string
+          message_ids: number[]
+          queue_name: string
+          worker_id: string
+        }
+        Returns: Json
+      }
       cleanup_ensure_workers_logs: {
         Args: { retention_hours?: number }
         Returns: {
@@ -497,6 +531,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string
@@ -538,7 +573,7 @@ export type Database = {
         Returns: undefined
       }
       ensure_flow_compiled: {
-        Args: { flow_slug: string; shape: Json }
+        Args: { flow_slug: string; shape: Json; worker_protocol: Json }
         Returns: Json
       }
       ensure_workers: {
@@ -567,6 +602,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string

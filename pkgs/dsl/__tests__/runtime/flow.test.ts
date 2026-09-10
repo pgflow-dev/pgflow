@@ -51,6 +51,25 @@ describe('Flow', () => {
     it('rejects invalid slugs during flow creation', () => {
       expect(() => new Flow({ slug: '1invalid' })).toThrowError();
     });
+
+    it.each(['_a', 'a_', 'a__b', '_', 'a___b'])('rejects %s', (slug) => {
+      expect(() => new Flow({ slug })).toThrow();
+      expect(() => new Flow({ slug: 'valid' }).step({ slug }, () => null)).toThrow();
+    });
+
+    it.each(['a_b', 'camelCase', 'a1'])('preserves %s', (slug) => {
+      expect(new Flow({ slug }).slug).toBe(slug);
+    });
+
+    it('preserves exact 128-character slugs and rejects longer', () => {
+      const exact = 'a'.repeat(128);
+      expect(new Flow({ slug: exact }).slug).toBe(exact);
+      expect(() => new Flow({ slug: 'a'.repeat(129) })).toThrow();
+    });
+
+    it('rejects the reserved slug run', () => {
+      expect(() => new Flow({ slug: 'run' })).toThrow();
+    });
   });
 
   describe('runtime options validation', () => {

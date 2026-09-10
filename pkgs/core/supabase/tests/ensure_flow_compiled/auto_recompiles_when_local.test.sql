@@ -19,7 +19,7 @@ select is(
         "steps": [
           {"slug": "new_step", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail"}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   'recompiled',

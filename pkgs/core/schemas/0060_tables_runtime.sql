@@ -88,6 +88,7 @@ create table pgflow.step_tasks (
   message_id bigint,
   task_index int not null default 0,
   status text not null default 'queued',
+  queue_name text not null,
   attempts_count int not null default 0,
   error_message text,
   output jsonb,
@@ -117,10 +118,40 @@ create table pgflow.step_tasks (
   constraint completed_at_is_after_started_at check (
     completed_at is null or started_at is null or completed_at >= started_at
   ),
-  constraint failed_at_is_after_started_at check (failed_at is null or started_at is null or failed_at >= started_at)
+  constraint failed_at_is_after_started_at check (failed_at is null or started_at is null or failed_at >= started_at),
+  constraint queue_name_is_valid check (pgflow._is_valid_queue_name(queue_name))
 );
 
-create index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id);
+-- Queue/message pair identity for queue-scoped PGMQ message IDs. Replaces the
+-- former message-only lookups; NULL message IDs stay legal (cleanup paths).
+create unique index if not exists idx_step_tasks_queue_message
+on pgflow.step_tasks (queue_name, message_id)
+where message_id is not null;
+
+-- Task queue snapshots are immutable after insertion. Statement transition
+-- tables also reject a task-address move that a key-based comparison would miss.
+create or replace function pgflow._keep_task_queue_name()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if exists (
+    select run_id, step_slug, task_index, queue_name from old_tasks
+    except
+    select run_id, step_slug, task_index, queue_name from new_tasks
+  ) then
+    raise exception 'step_tasks.queue_name is immutable';
+  end if;
+  return null;
+end;
+$$;
+
+create trigger keep_task_queue_name
+after update on pgflow.step_tasks
+referencing old table as old_tasks new table as new_tasks
+for each statement execute function pgflow._keep_task_queue_name();
+
 create index if not exists idx_step_tasks_queued on pgflow.step_tasks (run_id, step_slug) where status = 'queued';
 create index if not exists idx_step_tasks_completed on pgflow.step_tasks (run_id, step_slug) where status = 'completed';
 create index if not exists idx_step_tasks_failed on pgflow.step_tasks (run_id, step_slug) where status = 'failed';
@@ -128,5 +159,4 @@ create index if not exists idx_step_tasks_flow_run_step on pgflow.step_tasks (fl
 
 -- New indexes for refactored polling behavior
 create index if not exists idx_step_tasks_started on pgflow.step_tasks (started_at) where status = 'started';
-create index if not exists idx_step_tasks_queued_msg on pgflow.step_tasks (message_id) where status = 'queued';
 create index if not exists idx_step_tasks_last_worker on pgflow.step_tasks (last_worker_id) where status = 'started';

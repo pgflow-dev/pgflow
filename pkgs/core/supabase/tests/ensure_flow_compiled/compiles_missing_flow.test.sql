@@ -12,7 +12,7 @@ select is(
         "steps": [
           {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail"}
         ]
-      }'::jsonb
+      }'::jsonb, '{"version": 1}'::jsonb
     ) as result
   ),
   'compiled',

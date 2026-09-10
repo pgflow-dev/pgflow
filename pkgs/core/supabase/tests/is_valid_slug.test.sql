@@ -1,5 +1,5 @@
 begin;
-select plan(11);
+select plan(17);
 select pgflow_tests.reset_db();
 
 -- TEST: Null input
@@ -46,20 +46,56 @@ select ok(
 
 -- TEST: Valid with underscore
 select ok(
-  pgflow.is_valid_slug('valid_slug'),
-  'is_valid_slug returns true for string with underscore'
+  pgflow.is_valid_slug('a_b'),
+  'is_valid_slug returns true for single internal underscore'
 );
 
 -- TEST: Valid with numbers (not at start)
 select ok(
-  pgflow.is_valid_slug('valid123'),
+  pgflow.is_valid_slug('a1'),
   'is_valid_slug returns true for string with numbers not at start'
 );
 
 -- TEST: Valid mixed case
 select ok(
-  pgflow.is_valid_slug('validSlug'),
+  pgflow.is_valid_slug('camelCase'),
   'is_valid_slug returns true for mixed case string'
+);
+
+-- TEST: Exact 128-character slug stays valid
+select ok(
+  pgflow.is_valid_slug(repeat('a', 128)),
+  'is_valid_slug returns true for exact 128-character slug'
+);
+
+-- TEST: Leading underscore
+select ok(
+  not pgflow.is_valid_slug('_a'),
+  'is_valid_slug returns false for leading underscore'
+);
+
+-- TEST: Trailing underscore
+select ok(
+  not pgflow.is_valid_slug('a_'),
+  'is_valid_slug returns false for trailing underscore'
+);
+
+-- TEST: Double underscore
+select ok(
+  not pgflow.is_valid_slug('a__b'),
+  'is_valid_slug returns false for embedded double underscore'
+);
+
+-- TEST: Bare underscore
+select ok(
+  not pgflow.is_valid_slug('_'),
+  'is_valid_slug returns false for bare underscore'
+);
+
+-- TEST: Triple underscore inside
+select ok(
+  not pgflow.is_valid_slug('a___b'),
+  'is_valid_slug returns false for triple underscore'
 );
 
 -- TEST:

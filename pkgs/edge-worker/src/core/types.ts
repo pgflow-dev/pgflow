@@ -1,4 +1,7 @@
 export type { Json } from '@pgflow/core';
+import type { MessageId } from '@pgflow/core';
+
+export type { MessageId };
 
 // TODO: This Supplier pattern is a temporary measure to defer workerId access
 // until after worker startup. Consider refactoring initialization to pass
@@ -11,12 +14,12 @@ export interface IPoller<IMessage> {
 }
 
 export interface IExecutor {
-  get msgId(): number;
+  get msgId(): MessageId;
   execute(): Promise<unknown>;
 }
 
 export interface IMessage {
-  msg_id: number;
+  msg_id: MessageId;
 }
 
 export interface ILifecycle {

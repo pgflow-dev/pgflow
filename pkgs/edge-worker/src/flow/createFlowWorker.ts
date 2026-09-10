@@ -95,8 +95,10 @@ export function createFlowWorker<
   // Create the pgflow adapter
   const pgflowAdapter = new PgflowSqlClient<TFlow>(sql);
 
-  // Use flow slug as queue name, or fallback to 'tasks'
-  const queueName = flow.slug || 'tasks';
+  // Use the canonical physical queue derived from the flow slug; the
+  // lifecycle's handshake equality check must pass before the main loop can
+  // use it. A flow slug is mandatory: no 'tasks' fallback (#650).
+  const queueName = flow.slug.toLowerCase();
   logger.debug(`Using queue name: ${queueName}`);
 
   // Create specialized FlowWorkerLifecycle with the proxied queue and flow
@@ -113,10 +115,12 @@ export function createFlowWorker<
   // Create FlowInputProvider for lazy loading and caching flow input
   const flowInputProvider = new FlowInputProvider<TFlow>(sql);
 
-  // Create StepTaskPoller with two-phase approach
+  // Create StepTaskPoller with two-phase approach: queue (physical
+  // subscription) and flow (handler identity) travel separately (#650)
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: resolvedConfig.batchSize,
-    queueName: flow.slug,
+    queueName,
+    flowSlug: flow.slug,
     visibilityTimeout: resolvedConfig.visibilityTimeout,
     maxPollSeconds: resolvedConfig.maxPollSeconds,
     pollIntervalMs: resolvedConfig.pollIntervalMs,

@@ -100,14 +100,17 @@ BEGIN
         FROM skipped AS skipped_step
       )
       AND task.status IN ('queued', 'started')
-    RETURNING task.message_id
+    RETURNING task.queue_name, task.message_id
   ),
   -- ---------- Archive queued/started task messages for skipped steps ----------
+  -- Grouped by the task's queue snapshot; only newly skipped steps' tasks are
+  -- archived (preexisting skipped steps were already archived) (#650)
   archived_messages AS (
-    SELECT pgmq.archive(v_flow_slug, ARRAY_AGG(task.message_id)) as result
-    FROM skipped_tasks AS task
-    WHERE task.message_id IS NOT NULL
-    HAVING COUNT(task.message_id) > 0
+    SELECT pgmq.archive(st.queue_name, ARRAY_AGG(st.message_id)) as result
+    FROM skipped_tasks AS st
+    WHERE st.message_id IS NOT NULL
+    GROUP BY st.queue_name
+    HAVING COUNT(st.message_id) > 0
   ),
   -- ---------- Update run counters ----------
   run_updates AS (

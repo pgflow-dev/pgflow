@@ -11,6 +11,22 @@ import type { Database } from './database-types.js';
 export type { Json };
 
 /**
+ * PGMQ message id: a SQL bigint, always delivered to JavaScript as an exact
+ * decimal string through explicit SQL text projection (#650).
+ */
+export type MessageId = string;
+
+/**
+ * Diagnostic row returned by claim_tasks for messages that were skipped,
+ * archived, or rejected during a claim batch (#650).
+ */
+export type ClaimDiagnostic = {
+  queue_name: string;
+  message_id: MessageId | null;
+  reason: string;
+};
+
+/**
  * Record representing a task from pgflow.start_tasks
  *
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
@@ -28,7 +44,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     step_slug: StepSlug;
     task_index: number;
     input: Simplify<StepInput<TFlow, StepSlug>>;
-    msg_id: number;
+    msg_id: MessageId;
     flow_input: ExtractFlowInput<TFlow> | null;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
@@ -41,11 +57,20 @@ export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug' |
 
 
 
+export type ClaimTasksResult<TFlow extends AnyFlow = AnyFlow> = {
+  status: 'ok' | 'fatal';
+  tasks: StepTaskRecord<TFlow>[];
+  /** Present on `ok` results: body-free warnings about skipped messages. */
+  warnings?: ClaimDiagnostic[];
+  /** Present on `fatal` results: why the batch was rejected. */
+  errors?: ClaimDiagnostic[];
+};
+
 /**
  * Record representing a message from queue polling
  */
 export type MessageRecord = {
-  msg_id: number;
+  msg_id: MessageId;
   read_ct: number;
   enqueued_at: string;
   vt: string;
@@ -82,16 +107,21 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   ): Promise<MessageRecord[]>;
 
   /**
-   * Starts tasks for given message IDs (phase 2 of two-phase approach)
-   * @param flowSlug - The flow slug to start tasks from
+   * Claims tasks for given message IDs via pgflow.claim_tasks (phase 2 of
+   * two-phase approach). Returns started tasks plus claim diagnostics; a
+   * `fatal` status means the SQL side reset visibility and paused the
+   * worker, so the caller must stop (#650).
+   * @param queueName - Name of the queue the messages were read from
+   * @param flowSlug - The flow slug to claim tasks from
    * @param msgIds - Array of message IDs from readMessages
-   * @param workerId - ID of the worker starting the tasks
+   * @param workerId - ID of the worker claiming the tasks
    */
   startTasks(
+    queueName: string,
     flowSlug: string,
-    msgIds: number[],
+    msgIds: MessageId[],
     workerId: string
-  ): Promise<StepTaskRecord<TFlow>[]>;
+  ): Promise<ClaimTasksResult<TFlow>>;
 
   /**
    * Mark a task as completed with output
@@ -130,6 +160,11 @@ export type RunRow = Database['pgflow']['Tables']['runs']['Row'];
 export type StepStateRow = Database['pgflow']['Tables']['step_states']['Row'];
 
 /**
- * Record representing a step from pgflow.step_tasks
+ * Record representing a step from pgflow.step_tasks. The generated type
+ * labels the PGMQ bigint message ID as `number`; the runtime value arrives
+ * as a decimal string through explicit SQL text projection (#650).
  */
-export type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
+export type StepTaskRow = Omit<
+  Database['pgflow']['Tables']['step_tasks']['Row'],
+  'message_id'
+> & { message_id: MessageId | null };

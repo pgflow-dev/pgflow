@@ -394,7 +394,7 @@ export interface WorkerConfig {
 
 // Message record interface (minimal contract - actual type defined in @pgflow/core)
 export interface MessageRecord {
-  msg_id: number;
+  msg_id: string; // decimal-string PGMQ bigint (#650)
   read_ct: number;
   enqueued_at: string;
   vt: string;
@@ -407,7 +407,7 @@ export interface StepTaskRecord<TFlow extends AnyFlow> {
   run_id: string;
   step_slug: string;
   input: Json; // JSON-serializable input from database (JSONB column)
-  msg_id: number;
+  msg_id: string; // decimal-string PGMQ bigint (#650)
 }
 
 // Base context for queue workers (no stepTask)
@@ -740,6 +740,17 @@ export class Flow<
     return this.stepDefinitions[slug as string];
   }
 
+  /**
+   * Case-insensitive duplicate step detection. Case-only aliases would map to
+   * conflicting generated names downstream, so they are rejected here while
+   * exact spelling is preserved.
+   */
+  private hasStepWithSlug(slug: string): boolean {
+    return Object.keys(this.stepDefinitions).some(
+      (existing) => existing.toLowerCase() === slug.toLowerCase()
+    );
+  }
+
   // Overload 1: Root step without conditions
   step<
     Slug extends string,
@@ -962,7 +973,7 @@ export class Flow<
     // Validate the step slug
     validateSlug(slug);
 
-    if (this.stepDefinitions[slug]) {
+    if (this.hasStepWithSlug(slug)) {
       throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
     }
 
@@ -1229,7 +1240,7 @@ export class Flow<
     // Validate the step slug
     validateSlug(slug);
 
-    if (this.stepDefinitions[slug]) {
+    if (this.hasStepWithSlug(slug)) {
       throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
     }
 

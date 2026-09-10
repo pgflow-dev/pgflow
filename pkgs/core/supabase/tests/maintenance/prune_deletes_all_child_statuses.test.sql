@@ -58,7 +58,7 @@ set
   failed_at = NULL
 where flow_slug = 'status_test_flow' and step_slug = 'step2';
 
-insert into pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, status, queued_at, started_at)
+insert into pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, status, queued_at, started_at, queue_name)
 select
   'status_test_flow',
   run_id,
@@ -66,7 +66,8 @@ select
   0,
   'started',
   now() - interval '36 days',
-  now() - interval '35 days'
+  now() - interval '35 days',
+  'status_test_flow'
 from pgflow.runs where flow_slug = 'status_test_flow';
 
 -- step3: created but never started

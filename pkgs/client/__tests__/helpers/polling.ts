@@ -42,20 +42,28 @@ export async function readAndStart<TFlow extends AnyFlow>(
   workerUuid: string = TEST_WORKER_UUID,
   functionName = 'test_worker'
 ) {
-  // 1. Ensure the worker exists / update its heartbeat
-  const workerId = await ensureWorker(sql, flowSlug, workerUuid, functionName);
+  // Canonical physical queue; the concrete flow argument stays exact (#650)
+  const queueName = flowSlug.toLowerCase();
+
+  // 1. Ensure the worker exists / update its heartbeat (canonical queue)
+  const workerId = await ensureWorker(sql, queueName, workerUuid, functionName);
 
   // 2. Read messages from the queue
-  const messages = await sqlClient.readMessages(flowSlug, vt, qty, 1, 50);
+  const messages = await sqlClient.readMessages(queueName, vt, qty, 1, 50);
 
   // 3. If no messages, return empty array
   if (messages.length === 0) {
     return [];
   }
 
-  // 4. Start the tasks and return the resulting rows
+  // 4. Claim the tasks for the retrieved messages; this test helper only
+  // supports the ok path
   const msgIds = messages.map(m => m.msg_id);
-  const tasks = await sqlClient.startTasks(flowSlug, msgIds, workerId);
+  const result = await sqlClient.startTasks(queueName, flowSlug, msgIds, workerId);
 
-  return tasks;
+  if (result.status !== 'ok') {
+    throw new Error(`readAndStart(): unexpected claim status ${result.status}`);
+  }
+
+  return result.tasks;
 }
