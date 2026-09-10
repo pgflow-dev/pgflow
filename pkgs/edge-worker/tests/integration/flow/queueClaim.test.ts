@@ -6,7 +6,6 @@ import { createTestPlatformAdapter } from '../_helpers.ts';
 import { fakeLogger } from '../../fakes.ts';
 import { Queue } from '../../../src/queue/Queue.ts';
 import type { postgres } from '../../sql.ts';
-import type { MessageHandlerContext } from '../../../src/core/context.ts';
 import { delay } from '@std/async';
 
 // #650 queue identity end-to-end claim: PGMQ identity sequence starts above
@@ -22,7 +21,7 @@ const ID_SECOND = '9007199254740994';
 const ClaimFlow = new Flow<number[]>({
   slug: 'queue_claim_flow',
 })
-  .map({ slug: 'work' }, async (input: number, ctx) => {
+  .map({ slug: 'work' }, (input: number, ctx) => {
     // Both exposure paths must carry the exact decimal-string ID.
     const rawId = ctx.rawMessage.msg_id;
     const taskId = ctx.stepTask.msg_id;

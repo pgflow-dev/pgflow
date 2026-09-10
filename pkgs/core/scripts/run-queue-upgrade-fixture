@@ -282,6 +282,7 @@ for expect in \
    '"code": "case_conflict_flow"' \
    '"code": "ambiguous_metadata"' \
    '"code": "unmatched_active_message"' \
+   '"code": "malformed_queue_objects"' \
    '"code": "pruning_helper_stock"' \
    '"code": "backfill_overview"'; do
   if ! grep -qF "$expect" "$TMP/audit.log"; then
@@ -289,6 +290,10 @@ for expect in \
     exit 1
   fi
 done
+if ! grep -qF 'archive table is missing its headers column' "$TMP/audit.log"; then
+  echo "queue upgrade fixture: audit log missing the missing-archive-column report" >&2
+  exit 1
+fi
 null_keys=$(grep '"flow_slug": "many_null"' "$TMP/audit.log" | grep -o -e '->NULL' | wc -l)
 if [[ "$null_keys" -ne 20 ]]; then
   echo "queue upgrade fixture: expected exactly 20 sampled NULL keys, got $null_keys" >&2
@@ -324,7 +329,7 @@ if ! command -v deno >/dev/null 2>&1; then
   exit 1
 fi
 deno run --config ../edge-worker/deno.test.json --allow-all \
-  supabase/upgrade_queue_fixture/startup_probe.ts
+  ../edge-worker/tests/integration/upgrade/startup_probe.ts
 
 # ==========================================
 # Phase 3: migration succeeds on the populated old database

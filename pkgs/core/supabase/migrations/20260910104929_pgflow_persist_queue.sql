@@ -21,9 +21,15 @@ declare
   v_queue text;
   v_meta_count int;
   v_metadata_name text;
+  v_meta_row pgmq.meta%ROWTYPE;
   v_qtable text;
   v_atable text;
   v_seq text;
+  v_q_oid oid;
+  v_a_oid oid;
+  v_seq_oid oid;
+  v_ext_oid oid;
+  v_bad text;
   v_detail text;
   v_count bigint;
 begin
@@ -52,6 +58,218 @@ begin
     end if;
 
     execute format('lock table pgmq.%I, pgmq.%I in access exclusive mode', v_qtable, v_atable);
+
+    -- Complete physical shape, index, sequence-dependency, and
+    -- extension-membership contract, rechecked under the table locks: the
+    -- exact per-column contract of _inspect_generated_queue
+    -- (0070_functions_generated_queues.sql), including explicit
+    -- missing-column rejection for every queue and archive column.
+    select * into v_meta_row from pgmq.meta m where lower(m.queue_name) = v_queue;
+    v_q_oid := to_regclass(format('pgmq.%I', v_qtable));
+    v_a_oid := to_regclass(format('pgmq.%I', v_atable));
+    v_seq_oid := to_regclass(format('pgmq.%I', v_seq));
+    select e.oid into v_ext_oid from pg_extension e where e.extname = 'pgmq';
+
+    select problem into v_bad from (
+      select 'queue table %s is not an ordinary permanent table' as problem
+      from pg_class c
+      where c.oid = v_q_oid and (c.relkind <> 'r' or c.relpersistence <> 'p')
+      union all
+      select 'archive table %s is not an ordinary permanent table'
+      from pg_class c
+      where c.oid = v_a_oid and (c.relkind <> 'r' or c.relpersistence <> 'p')
+      union all
+      select 'queue table %s: msg_id must be a non-null bigint generated-always identity'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'msg_id'
+        and (a.atttypid <> 'int8'::regtype or not a.attnotnull or a.attidentity <> 'a')
+      union all
+      select 'queue table %s: missing msg_id bigint identity column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'msg_id' and a.attnum > 0)
+      union all
+      select 'queue table %s: msg_id has no single-column primary key'
+      where not exists (
+        select 1 from pg_index i
+        where i.indrelid = v_q_oid and i.indisprimary and i.indisvalid
+          and i.indnkeyatts = 1
+          and i.indkey[0] = (select a.attnum from pg_attribute a
+                             where a.attrelid = v_q_oid and a.attname = 'msg_id')
+      )
+      union all
+      select 'queue table %s: read_ct must be a non-null integer'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'read_ct'
+        and (a.atttypid <> 'int4'::regtype or not a.attnotnull)
+      union all
+      select 'queue table %s: missing read_ct column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'read_ct' and a.attnum > 0)
+      union all
+      select 'queue table %s: enqueued_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'enqueued_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'queue table %s: missing enqueued_at column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'enqueued_at' and a.attnum > 0)
+      union all
+      select 'queue table %s: vt must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'vt'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'queue table %s: missing vt column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'vt' and a.attnum > 0)
+      union all
+      select 'queue table %s: message must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'message'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'queue table %s: missing message column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'message' and a.attnum > 0)
+      union all
+      select 'queue table %s: headers must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'headers'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'queue table %s: missing headers column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'headers' and a.attnum > 0)
+      union all
+      select 'queue table %s has no valid usable single-column index on vt'
+      where not exists (
+        select 1
+        from pg_index i
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+        where i.indrelid = v_q_oid and i.indisvalid and i.indisready
+          and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+          and a.attname = 'vt'
+      )
+      union all
+      select 'archive table %s: msg_id must be a non-null bigint primary key without identity generator'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'msg_id'
+        and (a.atttypid <> 'int8'::regtype or not a.attnotnull or a.attidentity <> '')
+      union all
+      select 'archive table %s: missing msg_id bigint column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'msg_id' and a.attnum > 0)
+      union all
+      select 'archive table %s: msg_id has no single-column primary key'
+      where not exists (
+        select 1 from pg_index i
+        where i.indrelid = v_a_oid and i.indisprimary and i.indisvalid
+          and i.indnkeyatts = 1
+          and i.indkey[0] = (select a.attnum from pg_attribute a
+                             where a.attrelid = v_a_oid and a.attname = 'msg_id')
+      )
+      union all
+      select 'archive table %s: read_ct must be a non-null integer'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'read_ct'
+        and (a.atttypid <> 'int4'::regtype or not a.attnotnull)
+      union all
+      select 'archive table %s: missing read_ct column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'read_ct' and a.attnum > 0)
+      union all
+      select 'archive table %s: enqueued_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'enqueued_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table %s: missing enqueued_at column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'enqueued_at' and a.attnum > 0)
+      union all
+      select 'archive table %s: archived_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'archived_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table %s: missing archived_at column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'archived_at' and a.attnum > 0)
+      union all
+      select 'archive table %s: vt must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'vt'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table %s: missing vt column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'vt' and a.attnum > 0)
+      union all
+      select 'archive table %s: message must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'message'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'archive table %s: missing message column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'message' and a.attnum > 0)
+      union all
+      select 'archive table %s: headers must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'headers'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'archive table %s: missing headers column'
+      where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'headers' and a.attnum > 0)
+      union all
+      select 'archive table %s has no valid usable single-column index on archived_at'
+      where not exists (
+        select 1
+        from pg_index i
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+        where i.indrelid = v_a_oid and i.indisvalid and i.indisready
+          and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+          and a.attname = 'archived_at'
+      )
+      union all
+      select 'sequence %s must be a bigint sequence'
+      from pg_sequence s
+      where s.seqrelid = v_seq_oid
+        and s.seqtypid <> 'int8'::regtype
+      union all
+      select 'sequence %s is missing'
+      where not exists (select 1 from pg_sequence s where s.seqrelid = v_seq_oid)
+      union all
+      select 'sequence %s is not associated with queue msg_id'
+      where not exists (
+        select 1
+        from pg_depend d
+        join pg_attribute a
+          on a.attrelid = d.refobjid and a.attnum = d.refobjsubid
+        where d.objid = v_seq_oid
+          and d.refobjid = v_q_oid
+          and a.attname = 'msg_id'
+          and d.deptype in ('i', 'a')
+      )
+      union all
+      select 'queue %s metadata flags disagree with physical shape (partitioned/unlogged)'
+      where v_meta_row.is_partitioned or v_meta_row.is_unlogged
+      union all
+      select 'queue %s objects are not members of the installed pgmq extension'
+      where v_ext_oid is not null and (
+        not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_q_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        ) or not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_a_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        ) or not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_seq_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        )
+      )
+    ) problems
+    limit 1;
+
+    if v_bad is not null then
+      raise exception 'Migration preflight: queue "%" (metadata "%") failed physical/dependency/extension inspection: %',
+        v_queue, v_metadata_name, format(v_bad, v_queue);
+    end if;
   end loop;
 
   -- New slug rules (leading/trailing underscore, double underscore) on every
@@ -114,6 +332,31 @@ begin
     raise exception 'Migration preflight: % step_tasks rows disagree with their run''s flow_slug; resolve denormalized ownership manually', v_count;
   end if;
 
+  -- Full runtime ownership: every run references an existing flow
+  -- definition and every task references an existing step of its flow.
+  select count(*) into v_count
+  from pgflow.runs r
+  where not exists (
+    select 1 from pgflow.flows f where f.flow_slug = r.flow_slug
+  );
+  if v_count > 0 then
+    raise exception 'Migration preflight: % runs reference a flow definition that does not exist; resolve orphaned runs manually', v_count;
+  end if;
+
+  select string_agg(t.flow_slug || '/' || t.step_slug, ', ' order by t.flow_slug, t.step_slug) into v_detail
+  from (
+    select distinct t.flow_slug, t.step_slug
+    from pgflow.step_tasks t
+    where not exists (
+      select 1 from pgflow.steps s
+      where s.flow_slug = t.flow_slug and s.step_slug = t.step_slug
+    )
+    limit 20
+  ) t;
+  if v_detail is not null then
+    raise exception 'Migration preflight: step_tasks reference steps that do not exist in their flow [%]; resolve orphaned task rows manually', v_detail;
+  end if;
+
   -- Active queue rows without an exact durable task identity, including
   -- non-visible messages (vt > now() does not exempt them).
   for v_queue in select distinct lower(f.flow_slug) as q from pgflow.flows f order by 1
@@ -129,10 +372,31 @@ begin
     if v_count > 0 then
       raise exception 'Migration preflight: queue "%" holds % active message(s) without a matching exact task identity; resolve orphan messages manually before upgrade', v_queue, v_count;
     end if;
+
+    -- Matched messages whose envelopes identify different work than their
+    -- durable task identity. Only valid (safe-castable) contradicting
+    -- components count; malformed components are left to runtime claim
+    -- classification, where the durable pair wins.
+    execute format(
+      'select count(*) from pgmq.%I q
+       join pgflow.step_tasks t
+         on lower(t.flow_slug) = $1 and t.message_id = q.msg_id
+       where (q.message ->> ''flow_slug'') is not null
+         and (q.message ->> ''flow_slug'') is distinct from t.flow_slug
+         or ((q.message ->> ''run_id'') ~* ''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''
+             and (q.message ->> ''run_id'')::uuid is distinct from t.run_id)
+         or (q.message ->> ''step_slug'') is not null
+           and (q.message ->> ''step_slug'') is distinct from t.step_slug
+         or ((q.message ->> ''task_index'') ~ ''^[0-9]{1,9}$''
+             and (q.message ->> ''task_index'')::int is distinct from t.task_index)',
+      v_qtable)
+    into v_count using v_queue;
+    if v_count > 0 then
+      raise exception 'Migration preflight: queue "%" holds % matched active message(s) whose envelope identifies different work than the task row; resolve envelope corruption manually before upgrade', v_queue, v_count;
+    end if;
   end loop;
 end
 $preflight$;
-
 -- Create index "idx_flows_slug_lower" to table: "flows"
 CREATE UNIQUE INDEX "idx_flows_slug_lower" ON "pgflow"."flows" ((lower(flow_slug)));
 -- Create "_is_valid_queue_name" function
@@ -218,10 +482,12 @@ DECLARE
   v_flow_slug text;
   v_total_skipped int := 0;
 BEGIN
-  -- Get flow_slug for this run
+  -- Lock the parent run at direct entry before any run-mutating work;
+  -- callers that already hold the run lock re-acquire it harmlessly.
   SELECT r.flow_slug INTO v_flow_slug
   FROM pgflow.runs r
-  WHERE r.run_id = _cascade_force_skip_steps.run_id;
+  WHERE r.run_id = _cascade_force_skip_steps.run_id
+  FOR UPDATE;
 
   IF v_flow_slug IS NULL THEN
     RAISE EXCEPTION 'Run not found: %', _cascade_force_skip_steps.run_id;
@@ -346,9 +612,12 @@ declare
   v_meta_row pgmq.meta%ROWTYPE;
   v_flow_exists boolean;
   v_other_flow text;
+  v_routed_step text;
+  v_other_route text;
   v_q_oid oid;
   v_a_oid oid;
   v_seq_oid oid;
+  v_ext_oid oid;
   v_bad text;
 begin
   if not pgflow._is_valid_queue_name(p_queue_name) then
@@ -399,6 +668,19 @@ begin
   if v_other_flow is not null then
     raise exception 'Generated queue "%" for flow % is referenced by tasks of flow %',
       p_queue_name, p_flow_slug, v_other_flow;
+  end if;
+
+  -- The current flow's persisted route must actually be this queue: a step
+  -- persisting a different route is an invalid definition, and verifying or
+  -- deleting this queue while such a step exists would bypass it.
+  select s.step_slug, s.queue_name into v_routed_step, v_other_route
+  from pgflow.steps s
+  where s.flow_slug = p_flow_slug
+    and s.queue_name is distinct from p_queue_name
+  limit 1;
+  if v_routed_step is not null then
+    raise exception 'Flow %: step "%" persists route "%" instead of the generated queue "%"; the definition is invalid and no queue operation may proceed',
+      p_flow_slug, v_routed_step, v_other_route, p_queue_name;
   end if;
 
   select count(*), min(m.queue_name) into v_meta_count, v_metadata_name
@@ -463,10 +745,11 @@ begin
     select 'queue table %s: missing msg_id bigint identity column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'msg_id' and a.attnum > 0)
     union all
-    select 'queue table %s: msg_id has no primary key'
+    select 'queue table %s: msg_id has no single-column primary key'
     where not exists (
       select 1 from pg_index i
-      where i.indrelid = v_q_oid and i.indisprimary
+      where i.indrelid = v_q_oid and i.indisprimary and i.indisvalid
+        and i.indnkeyatts = 1
         and i.indkey[0] = (select a.attnum from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'msg_id')
     )
     union all
@@ -510,12 +793,18 @@ begin
     select 'queue table %s: missing headers column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'headers' and a.attnum > 0)
     union all
-    select 'queue table %s has no valid index on vt'
+    select 'queue table %s has no valid usable single-column index on vt'
     where not exists (
       select 1
       from pg_index i
       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
-      where i.indrelid = v_q_oid and i.indisvalid and a.attname = 'vt'
+      where i.indrelid = v_q_oid
+        and i.indisvalid
+        and i.indisready
+        and i.indpred is null
+        and i.indexprs is null
+        and i.indnkeyatts = 1
+        and a.attname = 'vt'
     )
     union all
     select 'queue table %s metadata flags disagree with physical shape (partitioned/unlogged)'
@@ -545,10 +834,11 @@ begin
     select 'archive table %s: missing msg_id bigint column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'msg_id' and a.attnum > 0)
     union all
-    select 'archive table %s: msg_id has no primary key'
+    select 'archive table %s: msg_id has no single-column primary key'
     where not exists (
       select 1 from pg_index i
-      where i.indrelid = v_a_oid and i.indisprimary
+      where i.indrelid = v_a_oid and i.indisprimary and i.indisvalid
+        and i.indnkeyatts = 1
         and i.indkey[0] = (select a.attnum from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'msg_id')
     )
     union all
@@ -600,12 +890,18 @@ begin
     select 'archive table %s: missing headers column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'headers' and a.attnum > 0)
     union all
-    select 'archive table %s has no valid index on archived_at'
+    select 'archive table %s has no valid usable single-column index on archived_at'
     where not exists (
       select 1
       from pg_index i
       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
-      where i.indrelid = v_a_oid and i.indisvalid and a.attname = 'archived_at'
+      where i.indrelid = v_a_oid
+        and i.indisvalid
+        and i.indisready
+        and i.indpred is null
+        and i.indexprs is null
+        and i.indnkeyatts = 1
+        and a.attname = 'archived_at'
     )
   ) problems
   limit 1;
@@ -644,6 +940,49 @@ begin
   if v_bad is not null then
     raise exception 'Flow %: generated queue "%" failed physical inspection: %',
       p_flow_slug, p_queue_name, format(v_bad, v_sequence);
+  end if;
+
+  -- ==========================================
+  -- EXTENSION MEMBERSHIP CONTRACT
+  -- ==========================================
+  -- When pgmq is installed as an extension, PGMQ's own create/drop path
+  -- marks the q/a tables and the identity sequence as extension members
+  -- (pg_depend deptype 'e'). Objects without that membership were created
+  -- outside PGMQ's implementation and must not be treated as owned
+  -- generated queues.
+  select e.oid into v_ext_oid from pg_extension e where e.extname = 'pgmq';
+  if v_ext_oid is not null then
+    select reason into v_bad from (
+      select 'queue table %s is not a member of the installed pgmq extension' as reason
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_q_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+      union all
+      select 'archive table %s is not a member of the installed pgmq extension'
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_a_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+      union all
+      select 'sequence %s is not a member of the installed pgmq extension'
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_seq_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+    ) problems
+    limit 1;
+
+    if v_bad is not null then
+      raise exception 'Flow %: generated queue "%" failed extension-membership inspection: %',
+        p_flow_slug, p_queue_name, format(v_bad, v_qtable);
+    end if;
   end if;
 
   return jsonb_build_object('state', 'present', 'metadata_name', v_metadata_name);
@@ -1001,11 +1340,14 @@ DECLARE
   v_archive_batch record;
 BEGIN
   -- ==========================================
-  -- GUARD: Early return if run is already terminal
+  -- GUARD: lock the parent run at direct entry, then early-return if the
+  -- run is already terminal. Callers that already hold the run lock (for
+  -- example complete_task) re-acquire it harmlessly in the same transaction.
   -- ==========================================
   SELECT r.status, r.input INTO v_run_status, v_run_input
   FROM pgflow.runs r
-  WHERE r.run_id = cascade_resolve_conditions.run_id;
+  WHERE r.run_id = cascade_resolve_conditions.run_id
+  FOR UPDATE;
 
   IF v_run_status IN ('failed', 'completed') THEN
     RETURN v_run_status != 'failed';
@@ -1465,6 +1807,14 @@ begin
 -- GUARD: No mutations on failed runs
 -- ==========================================
 IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = complete_task.run_id AND pgflow.runs.status = 'failed') THEN
+  -- Archive the late callback message through the locked single-task
+  -- helper (run/step/task locks are its own acquisition); the message must
+  -- not stay visible for re-reading after a failed run (#650).
+  PERFORM pgflow._archive_task_message(
+    complete_task.run_id,
+    complete_task.step_slug,
+    complete_task.task_index
+  );
   RETURN QUERY SELECT * FROM pgflow.step_tasks
     WHERE pgflow.step_tasks.run_id = complete_task.run_id
       AND pgflow.step_tasks.step_slug = complete_task.step_slug
@@ -1887,6 +2237,9 @@ DECLARE
   v_metadata_names text[];
   v_snapshot_violation record;
   v_queue text;
+  v_qtable text;
+  v_atable text;
+  v_sequence text;
   v_inspect_result jsonb;
   v_idx int;
 BEGIN
@@ -1987,7 +2340,30 @@ BEGIN
   -- No per-message archival/deletion happens before the whole-queue drop.
   FOR v_idx IN 1..COALESCE(array_length(v_route_names, 1), 0)
   LOOP
+    v_queue := v_route_names[v_idx];
+    v_qtable := pgmq.format_table_name(v_queue, 'q');
+    v_atable := pgmq.format_table_name(v_queue, 'a');
+    v_sequence := v_qtable || '_msg_id_seq';
+
     PERFORM pgmq.drop_queue(v_metadata_names[v_idx]);
+
+    -- Post-drop completeness: pgmq.drop_queue must have removed the
+    -- metadata row, both physical tables, and the identity sequence. A
+    -- partial drop leaves the namespace ambiguous and must abort before
+    -- the flow identity row is deleted.
+    IF EXISTS (
+      SELECT 1 FROM pgmq.meta m WHERE lower(m.queue_name) = v_queue
+    ) THEN
+      RAISE EXCEPTION 'Flow %: dropping generated queue "%" left its PGMQ metadata behind; deletion aborted with everything rolled back',
+        p_flow_slug, v_queue;
+    END IF;
+
+    IF to_regclass(format('pgmq.%I', v_qtable)) IS NOT NULL
+       OR to_regclass(format('pgmq.%I', v_atable)) IS NOT NULL
+       OR to_regclass(format('pgmq.%I', v_sequence)) IS NOT NULL THEN
+      RAISE EXCEPTION 'Flow %: dropping generated queue "%" left physical objects behind (queue table: %, archive table: %, sequence: %); deletion aborted with everything rolled back',
+        p_flow_slug, v_queue, v_qtable, v_atable, v_sequence;
+    END IF;
   END LOOP;
 
   -- Delete the concrete flow identity row last
@@ -2006,12 +2382,57 @@ begin
   -- Eligibility requires the parent run AND parent step to still be 'started':
   -- stale rows on failed runs or terminal steps must not be revived (#645).
   --
-  -- Lock order (#650): eligible parent runs and step states are locked before
-  -- task rows (ordered by (run_id, step_slug, task_index)), with SKIP LOCKED
-  -- so a blocked parent/run/task is skipped, not waited on. Status and timeout
-  -- predicates are rechecked under those locks by EvalPlanQual, so a parent
-  -- that failed while we waited is not revived.
-  with stalled_tasks as (
+  -- Lock order (#650): eligible parent runs are locked first (ordered by
+  -- run_id), then eligible step states (ordered by (run_id, step_slug)), then
+  -- task rows (ordered by (run_id, step_slug, task_index)) - as three
+  -- sequential lock sets, not one joined FOR UPDATE, so parent rows are
+  -- always locked before their children. SKIP LOCKED is preserved at every
+  -- level: a blocked parent/run/state/task is skipped, not waited on, and no
+  -- later-order lock is held while waiting. Status and timeout predicates
+  -- are restated in each phase so EvalPlanQual rechecks them under the locks.
+  with locked_runs as (
+    select r.run_id
+    from pgflow.runs r
+    where r.status = 'started'
+      and exists (
+        select 1
+        from pgflow.step_tasks st
+        join pgflow.step_states ss on ss.run_id = st.run_id and ss.step_slug = st.step_slug
+        join pgflow.flows f on f.flow_slug = r.flow_slug
+        join pgflow.steps s on s.flow_slug = r.flow_slug and s.step_slug = st.step_slug
+        where st.run_id = r.run_id
+          and st.status = 'started'
+          and ss.status = 'started'
+          and st.permanently_stalled_at is null
+          and st.started_at < now()
+            - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
+            - interval '30 seconds'
+      )
+    order by r.run_id
+    for update skip locked
+  ),
+  locked_states as (
+    select ss.run_id, ss.step_slug
+    from pgflow.step_states ss
+    join locked_runs lr on lr.run_id = ss.run_id
+    where ss.status = 'started'
+      and exists (
+        select 1
+        from pgflow.step_tasks st
+        join pgflow.flows f on f.flow_slug = ss.flow_slug
+        join pgflow.steps s on s.flow_slug = ss.flow_slug and s.step_slug = st.step_slug
+        where st.run_id = ss.run_id
+          and st.step_slug = ss.step_slug
+          and st.status = 'started'
+          and st.permanently_stalled_at is null
+          and st.started_at < now()
+            - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
+            - interval '30 seconds'
+      )
+    order by ss.run_id, ss.step_slug
+    for update of ss skip locked
+  ),
+  stalled_tasks as (
     select
       st.run_id,
       st.step_slug,
@@ -2020,19 +2441,18 @@ begin
       st.queue_name,
       st.requeued_count
     from pgflow.step_tasks st
+    join locked_states ls on ls.run_id = st.run_id and ls.step_slug = st.step_slug
     join pgflow.runs r on r.run_id = st.run_id
-    join pgflow.step_states ss on ss.run_id = st.run_id and ss.step_slug = st.step_slug
     join pgflow.flows f on f.flow_slug = r.flow_slug
     join pgflow.steps s on s.flow_slug = r.flow_slug and s.step_slug = st.step_slug
     where st.status = 'started'
       and r.status = 'started'
-      and ss.status = 'started'
       and st.permanently_stalled_at is null
       and st.started_at < now()
         - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
         - interval '30 seconds'
     order by st.run_id, st.step_slug, st.task_index
-    for update of r, ss, st skip locked
+    for update of st skip locked
   ),
   -- Separate tasks that can be requeued from those that exceeded max requeues
   to_requeue as (
@@ -2646,11 +3066,15 @@ declare
   v_errors jsonb := '[]'::jsonb;
   v_warnings jsonb := '[]'::jsonb;
   v_claimed_tasks jsonb;
+  v_body jsonb;
   v_body_flow text;
   v_body_run text;
   v_body_step text;
   v_body_index text;
-  v_address_task record;
+  v_run_valid boolean;
+  v_index_valid boolean;
+  v_reason text;
+  v_addr record;
   v_vt_offsets int[];
   v_updated_count int;
   v_claimed_count int;
@@ -2673,16 +3097,23 @@ begin
   where w.worker_id = claim_tasks.worker_id;
 
   if v_worker is null then
-    -- Missing registration supplies no invented function to pause
-    v_errors := v_errors || jsonb_build_object(
-      'queue_name', queue_name, 'message_id', null, 'reason', 'invalid_subscription');
+    -- Missing registration supplies no invented function to pause; one
+    -- diagnostic per batch member keeps every message ID non-null
+    select coalesce(jsonb_agg(
+      jsonb_build_object('queue_name', queue_name, 'message_id', id::text, 'reason', 'invalid_subscription')
+      order by id), '[]'::jsonb)
+    into v_errors
+    from unnest(v_ids) as u(id);
     perform pgflow.set_vt_batch(queue_name, v_ids, array_fill(0, array[cardinality(v_ids)]));
     return jsonb_build_object('status', 'fatal', 'tasks', '[]'::jsonb, 'errors', v_errors);
   end if;
 
   if v_worker.queue_name is distinct from queue_name then
-    v_errors := v_errors || jsonb_build_object(
-      'queue_name', queue_name, 'message_id', null, 'reason', 'invalid_subscription');
+    select coalesce(jsonb_agg(
+      jsonb_build_object('queue_name', queue_name, 'message_id', id::text, 'reason', 'invalid_subscription')
+      order by id), '[]'::jsonb)
+    into v_errors
+    from unnest(v_ids) as u(id);
     perform pgflow.set_vt_batch(queue_name, v_ids, array_fill(0, array[cardinality(v_ids)]));
     update pgflow.worker_functions wf
     set enabled = false, updated_at = clock_timestamp()
@@ -2706,8 +3137,11 @@ begin
   if not v_flow_exists
      or claim_tasks.queue_name is distinct from lower(claim_tasks.flow_slug)
      or v_route_violation is not null then
-    v_errors := v_errors || jsonb_build_object(
-      'queue_name', queue_name, 'message_id', null, 'reason', 'wrong_route');
+    select coalesce(jsonb_agg(
+      jsonb_build_object('queue_name', queue_name, 'message_id', id::text, 'reason', 'wrong_route')
+      order by id), '[]'::jsonb)
+    into v_errors
+    from unnest(v_ids) as u(id);
     perform pgflow.set_vt_batch(queue_name, v_ids, array_fill(0, array[cardinality(v_ids)]));
     update pgflow.worker_functions wf
     set enabled = false, updated_at = clock_timestamp()
@@ -2720,6 +3154,7 @@ begin
   -- READ-ONLY DISCOVERY
   -- ==========================================
   -- Read the bodies once (ordinary SQL error if the physical table is gone).
+  -- Bodies are immutable in PGMQ, so reading them before the locks is safe.
   -- Envelope inspection is identity classification only; application input
   -- JSON is never validated here.
   execute format(
@@ -2728,6 +3163,44 @@ begin
     v_qtable
   ) into v_bodies using v_ids;
 
+  -- ==========================================
+  -- ORDERED LOCKS
+  -- ==========================================
+  -- Parent runs, step states, task rows, then queue rows in message-ID
+  -- order: the established parent-first order shared with every other
+  -- runtime operation.
+  perform 1
+  from pgflow.runs r
+  where r.run_id in (
+    select t.run_id from pgflow.step_tasks t
+    where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
+  )
+  order by r.run_id
+  for update;
+
+  perform 1
+  from pgflow.step_states ss
+  where ss.run_id in (
+    select t.run_id from pgflow.step_tasks t
+    where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
+  )
+  order by ss.run_id, ss.step_slug
+  for update;
+
+  perform 1
+  from pgflow.step_tasks t
+  where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
+  order by t.run_id, t.step_slug, t.task_index
+  for update;
+
+  execute format(
+    'select q.msg_id from pgmq.%I q where q.msg_id = any($1) order by q.msg_id for update',
+    v_qtable
+  ) using v_ids;
+
+  -- ==========================================
+  -- CLASSIFICATION (under the locks above)
+  -- ==========================================
   for v_classification in
     with pairs as (
       select
@@ -2762,25 +3235,36 @@ begin
     left join lateral jsonb_array_elements(v_bodies) b(msg) on (b.msg->>'msg_id')::bigint = u.id
     order by u.id
   loop
-    v_body_flow := v_classification.body ->> 'flow_slug';
-    v_body_run := v_classification.body ->> 'run_id';
-    v_body_step := v_classification.body ->> 'step_slug';
-    v_body_index := v_classification.body ->> 'task_index';
+    v_body := v_classification.body;
+    v_body_flow := v_body ->> 'flow_slug';
+    v_body_run := v_body ->> 'run_id';
+    v_body_step := v_body ->> 'step_slug';
+    v_body_index := v_body ->> 'task_index';
+    -- Safe-cast gates: only well-formed components may identify work
+    v_run_valid := v_body_run is not null
+      and v_body_run ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+    v_index_valid := v_body_index is not null
+      and v_body_index ~ '^[0-9]{1,9}$';
 
     if v_classification.task_run_id is not null then
       -- ==========================================
-      -- EXACT DURABLE PAIR: the pair wins over the envelope
+      -- EXACT DURABLE PAIR: the pair wins over the envelope. Malformed or
+      -- absent components never contradict it; only a VALID address that
+      -- positively identifies different work is fatal.
       -- ==========================================
-      -- A valid address that positively identifies different work is fatal
       if v_body_flow is not null and v_body_flow is distinct from claim_tasks.flow_slug then
         v_errors := v_errors || jsonb_build_object(
-          'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'unsupported_work');
+          'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'wrong_route');
         v_fatal := true;
-      elsif v_body_run is not null and v_body_run !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      elsif v_run_valid and v_body_run::uuid is distinct from v_classification.task_run_id then
         v_errors := v_errors || jsonb_build_object(
           'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'unsupported_work');
         v_fatal := true;
-      elsif v_body_run is not null and v_body_run::uuid is distinct from v_classification.task_run_id then
+      elsif v_body_step is not null and v_body_step is distinct from v_classification.task_step then
+        v_errors := v_errors || jsonb_build_object(
+          'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'unsupported_work');
+        v_fatal := true;
+      elsif v_index_valid and (v_body_index)::int is distinct from v_classification.task_index then
         v_errors := v_errors || jsonb_build_object(
           'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'unsupported_work');
         v_fatal := true;
@@ -2806,17 +3290,48 @@ begin
       end if;
     else
       -- ==========================================
-      -- NO EXACT PAIR: envelope decides
+      -- NO EXACT PAIR: key presence decides. Present-null identity keys are
+      -- pgflow-shaped evidence, not foreign silence.
       -- ==========================================
-      if v_body_flow is null and v_body_run is null and v_body_step is null and v_body_index is null then
+      if v_body is null
+         or not (v_body ? 'flow_slug' or v_body ? 'run_id'
+                 or v_body ? 'step_slug' or v_body ? 'task_index') then
         -- Clearly foreign: archive and warn (no bodies in diagnostics)
         v_foreign_ids := array_append(v_foreign_ids, v_classification.msg_id);
         v_warnings := v_warnings || jsonb_build_object(
           'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'foreign_message');
       else
-        -- Apparently genuine pgflow work with a missing task: fatal
+        -- Apparently genuine or ambiguous pgflow work without an exact pair:
+        -- fatal. Inspect valid address components to name the reason; a
+        -- malformed or null-valued component stays unsupported work.
+        v_reason := 'unsupported_work';
+        if v_body_flow is not null and v_body_flow is distinct from claim_tasks.flow_slug then
+          v_reason := 'wrong_route';
+        elsif v_run_valid then
+          select r.flow_slug into v_addr
+          from pgflow.runs r
+          where r.run_id = v_body_run::uuid;
+          if not found then
+            v_reason := 'unsupported_work';
+          elsif v_addr.flow_slug is distinct from claim_tasks.flow_slug then
+            v_reason := 'wrong_route';
+          elsif v_body_step is not null and v_index_valid then
+            -- A complete valid address that belongs to this flow but to a
+            -- task in another queue is wrong-route work
+            if exists (
+              select 1
+              from pgflow.step_tasks t
+              where t.run_id = v_body_run::uuid
+                and t.step_slug = v_body_step
+                and t.task_index = (v_body_index)::int
+                and t.queue_name is distinct from claim_tasks.queue_name
+            ) then
+              v_reason := 'wrong_route';
+            end if;
+          end if;
+        end if;
         v_errors := v_errors || jsonb_build_object(
-          'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', 'unsupported_work');
+          'queue_name', queue_name, 'message_id', v_classification.msg_id::text, 'reason', v_reason);
         v_fatal := true;
       end if;
     end if;
@@ -2851,34 +3366,8 @@ begin
   end if;
 
   -- ==========================================
-  -- NONFATAL BRANCH: lock, then mutate
+  -- NONFATAL BRANCH (under the locks above)
   -- ==========================================
-  -- Lock affected parent runs, step states, and task rows in the established
-  -- order before touching queue rows
-  perform 1
-  from pgflow.runs r
-  where r.run_id in (
-    select t.run_id from pgflow.step_tasks t
-    where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
-  )
-  order by r.run_id
-  for update;
-
-  perform 1
-  from pgflow.step_states ss
-  where ss.run_id in (
-    select t.run_id from pgflow.step_tasks t
-    where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
-  )
-  order by ss.run_id, ss.step_slug
-  for update;
-
-  perform 1
-  from pgflow.step_tasks t
-  where t.queue_name = claim_tasks.queue_name and t.message_id = any(v_ids)
-  order by t.run_id, t.step_slug, t.task_index
-  for update;
-
   -- Defer started tasks to their existing recovery deadline (effective
   -- timeout + 30s from started_at); repeated reads never move that deadline
   if v_defer_ids is not null then
@@ -2913,184 +3402,129 @@ begin
   end if;
 
   -- ==========================================
-  -- CLAIM: guarded update; input assembly copied from start_tasks
+  -- CLAIM: guarded update; the returned tasks are built ONLY from the
+  -- UPDATE ... RETURNING rows, never from a re-query by message ID.
   -- ==========================================
-  with
-  task_candidates as (
-    select
-      task.flow_slug,
-      task.run_id,
-      task.step_slug,
-      task.task_index,
-      task.queue_name,
-      task.message_id
-    from pgflow.step_tasks as task
-    join pgflow.runs r on r.run_id = task.run_id
-    where task.queue_name = claim_tasks.queue_name
-      and task.message_id = any(v_claim_ids)
-      and task.status = 'queued'
-      and r.status = 'started'
-      and exists (
-        select 1
-        from pgflow.step_states ss
-        where ss.run_id = task.run_id
-          and ss.step_slug = task.step_slug
-          and ss.status = 'started'
-      )
-  ),
-  tasks as (
-    update pgflow.step_tasks
-    set
-      attempts_count = attempts_count + 1,
-      status = 'started',
-      started_at = now(),
-      last_worker_id = claim_tasks.worker_id
-    from task_candidates as candidate
-    where step_tasks.queue_name = candidate.queue_name
-      and step_tasks.message_id = candidate.message_id
-      and step_tasks.status = 'queued'
-    returning
-      step_tasks.flow_slug,
-      step_tasks.run_id,
-      step_tasks.step_slug,
-      step_tasks.task_index,
-      step_tasks.queue_name,
-      step_tasks.message_id
-  ),
-  runs as (
-    select r.run_id, r.input
-    from pgflow.runs r
-    where r.run_id in (select run_id from tasks)
-  ),
-  deps as (
-    select
-      st.run_id,
-      st.step_slug,
-      dep.dep_slug,
-      dep_state.output as dep_output
-    from tasks st
-    join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
-    join pgflow.step_states dep_state on
-      dep_state.run_id = st.run_id and
-      dep_state.step_slug = dep.dep_slug and
-      dep_state.status = 'completed'
-  ),
-  deps_outputs as (
-    select
-      d.run_id,
-      d.step_slug,
-      jsonb_object_agg(d.dep_slug, d.dep_output) as deps_output,
-      count(*) as dep_count
-    from deps d
-    group by d.run_id, d.step_slug
-  ),
-  timeouts as (
-    select
-      task.message_id,
-      coalesce(step.opt_timeout, flow.opt_timeout) + 2 as vt_delay
-    from tasks task
-    join pgflow.flows flow on flow.flow_slug = task.flow_slug
-    join pgflow.steps step on step.flow_slug = task.flow_slug and step.step_slug = task.step_slug
-  ),
-  visibility_reset as (
-    select pgflow.set_vt_batch(
-      claim_tasks.queue_name,
-      array_agg(t.message_id order by t.message_id),
-      array_agg(t.vt_delay order by t.message_id)
-    )
-    from timeouts t
-  )
-  select
-    (select count(*) from visibility_reset),
-    (select count(*) from tasks)
-  into v_updated_count, v_claimed_count;
-
-  -- Guard completeness: a claimed task without its visibility extension fails
-  -- the whole statement atomically (#656)
-  if v_updated_count is distinct from v_claimed_count then
-    raise exception 'claim_tasks(): visibility updated % of % claimed messages',
-      v_updated_count, v_claimed_count;
-  end if;
-
-  -- Build the claimed task JSON (IDs projected to text)
-  with tasks as (
-    select
-      task.flow_slug,
-      task.run_id,
-      task.step_slug,
-      task.task_index,
-      task.queue_name,
-      task.message_id
-    from pgflow.step_tasks task
-    where task.queue_name = claim_tasks.queue_name
-      and task.message_id = any(v_claim_ids)
-      and task.status = 'started'
-      and task.last_worker_id = claim_tasks.worker_id
-  ),
-  runs as (
-    select r.run_id, r.input
-    from pgflow.runs r
-    where r.run_id in (select run_id from tasks)
-  ),
-  deps as (
-    select
-      st.run_id,
-      st.step_slug,
-      dep.dep_slug,
-      dep_state.output as dep_output
-    from tasks st
-    join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
-    join pgflow.step_states dep_state on
-      dep_state.run_id = st.run_id and
-      dep_state.step_slug = dep.dep_slug and
-      dep_state.status = 'completed'
-  ),
-  deps_outputs as (
-    select
-      d.run_id,
-      d.step_slug,
-      jsonb_object_agg(d.dep_slug, d.dep_output) as deps_output,
-      count(*) as dep_count
-    from deps d
-    group by d.run_id, d.step_slug
-  )
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'flow_slug', st.flow_slug,
-        'run_id', st.run_id,
-        'step_slug', st.step_slug,
-        'task_index', st.task_index,
-        'queue_name', st.queue_name,
-        'msg_id', st.message_id::text,
-        'input',
-        case
-          when step.step_type = 'map' then
-            case
-              when step.deps_count = 0 then jsonb_array_element(r.input, st.task_index)
-              else (select jsonb_array_element(value, st.task_index) from jsonb_each(dep_out.deps_output) limit 1)
-            end
-          else coalesce(dep_out.deps_output, '{}'::jsonb)
-        end,
-        'flow_input',
-        case
-          when step.step_type != 'map' and step.deps_count = 0 then r.input
-          else null
-        end
-      )
-      order by st.message_id
+  if v_claim_ids is not null then
+    with
+    updated as (
+      update pgflow.step_tasks task
+      set
+        attempts_count = attempts_count + 1,
+        status = 'started',
+        started_at = now(),
+        last_worker_id = claim_tasks.worker_id
+      where task.queue_name = claim_tasks.queue_name
+        and task.message_id = any(v_claim_ids)
+        and task.status = 'queued'
+      returning
+        task.flow_slug,
+        task.run_id,
+        task.step_slug,
+        task.task_index,
+        task.queue_name,
+        task.message_id
     ),
-    '[]'::jsonb
-  )
-  into v_claimed_tasks
-  from tasks st
-  join runs r on st.run_id = r.run_id
-  join pgflow.steps step on
-    step.flow_slug = st.flow_slug and
-    step.step_slug = st.step_slug
-  left join deps_outputs dep_out on
-    dep_out.run_id = st.run_id and
-    dep_out.step_slug = st.step_slug;
+    runs as (
+      select r.run_id, r.input
+      from pgflow.runs r
+      where r.run_id in (select run_id from updated)
+    ),
+    deps as (
+      select
+        st.run_id,
+        st.step_slug,
+        dep.dep_slug,
+        dep_state.output as dep_output
+      from updated st
+      join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
+      join pgflow.step_states dep_state on
+        dep_state.run_id = st.run_id and
+        dep_state.step_slug = dep.dep_slug and
+        dep_state.status = 'completed'
+    ),
+    deps_outputs as (
+      select
+        d.run_id,
+        d.step_slug,
+        jsonb_object_agg(d.dep_slug, d.dep_output) as deps_output,
+        count(*) as dep_count
+      from deps d
+      group by d.run_id, d.step_slug
+    ),
+    timeouts as (
+      select
+        u.message_id,
+        coalesce(step.opt_timeout, flow.opt_timeout) + 2 as vt_delay
+      from updated u
+      join pgflow.flows flow on flow.flow_slug = u.flow_slug
+      join pgflow.steps step on step.flow_slug = u.flow_slug and step.step_slug = u.step_slug
+    ),
+    visibility_reset as (
+      select pgflow.set_vt_batch(
+        claim_tasks.queue_name,
+        (select array_agg(t.message_id order by t.message_id) from timeouts t),
+        (select array_agg(t.vt_delay order by t.message_id) from timeouts t)
+      )
+    ),
+    counts as (
+      select
+        (select count(*) from visibility_reset) as updated_count,
+        (select count(*) from updated) as claimed_count
+    )
+    select
+      c.updated_count,
+      c.claimed_count,
+      coalesce((
+        select jsonb_agg(
+          jsonb_build_object(
+            'flow_slug', st.flow_slug,
+            'run_id', st.run_id,
+            'step_slug', st.step_slug,
+            'task_index', st.task_index,
+            'queue_name', st.queue_name,
+            'msg_id', st.message_id::text,
+            'input',
+            case
+              when step.step_type = 'map' then
+                case
+                  when step.deps_count = 0 then jsonb_array_element(r.input, st.task_index)
+                  else (select jsonb_array_element(value, st.task_index) from jsonb_each(dep_out.deps_output) limit 1)
+                end
+              else coalesce(dep_out.deps_output, '{}'::jsonb)
+            end,
+            'flow_input',
+            case
+              when step.step_type != 'map' and step.deps_count = 0 then r.input
+              else null
+            end
+          )
+          order by st.message_id
+        )
+        from updated st
+        join runs r on st.run_id = r.run_id
+        join pgflow.steps step on
+          step.flow_slug = st.flow_slug and
+          step.step_slug = st.step_slug
+        left join deps_outputs dep_out on
+          dep_out.run_id = st.run_id and
+          dep_out.step_slug = st.step_slug
+      ), '[]'::jsonb)
+    into v_updated_count, v_claimed_count, v_claimed_tasks
+    from counts c;
+
+    -- Guard completeness: every task the guarded update actually claimed
+    -- must have its visibility extension; otherwise the whole statement
+    -- fails atomically (#656). A guarded update that claims fewer rows
+    -- than classified (e.g. a concurrent skip winning the row lock, #638)
+    -- simply returns only the claimed rows.
+    if v_updated_count is distinct from v_claimed_count then
+      raise exception 'claim_tasks(): visibility updated % of % claimed messages',
+        v_updated_count, v_claimed_count;
+    end if;
+  else
+    v_claimed_tasks := '[]'::jsonb;
+  end if;
 
   return jsonb_build_object(
     'status', 'ok',
@@ -3135,8 +3569,6 @@ begin
   end loop;
 end;
 $$;
--- Drop "ensure_flow_compiled" function
-DROP FUNCTION "pgflow"."ensure_flow_compiled" (text, jsonb);
 -- Create "ensure_flow_compiled" function
 CREATE FUNCTION "pgflow"."ensure_flow_compiled" ("flow_slug" text, "shape" jsonb, "worker_protocol" jsonb) RETURNS jsonb LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
@@ -3231,4 +3663,6 @@ END;
 $$;
 -- Drop "add_step" function
 DROP FUNCTION "pgflow"."add_step" (text, text, text[], integer, integer, integer, integer, text, jsonb, jsonb, text, text);
+-- Drop "ensure_flow_compiled" function
+DROP FUNCTION "pgflow"."ensure_flow_compiled" (text, jsonb);
 COMMIT;

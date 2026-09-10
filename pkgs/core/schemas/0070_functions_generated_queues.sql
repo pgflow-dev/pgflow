@@ -38,9 +38,12 @@ declare
   v_meta_row pgmq.meta%ROWTYPE;
   v_flow_exists boolean;
   v_other_flow text;
+  v_routed_step text;
+  v_other_route text;
   v_q_oid oid;
   v_a_oid oid;
   v_seq_oid oid;
+  v_ext_oid oid;
   v_bad text;
 begin
   if not pgflow._is_valid_queue_name(p_queue_name) then
@@ -91,6 +94,19 @@ begin
   if v_other_flow is not null then
     raise exception 'Generated queue "%" for flow % is referenced by tasks of flow %',
       p_queue_name, p_flow_slug, v_other_flow;
+  end if;
+
+  -- The current flow's persisted route must actually be this queue: a step
+  -- persisting a different route is an invalid definition, and verifying or
+  -- deleting this queue while such a step exists would bypass it.
+  select s.step_slug, s.queue_name into v_routed_step, v_other_route
+  from pgflow.steps s
+  where s.flow_slug = p_flow_slug
+    and s.queue_name is distinct from p_queue_name
+  limit 1;
+  if v_routed_step is not null then
+    raise exception 'Flow %: step "%" persists route "%" instead of the generated queue "%"; the definition is invalid and no queue operation may proceed',
+      p_flow_slug, v_routed_step, v_other_route, p_queue_name;
   end if;
 
   select count(*), min(m.queue_name) into v_meta_count, v_metadata_name
@@ -155,10 +171,11 @@ begin
     select 'queue table %s: missing msg_id bigint identity column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'msg_id' and a.attnum > 0)
     union all
-    select 'queue table %s: msg_id has no primary key'
+    select 'queue table %s: msg_id has no single-column primary key'
     where not exists (
       select 1 from pg_index i
-      where i.indrelid = v_q_oid and i.indisprimary
+      where i.indrelid = v_q_oid and i.indisprimary and i.indisvalid
+        and i.indnkeyatts = 1
         and i.indkey[0] = (select a.attnum from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'msg_id')
     )
     union all
@@ -202,12 +219,18 @@ begin
     select 'queue table %s: missing headers column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_q_oid and a.attname = 'headers' and a.attnum > 0)
     union all
-    select 'queue table %s has no valid index on vt'
+    select 'queue table %s has no valid usable single-column index on vt'
     where not exists (
       select 1
       from pg_index i
       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
-      where i.indrelid = v_q_oid and i.indisvalid and a.attname = 'vt'
+      where i.indrelid = v_q_oid
+        and i.indisvalid
+        and i.indisready
+        and i.indpred is null
+        and i.indexprs is null
+        and i.indnkeyatts = 1
+        and a.attname = 'vt'
     )
     union all
     select 'queue table %s metadata flags disagree with physical shape (partitioned/unlogged)'
@@ -237,10 +260,11 @@ begin
     select 'archive table %s: missing msg_id bigint column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'msg_id' and a.attnum > 0)
     union all
-    select 'archive table %s: msg_id has no primary key'
+    select 'archive table %s: msg_id has no single-column primary key'
     where not exists (
       select 1 from pg_index i
-      where i.indrelid = v_a_oid and i.indisprimary
+      where i.indrelid = v_a_oid and i.indisprimary and i.indisvalid
+        and i.indnkeyatts = 1
         and i.indkey[0] = (select a.attnum from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'msg_id')
     )
     union all
@@ -292,12 +316,18 @@ begin
     select 'archive table %s: missing headers column'
     where not exists (select 1 from pg_attribute a where a.attrelid = v_a_oid and a.attname = 'headers' and a.attnum > 0)
     union all
-    select 'archive table %s has no valid index on archived_at'
+    select 'archive table %s has no valid usable single-column index on archived_at'
     where not exists (
       select 1
       from pg_index i
       join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
-      where i.indrelid = v_a_oid and i.indisvalid and a.attname = 'archived_at'
+      where i.indrelid = v_a_oid
+        and i.indisvalid
+        and i.indisready
+        and i.indpred is null
+        and i.indexprs is null
+        and i.indnkeyatts = 1
+        and a.attname = 'archived_at'
     )
   ) problems
   limit 1;
@@ -336,6 +366,49 @@ begin
   if v_bad is not null then
     raise exception 'Flow %: generated queue "%" failed physical inspection: %',
       p_flow_slug, p_queue_name, format(v_bad, v_sequence);
+  end if;
+
+  -- ==========================================
+  -- EXTENSION MEMBERSHIP CONTRACT
+  -- ==========================================
+  -- When pgmq is installed as an extension, PGMQ's own create/drop path
+  -- marks the q/a tables and the identity sequence as extension members
+  -- (pg_depend deptype 'e'). Objects without that membership were created
+  -- outside PGMQ's implementation and must not be treated as owned
+  -- generated queues.
+  select e.oid into v_ext_oid from pg_extension e where e.extname = 'pgmq';
+  if v_ext_oid is not null then
+    select reason into v_bad from (
+      select 'queue table %s is not a member of the installed pgmq extension' as reason
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_q_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+      union all
+      select 'archive table %s is not a member of the installed pgmq extension'
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_a_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+      union all
+      select 'sequence %s is not a member of the installed pgmq extension'
+      where not exists (
+        select 1 from pg_depend d
+        where d.classid = 'pg_class'::regclass and d.objid = v_seq_oid and d.objsubid = 0
+          and d.refclassid = 'pg_extension'::regclass
+          and d.refobjid = v_ext_oid and d.deptype = 'e'
+      )
+    ) problems
+    limit 1;
+
+    if v_bad is not null then
+      raise exception 'Flow %: generated queue "%" failed extension-membership inspection: %',
+        p_flow_slug, p_queue_name, format(v_bad, v_qtable);
+    end if;
   end if;
 
   return jsonb_build_object('state', 'present', 'metadata_name', v_metadata_name);

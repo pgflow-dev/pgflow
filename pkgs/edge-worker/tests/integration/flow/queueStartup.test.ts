@@ -137,22 +137,27 @@ Deno.test(
 
     // The real released worker through pinned test-only fixture imports.
     // These are fixture dependencies, not restored production APIs (#650).
-    let releasedCreate: unknown;
-    let releasedFlow: unknown;
-    try {
-      const internal = await import('npm:@pgflow/edge-worker@0.16.0/_internal');
-      // The published _internal entry nests createFlowWorker (default/core).
-      const carrier = (internal as { default?: { createFlowWorker?: unknown }; core?: { createFlowWorker?: unknown } });
-      releasedCreate = carrier.default?.createFlowWorker ?? carrier.core?.createFlowWorker;
-      const dsl = await import('npm:@pgflow/dsl@0.16.0');
-      releasedFlow = (dsl as { Flow?: unknown }).Flow;
-    } catch (e) {
-      // Offline-tolerant fallback: the SQL probe above already proves the
-      // signature direction; nothing else is asserted here.
-      console.warn('pinned 0.16.0 fixture imports unavailable:', e);
-    }
+    // A missing import or export fails the test: the released-worker
+    // compatibility direction must never silently pass as untested.
+    const internal = await import('npm:@pgflow/edge-worker@0.16.0/_internal');
+    // The published _internal entry nests createFlowWorker (default/core/flow).
+    const carrier = (internal as {
+      default?: { createFlowWorker?: unknown };
+      core?: { createFlowWorker?: unknown };
+      flow?: { createFlowWorker?: unknown };
+    });
+    const releasedCreate = carrier.default?.createFlowWorker
+      ?? carrier.core?.createFlowWorker
+      ?? carrier.flow?.createFlowWorker;
+    const dsl = await import('npm:@pgflow/dsl@0.16.0');
+    const releasedFlow = (dsl as { Flow?: unknown }).Flow;
+    assertEquals(
+      typeof releasedCreate === 'function' && typeof releasedFlow === 'function',
+      true,
+      'pinned 0.16.0 fixture exports must expose createFlowWorker and Flow'
+    );
 
-    if (releasedCreate && releasedFlow) {
+    {
       const OldFlow = releasedFlow as new (opts: { slug: string }) => {
         step: (o: { slug: string }, h: () => unknown) => unknown;
       };
@@ -181,17 +186,24 @@ Deno.test(
         select count(*)::int as n from pgflow.worker_functions
       `;
 
-      let failed = false;
+      let releasedError: unknown;
       try {
         await oldWorker.startOnlyOnce({
           edgeFunctionName: 'startup_orders_old_worker',
           workerId: crypto.randomUUID(),
         });
       } catch (e) {
-        failed = true;
-        console.log('released 0.16.0 startup rejected:', String(e).split('\n')[0]);
+        releasedError = e;
       }
-      assertEquals(failed, true, 'released 0.16.0 startup must fail');
+      // The released worker must fail at the removed two-argument startup
+      // signature itself - not at an adapter, fixture, or unrelated error.
+      assertEquals(
+        releasedError instanceof Error &&
+          /function pgflow\.ensure_flow_compiled\(unknown, jsonb\) does not exist/
+            .test(releasedError.message),
+        true,
+        `released 0.16.0 startup must fail at the removed signature: ${String(releasedError)}`
+      );
 
       const [afterWorkers] = await sql<{ n: number }[]>`
         select count(*)::int as n from pgflow.workers

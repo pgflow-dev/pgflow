@@ -53,7 +53,8 @@ Deno.test(
     // Mock step task record - root steps get flow input directly
     const mockTask: StepTaskRecord<typeof ContextTestFlow> = {
       flow_slug: 'context_test_flow',
-      msg_id: 123,
+      queue_name: 'context_test_flow',
+      msg_id: '123',
       run_id: 'test-run-id',
       step_slug: 'test_step',
       task_index: 0,
@@ -63,7 +64,7 @@ Deno.test(
 
     // Create context with mock task and message using proper flow worker context creation
     const mockMessage = {
-      msg_id: 123,
+      msg_id: '123',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -75,7 +76,7 @@ Deno.test(
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: {
-        msg_id: 123,
+        msg_id: '123',
         message: mockMessage,
         task: mockTask,
         flowInput: { data: 'test data' },
@@ -117,7 +118,8 @@ Deno.test(
     // Mock step task record - input is the unwrapped flowInput for root steps
     const mockTask: StepTaskRecord<typeof LegacyFlow> = {
       flow_slug: 'legacy_flow',
-      msg_id: 456,
+      queue_name: 'legacy_flow',
+      msg_id: '456',
       run_id: 'legacy_run_id',
       step_slug: 'legacy_step',
       task_index: 0,
@@ -130,7 +132,7 @@ Deno.test(
 
     // Create proper context for legacy handler test
     const mockMessage = {
-      msg_id: 456,
+      msg_id: '456',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -142,7 +144,7 @@ Deno.test(
       sql: _sql,
       abortSignal: new AbortController().signal,
       taskWithMessage: {
-        msg_id: 456,
+        msg_id: '456',
         message: mockMessage,
         task: mockTask,
         flowInput: { value: 42 },
@@ -176,7 +178,7 @@ Deno.test(
 
     // Mock message - root steps get flow input directly (empty object for this flow)
     const mockMessage = {
-      msg_id: 789,
+      msg_id: '789',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -186,7 +188,8 @@ Deno.test(
     // Mock step task record - root steps get flow input directly
     const mockTask: StepTaskRecord<typeof RawMessageFlow> = {
       flow_slug: 'rawmessage_flow',
-      msg_id: 789,
+      queue_name: 'rawmessage_flow',
+      msg_id: '789',
       run_id: 'raw_run_id',
       step_slug: 'check_raw',
       task_index: 0,
@@ -196,7 +199,7 @@ Deno.test(
 
     // Create context - for this test we need a mock taskWithMessage
     const mockTaskWithMessage = {
-      msg_id: 789,
+      msg_id: '789',
       message: mockMessage,
       task: mockTask,
       flowInput: {},
@@ -238,7 +241,7 @@ Deno.test(
 
     // Mock message - root steps get flow input directly (empty object for this flow)
     const mockMessage = {
-      msg_id: 999,
+      msg_id: '999',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -248,7 +251,8 @@ Deno.test(
     // Mock step task record
     const mockTask: StepTaskRecord<typeof SupabaseFlow> = {
       flow_slug: 'supabase_flow',
-      msg_id: 999,
+      queue_name: 'supabase_flow',
+      msg_id: '999',
       run_id: 'supabase_run_id',
       step_slug: 'check_clients',
       task_index: 0,
@@ -258,7 +262,7 @@ Deno.test(
 
     // Create context with Supabase env vars
     const mockTaskWithMessage = {
-      msg_id: 999,
+      msg_id: '999',
       message: mockMessage,
       task: mockTask,
       flowInput: {},
@@ -322,7 +326,7 @@ Deno.test(
 
     // Create context - root steps get flow input directly
     const mockMessageForComplex = {
-      msg_id: 456,
+      msg_id: '456',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -331,7 +335,8 @@ Deno.test(
 
     const mockTaskForComplex: StepTaskRecord<typeof ComplexFlow> = {
       flow_slug: 'complex_context_flow',
-      msg_id: 456,
+      queue_name: 'complex_context_flow',
+      msg_id: '456',
       run_id: 'complex_run',
       step_slug: 'fetch_data',
       task_index: 0,
@@ -344,7 +349,7 @@ Deno.test(
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: {
-        msg_id: 456,
+        msg_id: '456',
         message: mockMessageForComplex,
         task: mockTaskForComplex,
         flowInput: { id: 123 },

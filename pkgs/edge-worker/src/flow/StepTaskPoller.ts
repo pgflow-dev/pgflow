@@ -83,11 +83,11 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       // The SQL side committed the visibility reset and restart pause; stop
       // the worker without a retry cycle. Ordinary SQL/network exceptions
       // stay ordinary and retryable.
-      throw new FatalWorkerError(formatDiagnostics(result.errors ?? []));
+      throw new FatalWorkerError(formatDiagnostics(result.errors));
     }
 
     // Log only supplied body-free warning diagnostics
-    for (const warning of result.warnings ?? []) {
+    for (const warning of result.warnings) {
       this.logger.warn(formatDiagnostic(warning));
     }
 

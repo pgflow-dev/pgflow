@@ -181,7 +181,7 @@ my-worker:   ↻ retry 1/3 in 5s
 When using Edge Worker in [Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes) (without pgflow orchestration), there are a few key differences:
 
 - **No flow/step configuration**: Queue workers don't have `maxAttempts`, `baseDelay`, `timeout`, or `startDelay` options in the flow definition. Instead, these are configured directly in the worker options.
-- **`queueName` option**: Queue workers can specify a custom queue name (default is `tasks`), while flow workers automatically use the flow slug as the queue name.
+- **`queueName` option**: Queue workers can specify a custom queue name (default is `tasks`), while flow workers automatically use the lowercase flow slug as their canonical queue name.
 - **Handler signature**: Queue workers receive a simple payload, while flow workers receive a context object with `input`, `run`, and previous step outputs.
 
 For complete queue worker configuration, see [Queue Worker Configuration](/reference/queue-worker/configuration/).

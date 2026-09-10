@@ -25,9 +25,15 @@ declare
   v_queue text;
   v_metadata_name text;
   v_meta_count int;
+  v_meta_row pgmq.meta%ROWTYPE;
   v_qtable text;
   v_atable text;
   v_seq text;
+  v_q_oid oid;
+  v_a_oid oid;
+  v_seq_oid oid;
+  v_ext_oid oid;
+  v_bad text;
   v_count text;
   v_samples text;
   v_procedure regprocedure;
@@ -174,7 +180,16 @@ begin
               from pgflow.step_tasks t
               where t.flow_slug = f.flow_slug and t.message_id is null
               limit 20
-            ) r) as null_samples
+            ) r) as null_samples,
+           (select coalesce(string_agg(
+              r.run_id || ':' || r.step_slug || '#' || r.task_index || '->' || r.message_id::text, ', '), '')
+            from (
+              select t.run_id, t.step_slug, t.task_index, t.message_id
+              from pgflow.step_tasks t
+              where t.flow_slug = f.flow_slug and t.message_id is not null
+              order by t.run_id, t.step_slug, t.task_index
+              limit 20
+            ) r) as task_samples
     from pgflow.flows f
     order by f.flow_slug
   loop
@@ -188,7 +203,8 @@ begin
         'steps', v_issue.steps,
         'tasks', v_issue.tasks,
         'null_message_tasks', v_issue.null_message_tasks,
-        'null_task_keys', v_issue.null_samples
+        'null_task_keys', v_issue.null_samples,
+        'task_keys', v_issue.task_samples
       ),
       'hint', 'Every step/task backfills queue_name to lower(flow_slug); NULL message IDs stay NULL'
     )::text;
@@ -268,6 +284,238 @@ begin
       continue;
     end if;
 
+    -- Physical shape, index, sequence-dependency, and extension-membership
+    -- audit: the same read-only catalog contract the migration preflight
+    -- enforces, mirroring the complete per-column contract of
+    -- _inspect_generated_queue (0070_functions_generated_queues.sql)
+    -- including explicit missing-column rejection. Problems are reported
+    -- (never repaired) with bounded samples.
+    select * into v_meta_row from pgmq.meta m where lower(m.queue_name) = v_queue;
+    v_q_oid := to_regclass(format('pgmq.%I', v_qtable));
+    v_a_oid := to_regclass(format('pgmq.%I', v_atable));
+    v_seq_oid := to_regclass(format('pgmq.%I', v_seq));
+    select e.oid into v_ext_oid from pg_extension e where e.extname = 'pgmq';
+
+    select string_agg(problem, '; ') into v_bad
+    from (
+      select 'queue table is not an ordinary permanent table' as problem
+      from pg_class c
+      where c.oid = v_q_oid and (c.relkind <> 'r' or c.relpersistence <> 'p')
+      union all
+      select 'archive table is not an ordinary permanent table'
+      from pg_class c
+      where c.oid = v_a_oid and (c.relkind <> 'r' or c.relpersistence <> 'p')
+      union all
+      select 'queue msg_id must be a non-null bigint generated-always identity'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'msg_id'
+        and (a.atttypid <> 'int8'::regtype or not a.attnotnull or a.attidentity <> 'a')
+      union all
+      select 'queue table is missing its msg_id bigint identity column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'msg_id' and a.attnum > 0)
+      union all
+      select 'queue msg_id has no single-column primary key'
+      where not exists (
+        select 1 from pg_index i
+        where i.indrelid = v_q_oid and i.indisprimary and i.indisvalid
+          and i.indnkeyatts = 1
+          and i.indkey[0] = (select a.attnum from pg_attribute a
+                             where a.attrelid = v_q_oid and a.attname = 'msg_id')
+      )
+      union all
+      select 'queue table has no valid usable single-column index on vt'
+      where not exists (
+        select 1
+        from pg_index i
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+        where i.indrelid = v_q_oid and i.indisvalid and i.indisready
+          and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+          and a.attname = 'vt'
+      )
+      union all
+      select 'queue read_ct must be a non-null integer'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'read_ct'
+        and (a.atttypid <> 'int4'::regtype or not a.attnotnull)
+      union all
+      select 'queue table is missing its read_ct column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'read_ct' and a.attnum > 0)
+      union all
+      select 'queue enqueued_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'enqueued_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'queue table is missing its enqueued_at column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'enqueued_at' and a.attnum > 0)
+      union all
+      select 'queue vt must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'vt'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'queue table is missing its vt column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'vt' and a.attnum > 0)
+      union all
+      select 'queue message must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'message'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'queue table is missing its message column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'message' and a.attnum > 0)
+      union all
+      select 'queue headers must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_q_oid and a.attname = 'headers'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'queue table is missing its headers column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_q_oid and a.attname = 'headers' and a.attnum > 0)
+      union all
+      select 'archive msg_id must be a non-null bigint primary key without identity generator'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'msg_id'
+        and (a.atttypid <> 'int8'::regtype or not a.attnotnull or a.attidentity <> '')
+      union all
+      select 'archive table is missing its msg_id bigint column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'msg_id' and a.attnum > 0)
+      union all
+      select 'archive msg_id has no single-column primary key'
+      where not exists (
+        select 1 from pg_index i
+        where i.indrelid = v_a_oid and i.indisprimary and i.indisvalid
+          and i.indnkeyatts = 1
+          and i.indkey[0] = (select a.attnum from pg_attribute a
+                             where a.attrelid = v_a_oid and a.attname = 'msg_id')
+      )
+      union all
+      select 'archive read_ct must be a non-null integer'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'read_ct'
+        and (a.atttypid <> 'int4'::regtype or not a.attnotnull)
+      union all
+      select 'archive table is missing its read_ct column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'read_ct' and a.attnum > 0)
+      union all
+      select 'archive enqueued_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'enqueued_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table is missing its enqueued_at column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'enqueued_at' and a.attnum > 0)
+      union all
+      select 'archive archived_at must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'archived_at'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table is missing its archived_at column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'archived_at' and a.attnum > 0)
+      union all
+      select 'archive vt must be a non-null timestamptz'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'vt'
+        and (a.atttypid <> 'timestamptz'::regtype or not a.attnotnull)
+      union all
+      select 'archive table is missing its vt column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'vt' and a.attnum > 0)
+      union all
+      select 'archive message must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'message'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'archive table is missing its message column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'message' and a.attnum > 0)
+      union all
+      select 'archive headers must be jsonb'
+      from pg_attribute a
+      where a.attrelid = v_a_oid and a.attname = 'headers'
+        and a.atttypid <> 'jsonb'::regtype
+      union all
+      select 'archive table is missing its headers column'
+      where not exists (select 1 from pg_attribute a
+                        where a.attrelid = v_a_oid and a.attname = 'headers' and a.attnum > 0)
+      union all
+      select 'archive table has no valid usable single-column index on archived_at'
+      where not exists (
+        select 1
+        from pg_index i
+        join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+        where i.indrelid = v_a_oid and i.indisvalid and i.indisready
+          and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+          and a.attname = 'archived_at'
+      )
+      union all
+      select 'sequence must be a bigint sequence'
+      from pg_sequence s
+      where s.seqrelid = v_seq_oid
+        and s.seqtypid <> 'int8'::regtype
+      union all
+      select 'sequence is missing (the named relation is not a sequence or does not exist)'
+      where not exists (select 1 from pg_sequence s where s.seqrelid = v_seq_oid)
+      union all
+      select 'sequence is not associated with queue msg_id'
+      where not exists (
+        select 1
+        from pg_depend d
+        join pg_attribute a
+          on a.attrelid = d.refobjid and a.attnum = d.refobjsubid
+        where d.objid = v_seq_oid
+          and d.refobjid = v_q_oid
+          and a.attname = 'msg_id'
+          and d.deptype in ('i', 'a')
+      )
+      union all
+      select 'metadata flags disagree with physical shape (partitioned/unlogged)'
+      where v_meta_row.is_partitioned or v_meta_row.is_unlogged
+      union all
+      select 'q/a tables or sequence are not members of the installed pgmq extension'
+      where v_ext_oid is not null and (
+        not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_q_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        ) or not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_a_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        ) or not exists (
+          select 1 from pg_depend d
+          where d.classid = 'pg_class'::regclass and d.objid = v_seq_oid and d.objsubid = 0
+            and d.refclassid = 'pg_extension'::regclass
+            and d.refobjid = v_ext_oid and d.deptype = 'e'
+        )
+      )
+    ) problems;
+
+    if v_bad is not null then
+      raise notice '%', jsonb_build_object(
+        'severity', 'error',
+        'code', 'malformed_queue_objects',
+        'queue_name', v_queue,
+        'samples', v_bad,
+        'hint', 'Queue objects fail the physical/dependency/extension contract; resolve manually (the migration repairs nothing)'
+      )::text;
+      continue;
+    end if;
+
     -- Active queue rows without a matching exact task identity, including
     -- non-visible messages (vt > now() does not exempt them). A malformed
     -- relation shape reports instead of failing the audit.
@@ -313,12 +561,71 @@ begin
         'hint', 'Active queue messages without a matching exact task identity; resolve orphan messages manually before upgrade'
       )::text;
     end if;
+
+    -- Matched messages whose envelopes identify different work than their
+    -- durable task identity: a valid contradicting address is corruption the
+    -- migration must reject, so the audit reports it before upgrade.
+    begin
+      execute format(
+        'select count(*)::text from pgmq.%I q
+         join pgflow.step_tasks t
+           on lower(t.flow_slug) = $1 and t.message_id = q.msg_id
+         where (q.message ->> ''flow_slug'') is not null
+           and (q.message ->> ''flow_slug'') is distinct from t.flow_slug
+           or ((q.message ->> ''run_id'') ~* ''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''
+               and (q.message ->> ''run_id'')::uuid is distinct from t.run_id)
+           or (q.message ->> ''step_slug'') is not null
+           and (q.message ->> ''step_slug'') is distinct from t.step_slug
+           or ((q.message ->> ''task_index'') ~ ''^[0-9]{1,9}$''
+               and (q.message ->> ''task_index'')::int is distinct from t.task_index)',
+        v_qtable)
+      into v_count using v_queue;
+    exception when others then
+      raise notice '%', jsonb_build_object(
+        'severity', 'error',
+        'code', 'queue_inspect_error',
+        'queue_name', v_queue,
+        'samples', sqlerrm || ' (table: ' || v_qtable || ')',
+        'hint', 'The queue relation has an unexpected shape; inspect it manually before upgrade'
+      )::text;
+      continue;
+    end;
+
+    if v_count <> '0' then
+      begin
+        execute format(
+          'select coalesce(string_agg(x.k, '', ''), '''')
+           from (select q.msg_id::text as k from pgmq.%I q
+                 join pgflow.step_tasks t
+                   on lower(t.flow_slug) = $1 and t.message_id = q.msg_id
+                 where (q.message ->> ''flow_slug'') is not null
+                   and (q.message ->> ''flow_slug'') is distinct from t.flow_slug
+                   or ((q.message ->> ''run_id'') ~* ''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$''
+                       and (q.message ->> ''run_id'')::uuid is distinct from t.run_id)
+                   or (q.message ->> ''step_slug'') is not null
+                   and (q.message ->> ''step_slug'') is distinct from t.step_slug
+                   or ((q.message ->> ''task_index'') ~ ''^[0-9]{1,9}$''
+                       and (q.message ->> ''task_index'')::int is distinct from t.task_index)
+                 order by q.msg_id limit 20) x', v_qtable)
+        into v_samples using v_queue;
+      exception when others then
+        v_samples := null;
+      end;
+      raise notice '%', jsonb_build_object(
+        'severity', 'error',
+        'code', 'envelope_contradiction',
+        'queue_name', v_queue,
+        'count', v_count,
+        'samples', v_samples,
+        'hint', 'Matched active messages carry envelopes that identify different work than their task rows; resolve manually before upgrade (no bodies are shown)'
+      )::text;
+    end if;
   end loop;
 
   -- ==========================================================================
   -- 7. Installed pruning helper (upgrade action, never auto-replaced)
   -- ==========================================================================
-  v_procedure := 'pgflow.prune_data_older_than(interval)'::regprocedure;
+  v_procedure := to_regprocedure('pgflow.prune_data_older_than(interval)');
   if v_procedure is null then
     raise notice '%', jsonb_build_object(
       'severity', 'info',

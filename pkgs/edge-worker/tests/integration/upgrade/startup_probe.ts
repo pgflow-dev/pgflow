@@ -5,21 +5,25 @@
 // and data are still installed. Deno script, not a test file.
 import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
-import { createFlowWorker } from '../../../edge-worker/src/flow/createFlowWorker.ts';
-import { QueueProtocolMismatchError } from '../../../edge-worker/src/flow/errors.ts';
-import { createTestPlatformAdapter } from '../../../edge-worker/tests/integration/_helpers.ts';
-import { fakeLogger } from '../../../edge-worker/tests/fakes.ts';
+import { createFlowWorker } from '../../../src/flow/createFlowWorker.ts';
+import { QueueProtocolMismatchError } from '../../../src/flow/errors.ts';
+import { createTestPlatformAdapter } from '../_helpers.ts';
+import { fakeLogger } from '../../fakes.ts';
 
 const dbUrl = Deno.env.get('PGFLOW_UPGRADE_DB_URL');
 
 // The failed worker keeps a heartbeat/stop path that may write after the
 // probe closes its SQL connection; those dead-socket rejections are expected
-// and must not fail the probe.
-globalThis.addEventListener('unhandledrejection', (event) => {
-  if (String((event as PromiseRejectionEvent).reason).includes('CONNECTION_ENDED')) {
+// and must not fail the probe. The handler is named and removed before the
+// verification connection is created: a CONNECTION_ENDED rejection from
+// captureState(verify) is a real verification failure and must fail the
+// probe (Deno exits non-zero on unhandled rejections by default).
+const suppressConnectionEnded = (event: PromiseRejectionEvent) => {
+  if (String(event.reason).includes('CONNECTION_ENDED')) {
     event.preventDefault();
   }
-});
+};
+globalThis.addEventListener('unhandledrejection', suppressConnectionEnded);
 if (!dbUrl) {
   console.error('startup_probe: PGFLOW_UPGRADE_DB_URL is required');
   Deno.exit(1);
@@ -37,8 +41,8 @@ interface WorkerCountRow {
   queue_rows: string;
 }
 
-async function captureState(): Promise<WorkerCountRow> {
-  const [row] = await sql<WorkerCountRow[]>`
+async function captureState(client: postgres.Sql): Promise<WorkerCountRow> {
+  const [row] = await client<WorkerCountRow[]>`
     select
       (select coalesce(string_agg(worker_id::text || ':' || queue_name, ',' order by worker_id::text), '')
          from pgflow.workers) as workers,
@@ -49,7 +53,7 @@ async function captureState(): Promise<WorkerCountRow> {
   return row;
 }
 
-const before = await captureState();
+const before = await captureState(sql);
 
 const OrdersFlow = new Flow<{ order: string }>({ slug: 'Orders' }).step(
   { slug: 'saveItem' },
@@ -84,9 +88,13 @@ try {
 }
 
 // Reconnect: the old database must be untouched after the failed startup.
+// captureState runs on the fresh connection, so a CONNECTION_ENDED rejection
+// here is a real verification failure and must fail the probe. The cleanup
+// handler is removed first so it can no longer suppress any rejection.
+globalThis.removeEventListener('unhandledrejection', suppressConnectionEnded);
 const verify = postgres(dbUrl, { prepare: false, onnotice: () => {} });
 try {
-  const after = await captureState();
+  const after = await captureState(verify);
   if (
     after.workers !== before.workers ||
     after.worker_functions !== before.worker_functions ||

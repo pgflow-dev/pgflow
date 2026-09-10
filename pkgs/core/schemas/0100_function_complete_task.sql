@@ -21,6 +21,14 @@ begin
 -- GUARD: No mutations on failed runs
 -- ==========================================
 IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = complete_task.run_id AND pgflow.runs.status = 'failed') THEN
+  -- Archive the late callback message through the locked single-task
+  -- helper (run/step/task locks are its own acquisition); the message must
+  -- not stay visible for re-reading after a failed run (#650).
+  PERFORM pgflow._archive_task_message(
+    complete_task.run_id,
+    complete_task.step_slug,
+    complete_task.task_index
+  );
   RETURN QUERY SELECT * FROM pgflow.step_tasks
     WHERE pgflow.step_tasks.run_id = complete_task.run_id
       AND pgflow.step_tasks.step_slug = complete_task.step_slug

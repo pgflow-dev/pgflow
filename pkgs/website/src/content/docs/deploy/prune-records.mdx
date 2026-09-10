@@ -31,7 +31,7 @@ When a run (completed or failed) exceeds the retention period, **ALL** associate
 **Deleted:**
 - Run records (`pgflow.runs`)
 - Step states and tasks - all statuses (`pgflow.step_states`, `pgflow.step_tasks`)
-- PGMQ messages - active queue (`pgmq.q_{flow_slug}`) and archived (`pgmq.a_{flow_slug}`)
+- PGMQ messages - active queue (`pgmq.q_{lowercase flow slug}`) and archive (`pgmq.a_{lowercase flow slug}`)
 - Inactive workers (based on `last_heartbeat_at`)
 
 **Preserved:**
@@ -46,6 +46,10 @@ pgflow includes a pruning function that accepts an INTERVAL parameter specifying
 ```sql
 pgflow.prune_data_older_than(retention_interval INTERVAL)
 ```
+
+<Aside type="caution" title="Queue identity upgrade">
+If you applied the queue identity migration (`20260910104929_pgflow_persist_queue.sql`), the migration did not touch an already-installed pruning function. Replace or adapt your installed helper with the current version below before resuming maintenance schedules; see [update pgflow](/deploy/update-pgflow/#the-queue-identity-upgrade).
+</Aside>
 
 Examples:
 ```sql

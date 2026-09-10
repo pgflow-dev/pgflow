@@ -38,6 +38,7 @@
       "{workspaceRoot}/pkgs/edge-worker/tests/config.ts",
       "{workspaceRoot}/pkgs/edge-worker/tests/sql.ts",
       "{workspaceRoot}/pkgs/edge-worker/tests/integration/_helpers.ts",
+      "{workspaceRoot}/pkgs/edge-worker/tests/integration/upgrade/**",
       "{workspaceRoot}/pkgs/edge-worker/deno.test.json",
       "{workspaceRoot}/pkgs/edge-worker/deno.lock",
       "{workspaceRoot}/pkgs/dsl/src/**",

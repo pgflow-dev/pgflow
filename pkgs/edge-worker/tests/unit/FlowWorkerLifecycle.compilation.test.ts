@@ -15,6 +15,8 @@ class MockQueries extends Queries {
   nextCompilationResult: EnsureFlowCompiledResult = {
     status: 'verified',
     differences: [],
+    protocol_version: 1,
+    queue_name: 'test_flow',
   };
 
   constructor() {

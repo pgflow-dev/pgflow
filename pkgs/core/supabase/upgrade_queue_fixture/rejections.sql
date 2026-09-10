@@ -57,3 +57,17 @@ values ('ORDERS', false, false, now());
 update pgflow.step_tasks set flow_slug = 'billing'
 where run_id in (select run_id from pgflow.runs where flow_slug = 'Orders')
   and step_slug = 'audit';
+
+-- scenario: missing_column
+-- The archive table lost its headers column (a dropped-and-recreated or
+-- manually altered external queue with the same canonical name); a
+-- physical shape missing columns must reject the migration atomically
+-- instead of passing incomplete objects through the preflight.
+alter table pgmq.a_billing drop column headers;
+
+-- scenario: malformed_objects
+-- The queue's valid single-column vt index is replaced by a partial one; the
+-- preflight's physical shape contract must reject the migration atomically
+-- (a malformed or unusable index is not ownership evidence).
+drop index pgmq.q_billing_vt_idx;
+create index q_billing_vt_partial on pgmq.q_billing (vt) where read_ct > 0;

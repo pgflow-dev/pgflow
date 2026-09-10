@@ -15,13 +15,17 @@ Every startup follows this ordered contract:
 
 ```text
 extract complete shape
-  -> compile or verify under the flow lock
+  -> compile or verify under the flow lock (queue-aware protocol handshake)
   -> track the worker function
   -> insert the worker row
   -> start polling
 ```
 
-Compilation happens under the flow's advisory lock, so concurrent workers for the same flow serialize safely. If compilation fails, the worker performs no registration write: the `worker_functions` row and the `pgflow.workers` row stay unchanged, and startup fails.
+Compilation happens under the flow's advisory lock, so concurrent workers for the same flow serialize safely. The database answers the compilation handshake with its protocol version and the flow's canonical queue name; the worker registers against that queue and claims tasks from it. If compilation fails, the worker performs no registration write: the `worker_functions` row and the `pgflow.workers` row stay unchanged, and startup fails.
+
+<Aside type="caution" title="Coordinated upgrade">
+Worker startup validates the handshake answer. A new worker meeting a pre-upgrade database stops at startup with `QueueProtocolMismatchError` and never registers or polls; an old worker meeting the queue-aware database fails on the removed two-argument compilation signature. New workers and the queue-aware database must be upgraded together - rolling old/new workers are unsupported. See [Update pgflow](/deploy/update-pgflow/#the-queue-identity-upgrade).
+</Aside>
 
 ```d2
 ...@../../../assets/pgflow-theme.d2
@@ -77,9 +81,17 @@ register -> polling
 When a worker starts, it:
 
 1. **Extracts the complete flow shape** from the imported TypeScript definition
-2. **Compiles the flow if missing** - PostgreSQL creates the flow, steps, and queue from the shape
-3. **Verifies the shape if the flow exists** - PostgreSQL compares the worker's shape with the database definition
-4. **Registers the worker** - tracks the edge function, inserts the worker row, then starts polling
+2. **Compiles the flow if missing** - PostgreSQL creates the flow, steps, and the canonical queue from the shape
+3. **Verifies the shape if the flow exists** - PostgreSQL compares the worker's shape with the database definition and returns the canonical queue name
+4. **Registers the worker** - tracks the edge function, inserts the worker row bound to the canonical queue, then starts polling
+
+### Queue provisioning and ownership
+
+A flow owns one generated private queue whose name is its lowercase flow slug. Compilation checks the complete definition and queue namespace before it changes either one. It provisions the queue even when the flow has no steps.
+
+An existing physical queue is reusable only when the same persisted flow definition already owns that exact route and its PGMQ objects are valid. A queue with the generated name but no matching flow definition is a collision, so startup fails instead of adopting it. Ambiguous metadata or malformed queue objects also stop startup.
+
+The SQL building blocks use the same boundary. `create_flow()` creates only the flow definition; `add_step()` provisions or verifies its generated queue. Starting a run performs no queue DDL.
 
 ## Local Development
 

@@ -29,6 +29,11 @@ update pgmq.q_billing
 set vt = now() + interval '5 minutes'
 where message = '{"orphan":"invisible"}'::jsonb;
 
+-- Missing archive column on a separate queue (empty_flow): the audit must
+-- report the malformed physical shape; billing keeps reporting its orphan
+-- messages because the malformed report skips only empty_flow.
+alter table pgmq.a_empty_flow drop column headers;
+
 -- ==========================================
 -- Post-audit: read-only proof (run after PRE_MIGRATION_CHECK_650.sql)
 -- ==========================================

@@ -31,6 +31,22 @@ export const AnalyzeWebsite = new Flow<Input>({ slug: 'analyzeWebsite' })
 
 Flow slugs are stored in the database and used to identify flows when starting runs. Using camelCase keeps them consistent with step slugs and JavaScript conventions.
 
+### Exact rules
+
+Slug acceptance is checked at definition time:
+
+- up to 128 characters (letters, digits, underscores);
+- must not start with a digit or an underscore;
+- must not end with an underscore;
+- no two consecutive underscores;
+- the word `run` is reserved.
+
+Accepted slugs keep their exact spelling, including case. References such as `start_flow()` and `dependsOn` must use that exact spelling.
+
+Uniqueness checks ignore case. Flow slugs must be unique across the database, while step slugs must be unique only within their flow. For example, `fetchUser` and `FetchUser` cannot coexist in one flow, but different flows may each define `fetchUser`.
+
+One extra limit applies to generated queue names. A flow's physical queue name is its lowercase flow slug, and PGMQ limits that name to 47 characters. As a result, current flow slugs cannot exceed 47 characters. Step slugs retain the generic 128-character limit.
+
 ## File naming
 
 Flow files use **kebab-case** (industry standard for TypeScript):

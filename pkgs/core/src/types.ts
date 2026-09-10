@@ -18,12 +18,19 @@ export type MessageId = string;
 
 /**
  * Diagnostic row returned by claim_tasks for messages that were skipped,
- * archived, or rejected during a claim batch (#650).
+ * archived, or rejected during a claim batch (#650). One row per message;
+ * no message bodies ever appear here.
  */
+export type ClaimDiagnosticReason =
+  | 'foreign_message'
+  | 'unsupported_work'
+  | 'wrong_route'
+  | 'invalid_subscription';
+
 export type ClaimDiagnostic = {
   queue_name: string;
-  message_id: MessageId | null;
-  reason: string;
+  message_id: MessageId;
+  reason: ClaimDiagnosticReason;
 };
 
 /**
@@ -43,6 +50,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     run_id: string;
     step_slug: StepSlug;
     task_index: number;
+    queue_name: string;
     input: Simplify<StepInput<TFlow, StepSlug>>;
     msg_id: MessageId;
     flow_input: ExtractFlowInput<TFlow> | null;
@@ -57,14 +65,15 @@ export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug' |
 
 
 
-export type ClaimTasksResult<TFlow extends AnyFlow = AnyFlow> = {
-  status: 'ok' | 'fatal';
-  tasks: StepTaskRecord<TFlow>[];
-  /** Present on `ok` results: body-free warnings about skipped messages. */
-  warnings?: ClaimDiagnostic[];
-  /** Present on `fatal` results: why the batch was rejected. */
-  errors?: ClaimDiagnostic[];
-};
+/**
+ * Result of pgflow.claim_tasks (#650): one committed outcome for the whole
+ * read batch. `ok` carries the claimed tasks and body-free warnings for
+ * archived members; `fatal` carries no tasks and the reasons the batch was
+ * rejected - the SQL side already reset visibility and paused the worker.
+ */
+export type ClaimTasksResult<TFlow extends AnyFlow = AnyFlow> =
+  | { status: 'ok'; tasks: StepTaskRecord<TFlow>[]; warnings: ClaimDiagnostic[] }
+  | { status: 'fatal'; tasks: []; errors: ClaimDiagnostic[] };
 
 /**
  * Record representing a message from queue polling

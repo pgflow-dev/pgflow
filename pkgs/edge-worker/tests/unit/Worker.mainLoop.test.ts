@@ -3,6 +3,7 @@ import { FakeTime } from '@std/testing/time';
 import { Worker } from '../../src/core/Worker.ts';
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from '../../src/core/types.ts';
 import { States, WorkerState } from '../../src/core/WorkerState.ts';
+import { FatalWorkerError } from '../../src/core/errors.ts';
 import { fakeLogger } from '../fakes.ts';
 
 /**
@@ -190,6 +191,67 @@ Deno.test('Worker stop completes immediately while a retry delay is pending', as
     await worker.stop();
 
     assertEquals(batchTimes.length, 1, 'no further iteration after stop');
+  } finally {
+    time.restore();
+  }
+});
+
+Deno.test('Worker main loop stops terminally after a fatal batch', async () => {
+  const time = new FakeTime();
+  try {
+    const batchTimes: number[] = [];
+    const fatalErrors: string[] = [];
+    const logger = {
+      ...fakeLogger,
+      error: (message: string) => fatalErrors.push(message),
+    };
+    let stopAcknowledged = 0;
+    let cleanups = 0;
+    const lifecycle = createRunningLifecycle();
+    const origAcknowledgeStop = lifecycle.acknowledgeStop;
+    lifecycle.acknowledgeStop = () => {
+      stopAcknowledged++;
+      origAcknowledgeStop.call(lifecycle);
+    };
+
+    const fatal = () =>
+      Promise.reject(
+        new FatalWorkerError(
+          'Committed fatal claim batch: reason=unsupported_work queue=orders message_id=9007199254740994'
+        )
+      );
+    const worker = new Worker(
+      createBatchProcessor(fatal, batchTimes),
+      lifecycle,
+      logger,
+      { cleanup: () => { cleanups++; return Promise.resolve(); } }
+    );
+
+    await worker.startOnlyOnce(workerBootstrap);
+    // Drain the fatal branch, the scheduled stop, and performStop's wait on
+    // the main-loop promise.
+    for (let i = 0; i < 5; i++) {
+      await time.runMicrotasks();
+    }
+
+    assertEquals(batchTimes.length, 1, 'exactly one poll happens before the fatal stop');
+
+    // No retry timer is scheduled after a fatal batch.
+    await advance(time, 10_000);
+    assertEquals(batchTimes.length, 1, 'no retry iteration after a fatal batch');
+
+    await worker.stop();
+
+    assertEquals(worker.isStopped, true, 'the worker reaches the stopped state');
+    assertEquals(stopAcknowledged, 1, 'stop is acknowledged exactly once');
+    assertEquals(cleanups, 1, 'cleanup runs exactly once');
+    assertEquals(fatalErrors.length, 1, 'the fatal outcome is logged exactly once');
+    assertEquals(
+      fatalErrors[0]!.includes('reason=unsupported_work') &&
+        fatalErrors[0]!.includes('message_id=9007199254740994'),
+      true,
+      'the fatal log is the body-free diagnostic line'
+    );
   } finally {
     time.restore();
   }

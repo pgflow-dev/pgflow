@@ -12,10 +12,12 @@ DECLARE
   v_flow_slug text;
   v_total_skipped int := 0;
 BEGIN
-  -- Get flow_slug for this run
+  -- Lock the parent run at direct entry before any run-mutating work;
+  -- callers that already hold the run lock re-acquire it harmlessly.
   SELECT r.flow_slug INTO v_flow_slug
   FROM pgflow.runs r
-  WHERE r.run_id = _cascade_force_skip_steps.run_id;
+  WHERE r.run_id = _cascade_force_skip_steps.run_id
+  FOR UPDATE;
 
   IF v_flow_slug IS NULL THEN
     RAISE EXCEPTION 'Run not found: %', _cascade_force_skip_steps.run_id;

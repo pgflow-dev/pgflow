@@ -406,6 +406,7 @@ export interface StepTaskRecord<TFlow extends AnyFlow> {
   flow_slug: string;
   run_id: string;
   step_slug: string;
+  queue_name: string; // canonical physical queue snapshot (#650)
   input: Json; // JSON-serializable input from database (JSONB column)
   msg_id: string; // decimal-string PGMQ bigint (#650)
 }

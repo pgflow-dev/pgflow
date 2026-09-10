@@ -25,3 +25,12 @@ begin;
 lock table pgmq.meta in share row exclusive mode;
 select pg_sleep(60);
 rollback;
+
+-- blocker: queue_create
+-- External PGMQ queue creation at the topology fence: it creates physical
+-- objects and holds the pgmq.meta row lock. The migration must fail within
+-- the 5-second lock bound and change nothing.
+begin;
+select pgmq.create('concurrent_app_queue');
+select pg_sleep(60);
+rollback;

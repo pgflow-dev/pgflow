@@ -240,10 +240,10 @@ All platforms provide these core resources:
 - **`ctx.env`** - Environment variables (`Record<string, string | undefined>`)
 - **`ctx.flowInput`** - Original flow input (typed as the flow's input type)
 - **`ctx.shutdownSignal`** - AbortSignal for graceful shutdown handling
-- **`ctx.rawMessage`** - Original pgmq message with metadata
+- **`ctx.rawMessage`** - Original pgmq message with metadata (msg_id is an exact decimal string; #650)
   ```typescript
   interface PgmqMessageRecord<T> {
-    msg_id: number;
+    msg_id: string; // decimal-string PGMQ bigint
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
@@ -256,7 +256,7 @@ All platforms provide these core resources:
     flow_slug: string;
     run_id: string;
     step_slug: string;
-    msg_id: number;
+    msg_id: string; // decimal-string PGMQ bigint
   }
   ```
 - **`ctx.workerConfig`** - Resolved worker configuration with all defaults applied
@@ -314,9 +314,17 @@ new Flow<Input>({
 });
 ```
 
+### Slug Rules and Queue Identity
+
+Flow and step slugs are up to 128 characters and may use letters, digits, and underscores, but they must not start with a digit or underscore, end with an underscore, or contain two consecutive underscores. The word `run` is reserved.
+
+Accepted slugs keep their exact spelling, and every reference must match it. Uniqueness checks ignore case: flow slugs across the database, and step slugs within each flow. Different flows may reuse a step slug.
+
+Each flow owns one generated queue whose physical name is the lowercase flow slug. Because PGMQ plain queue names are limited to 47 characters, current flow slugs cannot exceed 47 characters. Step slugs retain the generic 128-character limit. Handlers still see the exact flow and step spelling they defined; only the physical queue name is lowercase.
+
 ## Deploying Flows
 
-Flow workers deploy definitions during startup. The worker extracts the complete flow shape, then PostgreSQL compiles a missing definition or verifies an existing one before polling begins.
+Flow workers deploy definitions during startup. The worker extracts the complete flow shape, then PostgreSQL compiles a missing definition or verifies an existing one before polling begins. The database answers with its protocol version and the flow's canonical queue name. A new worker against an older database stops with `QueueProtocolMismatchError`; an old worker against the queue-aware database fails on the removed SQL signature before registration or polling. Upgrade worker packages and the database together.
 
 See [Startup Compilation](https://pgflow.dev/concepts/startup-compilation/) for local recompilation and production versioning behavior.
 

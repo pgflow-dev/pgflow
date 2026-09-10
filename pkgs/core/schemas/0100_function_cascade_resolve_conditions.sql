@@ -22,11 +22,14 @@ DECLARE
   v_archive_batch record;
 BEGIN
   -- ==========================================
-  -- GUARD: Early return if run is already terminal
+  -- GUARD: lock the parent run at direct entry, then early-return if the
+  -- run is already terminal. Callers that already hold the run lock (for
+  -- example complete_task) re-acquire it harmlessly in the same transaction.
   -- ==========================================
   SELECT r.status, r.input INTO v_run_status, v_run_input
   FROM pgflow.runs r
-  WHERE r.run_id = cascade_resolve_conditions.run_id;
+  WHERE r.run_id = cascade_resolve_conditions.run_id
+  FOR UPDATE;
 
   IF v_run_status IN ('failed', 'completed') THEN
     RETURN v_run_status != 'failed';

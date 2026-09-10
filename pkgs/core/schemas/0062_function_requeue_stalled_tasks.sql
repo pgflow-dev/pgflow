@@ -18,12 +18,57 @@ begin
   -- Eligibility requires the parent run AND parent step to still be 'started':
   -- stale rows on failed runs or terminal steps must not be revived (#645).
   --
-  -- Lock order (#650): eligible parent runs and step states are locked before
-  -- task rows (ordered by (run_id, step_slug, task_index)), with SKIP LOCKED
-  -- so a blocked parent/run/task is skipped, not waited on. Status and timeout
-  -- predicates are rechecked under those locks by EvalPlanQual, so a parent
-  -- that failed while we waited is not revived.
-  with stalled_tasks as (
+  -- Lock order (#650): eligible parent runs are locked first (ordered by
+  -- run_id), then eligible step states (ordered by (run_id, step_slug)), then
+  -- task rows (ordered by (run_id, step_slug, task_index)) - as three
+  -- sequential lock sets, not one joined FOR UPDATE, so parent rows are
+  -- always locked before their children. SKIP LOCKED is preserved at every
+  -- level: a blocked parent/run/state/task is skipped, not waited on, and no
+  -- later-order lock is held while waiting. Status and timeout predicates
+  -- are restated in each phase so EvalPlanQual rechecks them under the locks.
+  with locked_runs as (
+    select r.run_id
+    from pgflow.runs r
+    where r.status = 'started'
+      and exists (
+        select 1
+        from pgflow.step_tasks st
+        join pgflow.step_states ss on ss.run_id = st.run_id and ss.step_slug = st.step_slug
+        join pgflow.flows f on f.flow_slug = r.flow_slug
+        join pgflow.steps s on s.flow_slug = r.flow_slug and s.step_slug = st.step_slug
+        where st.run_id = r.run_id
+          and st.status = 'started'
+          and ss.status = 'started'
+          and st.permanently_stalled_at is null
+          and st.started_at < now()
+            - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
+            - interval '30 seconds'
+      )
+    order by r.run_id
+    for update skip locked
+  ),
+  locked_states as (
+    select ss.run_id, ss.step_slug
+    from pgflow.step_states ss
+    join locked_runs lr on lr.run_id = ss.run_id
+    where ss.status = 'started'
+      and exists (
+        select 1
+        from pgflow.step_tasks st
+        join pgflow.flows f on f.flow_slug = ss.flow_slug
+        join pgflow.steps s on s.flow_slug = ss.flow_slug and s.step_slug = st.step_slug
+        where st.run_id = ss.run_id
+          and st.step_slug = ss.step_slug
+          and st.status = 'started'
+          and st.permanently_stalled_at is null
+          and st.started_at < now()
+            - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
+            - interval '30 seconds'
+      )
+    order by ss.run_id, ss.step_slug
+    for update of ss skip locked
+  ),
+  stalled_tasks as (
     select
       st.run_id,
       st.step_slug,
@@ -32,19 +77,18 @@ begin
       st.queue_name,
       st.requeued_count
     from pgflow.step_tasks st
+    join locked_states ls on ls.run_id = st.run_id and ls.step_slug = st.step_slug
     join pgflow.runs r on r.run_id = st.run_id
-    join pgflow.step_states ss on ss.run_id = st.run_id and ss.step_slug = st.step_slug
     join pgflow.flows f on f.flow_slug = r.flow_slug
     join pgflow.steps s on s.flow_slug = r.flow_slug and s.step_slug = st.step_slug
     where st.status = 'started'
       and r.status = 'started'
-      and ss.status = 'started'
       and st.permanently_stalled_at is null
       and st.started_at < now()
         - (coalesce(s.opt_timeout, f.opt_timeout) * interval '1 second')
         - interval '30 seconds'
     order by st.run_id, st.step_slug, st.task_index
-    for update of r, ss, st skip locked
+    for update of st skip locked
   ),
   -- Separate tasks that can be requeued from those that exceeded max requeues
   to_requeue as (

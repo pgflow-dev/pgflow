@@ -31,7 +31,7 @@ Deno.test('createContextSafeConfig excludes sql field and freezes result', () =>
 
 Deno.test('Queue worker context includes workerConfig for GitHub issue use case', async () => {
   const mockMessage: PgmqMessageRecord<{test: string}> = {
-    msg_id: 123,
+    msg_id: '123',
     read_ct: 2, // Current retry attempt
     enqueued_at: '2024-01-01T00:00:00Z',
     vt: '2024-01-01T00:01:00Z',
@@ -91,7 +91,7 @@ Deno.test('Queue worker config immutability prevents handler modifications', asy
   const context = {
     env: {},
     shutdownSignal: new AbortController().signal,
-    rawMessage: { msg_id: 1, read_ct: 1, message: {} },
+    rawMessage: { msg_id: '1', read_ct: 1, message: {} },
     workerConfig: createContextSafeConfig(mockConfig),
   };
 
@@ -120,8 +120,8 @@ Deno.test('Flow worker context includes workerConfig', async () => {
   const context = {
     env: {},
     shutdownSignal: new AbortController().signal,
-    rawMessage: { msg_id: 456, read_ct: 1, message: {} },
-    stepTask: { flow_slug: 'test', step_slug: 'step', msg_id: 456, run_id: 'run', input: {} },
+    rawMessage: { msg_id: '456', read_ct: 1, message: {} },
+    stepTask: { flow_slug: 'test', step_slug: 'step', msg_id: '456', run_id: 'run', queue_name: 'test', input: {} },
     workerConfig: createContextSafeConfig(mockConfig),
   };
 

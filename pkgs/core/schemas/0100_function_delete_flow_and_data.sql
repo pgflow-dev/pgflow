@@ -19,6 +19,9 @@ DECLARE
   v_metadata_names text[];
   v_snapshot_violation record;
   v_queue text;
+  v_qtable text;
+  v_atable text;
+  v_sequence text;
   v_inspect_result jsonb;
   v_idx int;
 BEGIN
@@ -119,7 +122,30 @@ BEGIN
   -- No per-message archival/deletion happens before the whole-queue drop.
   FOR v_idx IN 1..COALESCE(array_length(v_route_names, 1), 0)
   LOOP
+    v_queue := v_route_names[v_idx];
+    v_qtable := pgmq.format_table_name(v_queue, 'q');
+    v_atable := pgmq.format_table_name(v_queue, 'a');
+    v_sequence := v_qtable || '_msg_id_seq';
+
     PERFORM pgmq.drop_queue(v_metadata_names[v_idx]);
+
+    -- Post-drop completeness: pgmq.drop_queue must have removed the
+    -- metadata row, both physical tables, and the identity sequence. A
+    -- partial drop leaves the namespace ambiguous and must abort before
+    -- the flow identity row is deleted.
+    IF EXISTS (
+      SELECT 1 FROM pgmq.meta m WHERE lower(m.queue_name) = v_queue
+    ) THEN
+      RAISE EXCEPTION 'Flow %: dropping generated queue "%" left its PGMQ metadata behind; deletion aborted with everything rolled back',
+        p_flow_slug, v_queue;
+    END IF;
+
+    IF to_regclass(format('pgmq.%I', v_qtable)) IS NOT NULL
+       OR to_regclass(format('pgmq.%I', v_atable)) IS NOT NULL
+       OR to_regclass(format('pgmq.%I', v_sequence)) IS NOT NULL THEN
+      RAISE EXCEPTION 'Flow %: dropping generated queue "%" left physical objects behind (queue table: %, archive table: %, sequence: %); deletion aborted with everything rolled back',
+        p_flow_slug, v_queue, v_qtable, v_atable, v_sequence;
+    END IF;
   END LOOP;
 
   -- Delete the concrete flow identity row last

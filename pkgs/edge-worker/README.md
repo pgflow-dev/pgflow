@@ -102,10 +102,10 @@ These resources are provided regardless of platform:
 
 - **`env`** - Environment variables (`Record<string, string | undefined>`)
 - **`shutdownSignal`** - AbortSignal for graceful shutdown handling
-- **`rawMessage`** - Original pgmq message with metadata
+- **`rawMessage`** - Original pgmq message with metadata (msg_id is an exact decimal string; #650)
   ```typescript
   interface PgmqMessageRecord<T> {
-    msg_id: number;
+    msg_id: string; // decimal-string PGMQ bigint
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
@@ -118,10 +118,13 @@ These resources are provided regardless of platform:
     flow_slug: string;
     run_id: string;
     step_slug: string;
+    queue_name: string; // canonical physical queue snapshot (#650)
     input: StepInput<TFlow, StepSlug>;
-    msg_id: number;
+    msg_id: string; // decimal-string PGMQ bigint
   }
   ```
+
+Queue identity rules (#650): a task message is identified by `(queue_name, message_id)`, not `message_id` alone. Flow workers claim tasks from their flow's canonical lowercase queue; do not send application messages directly into pgflow-owned queues. New workers and the queue-aware database must be upgraded together - a startup protocol mismatch stops the worker with `QueueProtocolMismatchError` instead of polling.
 
 ### Supabase Platform Resources
 

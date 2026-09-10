@@ -40,6 +40,16 @@ SELECT pgflow.delete_flow_and_data('analyzeWebsite');
 
 This deletes the flow definition, all runs, queued messages, and task outputs for the specified flow.
 
+### Failure modes and deletion order
+
+Deletion is all-or-nothing: it either removes the flow and everything it owns, or it rolls back and removes nothing. It fails with an explicit error, before any destructive step, when the queue state is not exactly what the flow owns (#650):
+
+- the queue metadata is missing or ambiguous (for example two case-distinct metadata rows);
+- physical queue objects are malformed or incomplete;
+- task rows claim queue snapshots outside the flow's canonical route.
+
+On success, deletion locks and deletes the runtime data and step definitions first, then drops the validated PGMQ queue objects, and removes the flow identity row last - so an interrupted attempt cannot leave a live flow without its queue or history.
+
 ## After Deleting
 
 Once you've deleted the flow:
