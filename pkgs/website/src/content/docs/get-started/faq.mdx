@@ -28,7 +28,7 @@ import { MyFlow } from '../../flows/my_flow.ts';
 EdgeWorker.start(MyFlow);
 ```
 
-In this mode, Edge Worker processes tasks for a specific workflow, handling step dependencies, data flow between steps, and automatic coordination. The queue name matches your flow slug.
+In this mode, Edge Worker processes tasks for a specific workflow, handling step dependencies, data flow between steps, and automatic coordination. The queue name matches your flow slug, lowercased.
 
 <details>
 <summary>Read more about choosing the right mode</summary>
@@ -37,7 +37,7 @@ In this mode, Edge Worker processes tasks for a specific workflow, handling step
 
 **Flows:** Multi-step processes with dependencies, data flow between steps, parallel execution (AI pipelines, data transformations, business workflows)
 
-**Configuration:** Both modes share the same Edge Worker options. Background jobs use `queueName` option (default: `tasks`), flows use the flow slug as queue name.
+**Configuration:** Both modes share the same Edge Worker options. Background jobs use `queueName` option (default: `tasks`), flows use the lowercased flow slug as queue name.
 
 **🤔 Hard to decide?** Consider flows if your "single step" has multiple distinct operations that could fail independently, or you might add steps later. Handler functions are reusable between modes - start with background jobs and migrate to flows when needed.
 
@@ -61,7 +61,7 @@ Actual costs depend on message volume, message size, and worker stability. Monit
 
 Each Edge Worker instance is bound to a single queue:
 - **Background jobs mode:** Queue name set via `queueName` configuration (default: `tasks`)
-- **Flow mode:** Queue name automatically matches the flow slug
+- **Flow mode:** Queue name automatically matches the lowercased flow slug
 
 **Scaling options:**
 - **Multiple workers on same queue:** Deploy multiple Edge Workers pointing to the same queue for increased throughput

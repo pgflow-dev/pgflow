@@ -23,7 +23,7 @@ select pgflow.start_tasks(
   'timestamp_flow',
   (select ids from msg_ids), 
   '11111111-1111-1111-1111-111111111111'::uuid
-);
+, 'timestamp_flow');
 
 -- TEST: started_at should be set after start_tasks
 select isnt(

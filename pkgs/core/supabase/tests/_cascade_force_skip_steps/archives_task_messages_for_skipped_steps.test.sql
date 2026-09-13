@@ -18,7 +18,7 @@ with tasks as (
   where flow_slug = 'cascade_skip_archive' and step_slug = 'map_a'
   order by task_index
 )
-select pgflow.start_tasks('cascade_skip_archive', array[(select message_id from tasks where task_index = 0)::bigint], pgflow_tests.ensure_worker('cascade_skip_archive'));
+select pgflow.start_tasks('cascade_skip_archive', array[(select message_id from tasks where task_index = 0)::bigint], pgflow_tests.ensure_worker('cascade_skip_archive'), 'cascade_skip_archive');
 
 select ok(
   (select count(*) = 3 from pgflow.step_tasks 

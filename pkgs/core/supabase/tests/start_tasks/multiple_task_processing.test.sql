@@ -26,7 +26,7 @@ select is(
     'multi_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'multi_flow')),
   4,
   'start_tasks should return multiple tasks when multiple messages available'
 );

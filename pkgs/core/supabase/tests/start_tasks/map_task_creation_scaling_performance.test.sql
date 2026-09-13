@@ -61,7 +61,7 @@ BEGIN
     'map_perf_flow',
     v_msg_ids,
     '11111111-1111-1111-1111-111111111111'::uuid
-  );
+  , 'map_perf_flow');
   v_end_time := clock_timestamp();
   v_start_tasks_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
 
@@ -117,7 +117,7 @@ BEGIN
     'map_perf_flow',
     v_msg_ids,
     '11111111-1111-1111-1111-111111111111'::uuid
-  );
+  , 'map_perf_flow');
   v_end_time := clock_timestamp();
   v_start_tasks_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
 
@@ -173,7 +173,7 @@ BEGIN
     'map_perf_flow',
     v_msg_ids,
     '11111111-1111-1111-1111-111111111111'::uuid
-  );
+  , 'map_perf_flow');
   v_end_time := clock_timestamp();
   v_start_tasks_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
 
@@ -229,7 +229,7 @@ BEGIN
     'map_perf_flow',
     v_msg_ids,
     '11111111-1111-1111-1111-111111111111'::uuid
-  );
+  , 'map_perf_flow');
   v_end_time := clock_timestamp();
   v_start_tasks_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
 

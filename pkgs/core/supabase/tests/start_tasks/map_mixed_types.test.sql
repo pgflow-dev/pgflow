@@ -54,7 +54,7 @@ select is(
     'mixed_types_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'mixed_types_flow')),
   '"text value"'::jsonb,
   'Task 0 should receive string element'
 );
@@ -64,7 +64,7 @@ select is(
     'mixed_types_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'mixed_types_flow')),
   '42'::jsonb,
   'Task 1 should receive number element'
 );
@@ -74,7 +74,7 @@ select is(
     'mixed_types_flow',
     ARRAY[:'msg_id_2'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'mixed_types_flow')),
   '{"key": "value", "nested": {"id": 1}}'::jsonb,
   'Task 2 should receive object element with nested structure'
 );
@@ -84,7 +84,7 @@ select is(
     'mixed_types_flow',
     ARRAY[:'msg_id_3'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'mixed_types_flow')),
   'true'::jsonb,
   'Task 3 should receive boolean element'
 );
@@ -94,7 +94,7 @@ select is(
     'mixed_types_flow',
     ARRAY[:'msg_id_4'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'mixed_types_flow')),
   'null'::jsonb,
   'Task 4 should receive null element'
 );

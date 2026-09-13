@@ -103,7 +103,7 @@ start_result as (
     'skip_diamond',
     (select ids from msg_ids),
     pgflow_tests.ensure_worker('skip_diamond')
-  ) st
+  , 'skip_diamond') st
 )
 -- Store the input for later testing
 select input, step_slug, run_id into temporary step_c_inputs

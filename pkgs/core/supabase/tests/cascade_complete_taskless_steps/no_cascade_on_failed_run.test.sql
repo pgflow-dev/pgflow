@@ -22,7 +22,7 @@ where run_id = :'run_id' and step_slug = 'step1' limit 1 \gset
 select pgflow_tests.ensure_worker('test_flow');
 
 -- Start and fail step1 which will fail the entire run
-select pgflow.start_tasks('test_flow', ARRAY[:msg1]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('test_flow', ARRAY[:msg1]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid, 'test_flow');
 select pgflow.fail_task(:'run_id', 'step1', 0, 'Simulated failure');
 
 -- Call cascade_complete_taskless_steps directly on the failed run

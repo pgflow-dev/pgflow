@@ -80,7 +80,7 @@ with started as (
     'vt_formula',
     (select array_agg(msg_id) from vt_formula_msg),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'vt_formula')
 )
 select is(
   (select count(*)::int from started),

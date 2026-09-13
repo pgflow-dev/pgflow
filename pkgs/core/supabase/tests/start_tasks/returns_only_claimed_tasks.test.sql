@@ -42,7 +42,7 @@ select is(
     'start_claim_guard',
     array[:'test_message_id'::bigint],
     pgflow_tests.ensure_worker('start_claim_guard')
-  )),
+  , 'start_claim_guard')),
   0,
   'start_tasks should return only rows claimed by the guarded update'
 );

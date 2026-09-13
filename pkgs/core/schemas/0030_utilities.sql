@@ -35,6 +35,23 @@ begin
 end;
 $$;
 
+create or replace function pgflow.is_valid_queue_name(
+  queue_name text
+)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  -- Mirrors pgmq.validate_queue_name() (47-character limit) and additionally
+  -- requires the canonical lowercase spelling pgflow stores (#650).
+  select
+    queue_name is not null
+    and queue_name <> ''
+    and length(queue_name) <= 47
+    and queue_name = lower(queue_name)
+$$;
+
 create or replace function pgflow.calculate_retry_delay(
   base_delay numeric,
   attempts_count int

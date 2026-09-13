@@ -105,7 +105,7 @@ These resources are provided regardless of platform:
 - **`rawMessage`** - Original pgmq message with metadata
   ```typescript
   interface PgmqMessageRecord<T> {
-    msg_id: number;
+    msg_id: string; // queue-scoped exact decimal string
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
@@ -119,7 +119,7 @@ These resources are provided regardless of platform:
     run_id: string;
     step_slug: string;
     input: StepInput<TFlow, StepSlug>;
-    msg_id: number;
+    msg_id: string; // queue-scoped exact decimal string
   }
   ```
 

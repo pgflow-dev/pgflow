@@ -28,7 +28,7 @@ started_tasks as (
     'simple_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'simple_flow')
 )
 select is(
   (select flow_input from started_tasks),
@@ -69,7 +69,7 @@ started_tasks as (
     'dep_flow',
     (select ids from msg_ids),
     '22222222-2222-2222-2222-222222222222'::uuid
-  )
+  , 'dep_flow')
 )
 select is(
   (select flow_input from started_tasks),
@@ -98,7 +98,7 @@ select * from pgflow.start_tasks(
   'map_flow',
   (select ids from msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
-);
+, 'map_flow');
 
 -- Test 3: All map tasks should have NULL flow_input (consistent)
 select is(
@@ -137,7 +137,7 @@ started_tasks as (
     'multi_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'multi_flow')
 )
 select ok(
   (select bool_and(flow_input = '{"batch": "test"}'::jsonb) from started_tasks),

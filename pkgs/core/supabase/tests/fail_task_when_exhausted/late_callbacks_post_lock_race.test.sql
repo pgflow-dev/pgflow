@@ -72,7 +72,7 @@ select msg_boom from dblink('ctrl', $$select message_id from pgflow.step_tasks w
 select dblink_exec(
   'ctrl',
   format(
-    $$do $do$ begin perform pgflow.start_tasks('race_flow', ARRAY[%s, %s]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid); end $do$;$$,
+    $$do $do$ begin perform pgflow.start_tasks('race_flow', ARRAY[%s, %s]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid, 'race_flow'); end $do$;$$,
     :'msg_single', :'msg_boom'
   )
 );

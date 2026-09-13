@@ -38,15 +38,17 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
 
   async startTasks(
     flowSlug: string,
-    msgIds: number[],
-    workerId: string
+    msgIds: string[],
+    workerId: string,
+    queueName: string
   ): Promise<StepTaskRecord<TFlow>[]> {
     return await this.sql<StepTaskRecord<TFlow>[]>`
       SELECT *
       FROM pgflow.start_tasks(
         flow_slug => ${flowSlug},
         msg_ids => ${msgIds}::bigint[],
-        worker_id => ${workerId}::uuid
+        worker_id => ${workerId}::uuid,
+        queue_name => ${queueName}::text
       );
     `;
   }

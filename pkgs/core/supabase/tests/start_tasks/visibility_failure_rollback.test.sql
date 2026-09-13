@@ -36,7 +36,7 @@ select throws_ok(
        'visfail',
        (select ids from visfail_msgs),
        '11111111-1111-1111-1111-111111111111'::uuid
-     ) $$,
+     , 'visfail') $$,
   'relation "pgmq.q_visfail" does not exist',
   'missing queue table makes start_tasks fail'
 );
@@ -95,7 +95,7 @@ select throws_ok(
        'vispartial',
        (select ids from vispartial_msgs),
        '11111111-1111-1111-1111-111111111111'::uuid
-     ) $$,
+     , 'vispartial') $$,
   'invalid input syntax for type integer: "start_tasks(): visibility updated 1 of 2 claimed messages"',
   'partial visibility mismatch fails the whole statement and returns nothing'
 );

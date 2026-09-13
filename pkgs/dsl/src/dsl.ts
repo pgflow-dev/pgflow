@@ -393,8 +393,10 @@ export interface WorkerConfig {
 }
 
 // Message record interface (minimal contract - actual type defined in @pgflow/core)
+// msg_id is an exact decimal string: PGMQ message ids are queue-scoped
+// bigints that can exceed the JavaScript safe integer range (#650).
 export interface MessageRecord {
-  msg_id: number;
+  msg_id: string;
   read_ct: number;
   enqueued_at: string;
   vt: string;
@@ -407,7 +409,7 @@ export interface StepTaskRecord<TFlow extends AnyFlow> {
   run_id: string;
   step_slug: string;
   input: Json; // JSON-serializable input from database (JSONB column)
-  msg_id: number;
+  msg_id: string;
 }
 
 // Base context for queue workers (no stepTask)

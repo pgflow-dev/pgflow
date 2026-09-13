@@ -52,7 +52,7 @@ select is(
     'map_chain_flow',
     ARRAY[:'first_map_msg_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'map_chain_flow')),
   '1'::jsonb,
   'First map task 0 should receive element 1'
 );
@@ -63,7 +63,7 @@ select is(
     'map_chain_flow',
     ARRAY[:'first_map_msg_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'map_chain_flow')),
   '2'::jsonb,
   'First map task 1 should receive element 2'
 );
@@ -134,7 +134,7 @@ select is(
     'map_chain_test2',
     ARRAY[:'consumer_msg_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'map_chain_test2')),
   '{"value": 10}'::jsonb,
   'Consumer map task 0 should receive first element from producer array'
 );
@@ -144,7 +144,7 @@ select is(
     'map_chain_test2',
     ARRAY[:'consumer_msg_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'map_chain_test2')),
   '{"value": 20}'::jsonb,
   'Consumer map task 1 should receive second element from producer array'
 );

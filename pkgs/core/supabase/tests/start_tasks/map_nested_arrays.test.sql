@@ -53,7 +53,7 @@ select is(
     'nested_arrays_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'nested_arrays_flow')),
   '[1, 2]'::jsonb,
   'Task 0 should receive first sub-array [1, 2]'
 );
@@ -63,7 +63,7 @@ select is(
     'nested_arrays_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'nested_arrays_flow')),
   '[3, 4, 5]'::jsonb,
   'Task 1 should receive second sub-array [3, 4, 5]'
 );
@@ -73,7 +73,7 @@ select is(
     'nested_arrays_flow',
     ARRAY[:'msg_id_2'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'nested_arrays_flow')),
   '[]'::jsonb,
   'Task 2 should receive empty sub-array []'
 );
@@ -83,7 +83,7 @@ select is(
     'nested_arrays_flow',
     ARRAY[:'msg_id_4'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'nested_arrays_flow')),
   '[{"id": 1}, {"id": 2}]'::jsonb,
   'Task 4 should receive array of objects'
 );

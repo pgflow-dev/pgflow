@@ -22,7 +22,7 @@ Deno.test(
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
-      msg_id: 123,
+      msg_id: '123',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -79,7 +79,7 @@ Deno.test(
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
-      msg_id: 456,
+      msg_id: '456',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -113,7 +113,7 @@ Deno.test(
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ id: number; name: string }> = {
-      msg_id: 789,
+      msg_id: '789',
       read_ct: 2,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
@@ -146,7 +146,7 @@ Deno.test(
 
     // Verify rawMessage in context matches the original message
     assertExists(receivedRawMessage);
-    assertEquals(receivedRawMessage.msg_id, 789);
+    assertEquals(receivedRawMessage.msg_id, '789');
     assertEquals(receivedRawMessage.read_ct, 2);
     assertEquals(receivedRawMessage.message, { id: 42, name: 'test item' });
   })
@@ -156,7 +156,7 @@ Deno.test(
   'MessageExecutor - Supabase clients are available when env vars exist',
   withTransaction(async (sql) => {
     const mockMessage: PgmqMessageRecord<{ test: string }> = {
-      msg_id: 999,
+      msg_id: '999',
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',

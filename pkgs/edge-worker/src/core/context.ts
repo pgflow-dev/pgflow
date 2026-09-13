@@ -63,7 +63,7 @@ export type StepTaskContext<
  * immediately (if provided) or lazy-loads from the runs table.
  */
 export interface StepTaskWithMessage<TFlow extends AnyFlow> {
-  msg_id : number;
+  msg_id : string;
   message: PgmqMessageRecord<AllStepInputs<TFlow>>;
   task   : StepTaskRecord<TFlow>;
   flowInput: ExtractFlowInput<TFlow> | null;

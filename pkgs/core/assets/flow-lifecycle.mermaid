@@ -24,7 +24,7 @@ sequenceDiagram
     PGMQ-->>Worker: Return messages
     deactivate PGMQ
     
-    Worker->>pgflow: start_tasks(flow_slug, msg_ids, worker_id)
+    Worker->>pgflow: start_tasks(flow_slug, msg_ids, worker_id, queue_name)
     activate pgflow
     pgflow->>pgflow: Find step_tasks with matching message_ids
     pgflow->>pgflow: Mark tasks as 'started' with worker_id

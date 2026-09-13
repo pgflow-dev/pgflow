@@ -20,7 +20,7 @@ select pgflow.start_tasks(
   'dep_flow',
   (select ids from first_msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
-);
+, 'dep_flow');
 
 select pgflow.complete_task(
   run_id => (select run_id from pgflow.runs where flow_slug = 'dep_flow'),
@@ -39,7 +39,7 @@ select is(
     'dep_flow',
     (select ids from second_msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  ) where step_slug = 'second'),
+  , 'dep_flow') where step_slug = 'second'),
   1,
   'start_tasks should return one task for dependent step'
 );

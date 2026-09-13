@@ -19,7 +19,7 @@ select pgflow.start_tasks(
   'double_decrement_test', 
   (select array_agg(message_id) from pgflow.step_tasks st join pgflow.runs r on st.run_id = r.run_id where r.flow_slug = 'double_decrement_test' and st.step_slug = 'map_a'),
   '00000000-0000-0000-0000-000000000001'::uuid
-);
+, 'double_decrement_test');
 select is(count(*), 2::bigint, 'Both map_a tasks are started') from pgflow.step_tasks st join pgflow.runs r on st.run_id = r.run_id where r.flow_slug = 'double_decrement_test' and st.step_slug = 'map_a' and st.status = 'started';
 
 -- Start 'other' task (to keep run alive)
@@ -27,7 +27,7 @@ select pgflow.start_tasks(
   'double_decrement_test', 
   (select array_agg(message_id) from pgflow.step_tasks st join pgflow.runs r on st.run_id = r.run_id where r.flow_slug = 'double_decrement_test' and st.step_slug = 'other'),
   '00000000-0000-0000-0000-000000000001'::uuid
-);
+, 'double_decrement_test');
 
 -- Capture remaining_steps BEFORE first fail
 create temp table baseline as

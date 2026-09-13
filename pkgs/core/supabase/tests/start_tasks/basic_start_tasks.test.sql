@@ -21,7 +21,7 @@ started_tasks as (
     'simple',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'simple')
 )
 -- TEST: start_tasks returns tasks for valid message IDs
 select is(
@@ -75,7 +75,7 @@ select is(
     'simple',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'simple')),
   0,
   'start_tasks should return no tasks when queue is empty'
 );

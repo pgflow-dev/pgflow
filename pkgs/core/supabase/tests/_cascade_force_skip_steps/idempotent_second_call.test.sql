@@ -18,7 +18,7 @@ with tasks as (
   where flow_slug = 'idempotent_test' and step_slug = 'map_step'
   order by task_index
 )
-select pgflow.start_tasks('idempotent_test', array[(select message_id from tasks where task_index = 0)::bigint], pgflow_tests.ensure_worker('idempotent_test'));
+select pgflow.start_tasks('idempotent_test', array[(select message_id from tasks where task_index = 0)::bigint], pgflow_tests.ensure_worker('idempotent_test'), 'idempotent_test');
 
 create temporary table test_run as
 select run_id from pgflow.runs where flow_slug = 'idempotent_test';

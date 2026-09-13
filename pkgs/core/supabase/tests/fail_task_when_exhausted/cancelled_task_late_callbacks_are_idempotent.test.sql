@@ -20,11 +20,11 @@ select pgflow_tests.ensure_worker('late_callback_test') as test_worker_id \gset
 
 select message_id as msg_0 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_step' and task_index = 0 \gset
-select pgflow.start_tasks('late_callback_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('late_callback_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid, 'late_callback_test');
 
 select message_id as msg_1 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_step' and task_index = 1 \gset
-select pgflow.start_tasks('late_callback_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('late_callback_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid, 'late_callback_test');
 
 -- Fail task 0: run fails, task 1 becomes cancelled
 select pgflow.fail_task(:'test_run_id'::uuid, 'map_step', 0, 'Task 0 failed');

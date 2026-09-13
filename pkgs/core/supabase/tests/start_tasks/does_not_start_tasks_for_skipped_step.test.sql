@@ -25,7 +25,7 @@ with task0 as (
   where flow_slug = 'skip_start_guard' and step_slug = 'map_a' and task_index = 0
 )
 select is(
-  (select count(*) from pgflow.start_tasks('skip_start_guard', array[(select message_id from task0)::bigint], pgflow_tests.ensure_worker('skip_start_guard'))),
+  (select count(*) from pgflow.start_tasks('skip_start_guard', array[(select message_id from task0)::bigint], pgflow_tests.ensure_worker('skip_start_guard'), 'skip_start_guard')),
   1::bigint,
   'Should start 1 task for map_a[0]'
 );
@@ -67,7 +67,7 @@ with task1 as (
   where flow_slug = 'skip_start_guard' and step_slug = 'map_a' and task_index = 1
 )
 select is(
-  (select count(*) from pgflow.start_tasks('skip_start_guard', array[(select message_id from task1)::bigint], pgflow_tests.ensure_worker('skip_start_guard'))),
+  (select count(*) from pgflow.start_tasks('skip_start_guard', array[(select message_id from task1)::bigint], pgflow_tests.ensure_worker('skip_start_guard'), 'skip_start_guard')),
   0::bigint,
   'Should NOT start task for map_a[1] when step is skipped'
 );

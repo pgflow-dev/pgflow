@@ -172,7 +172,7 @@ export default CompleteExample;
 
 **Critical Cross-Cutting Concepts**:
 
-1. **Two-Phase Polling** - Worker calls `read_with_poll()` then `start_tasks(workerId)` to prevent race conditions
+1. **Two-Phase Polling** - Worker calls `read_with_poll()` then `start_tasks(workerId, queue_name)` to prevent race conditions
 2. **Empty Array Cascade** - When `initial_tasks=0`, `cascade_complete_taskless_steps()` completes entire dependent chain in one transaction
 3. **Map Step `initial_tasks` Lifecycle**:
    - Root maps: Set at flow start from input array length
@@ -204,7 +204,7 @@ export default CompleteExample;
 2. Main loop:
    - `sendHeartbeat()` - Update status, check deprecation
    - If deprecated → exit gracefully
-   - Two-phase polling: `readMessages()` then `startTasks(workerId)`
+   - Two-phase polling: `readMessages()` then `startTasks(workerId, queueName)`
    - Execute handlers (up to `maxConcurrent` parallel)
    - `complete_task()` or `fail_task()`
 3. On shutdown:
@@ -228,8 +228,7 @@ const supabase = createClient(
 
 // Create worker with all configuration options
 const worker = createFlowWorker(supabase, MyFlow, {
-  // Queue configuration
-  queueName: 'tasks',           // Default: 'tasks'
+  // The worker polls the flow's canonical queue: lower(flow_slug)
 
   // Polling configuration
   maxPollSeconds: 2,            // Default: 2
@@ -313,7 +312,7 @@ await worker.start();
 
 **How**:
 - Phase 1: Worker calls `read_with_poll()` - reserves messages, returns `msg_id`s
-- Phase 2: Worker calls `start_tasks(flow_slug, msg_ids, workerId)` - creates `step_tasks`, returns details
+- Phase 2: Worker calls `start_tasks(flow_slug, msg_ids, worker_id, queue_name)` - creates `step_tasks`, returns details
 
 **See**:
 - Worker implementation: `/pkgs/edge-worker/src/worker/FlowWorkerLifecycle.ts`

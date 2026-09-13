@@ -60,7 +60,7 @@ import { EdgeWorker } from "jsr:@pgflow/edge-worker@^0.6.0";
 
 ### 3. Run pgflow install to update migrations
 
-**Always run the install command after updating packages** to check for and apply new database migrations:
+**Always run the install command after updating packages** to check for new database migrations and copy them into your project (the Supabase migration runner, not the installer, applies them):
 
 ```bash frame="none"
 npx pgflow@latest install
@@ -99,11 +99,17 @@ pgflow is tested on PostgreSQL 17 for compatibility.
 
 ### 5. Apply new migrations
 
+<Aside type="caution" title="Updating from 0.16.0?">
+The 0.17.0 queue-identity migration is a breaking maintenance upgrade: it drops the three-argument `start_tasks()` claim that old workers still use. Do not run this step for that update. Apply it only inside the [Persist queue identity (0.17.0)](#persist-queue-identity-0170) sequence below, with every worker stopped and the packages updated first.
+</Aside>
+
 Apply the new migrations to your database:
 
 ```bash frame="none"
 npx supabase migrations up
 ```
+
+By default this applies to your **local** development database. For a linked Supabase project, use `npx supabase migrations up --linked`; for any other database, pass an explicit percent-encoded connection string with `--db-url`.
 
 ## Understanding Migration Timestamps
 
@@ -129,6 +135,66 @@ Where:
 - `ORIGINAL_NAME` - The original migration file name
 
 The original timestamp allows pgflow to search for and detect which migrations have already been installed, while the new timestamp prefix ensures Supabase can apply the migration without timestamp ordering errors.
+
+## Persist queue identity (0.17.0)
+
+pgflow 0.17.0 stores each step's and task's physical queue identity in the database: `pgflow.steps.queue_name` and `pgflow.step_tasks.queue_name`, always the canonical lowercase `lower(flow_slug)` for now. A task's message identity is `(queue_name, message_id)` instead of `message_id` alone, so the same message id in two queues can never collide. Queues created by older releases keep their original mixed-case spelling in pgmq and continue to work through it: PGMQ's public message API normalizes names, and pgflow resolves the original listed spelling only where PGMQ deletes physical objects by exact name (queue deletion); the pruning helper's archive walk derives table names from the canonical route directly. No queues or messages are migrated or recreated, flow slug casing is untouched, and the existing queue metadata spelling is preserved.
+
+<Aside type="caution" title="Breaking low-level change">
+The migration changes the `pgflow.start_tasks()` claim signature: the `queue_name` argument is now **required** (the released three-argument form and the NULL default are gone), and `startTasks()` on `IPgflowClient`/`PgflowSqlClient` requires the queue argument in TypeScript as well. The argument is the queue's **canonical identity** - `lower(flow_slug)` today, the exact spelling stored with each task. pgflow's own workers poll and claim through that canonical name, so flows keep working unchanged, including queues that PGMQ still lists with an older mixed-case spelling. Custom code that calls `pgflow.start_tasks()` or `startTasks()` directly with the old signature breaks and must pass the canonical name explicitly; passing the polled mixed-case spelling of an upgraded queue matches nothing. There is **no rolling mixed-version upgrade**: old workers cannot claim tasks against the new schema, and new workers cannot run against the old schema. Deploy matching pgflow packages, workers, and explicit-queue callers together, while everything is stopped.
+</Aside>
+
+This is a maintenance upgrade from 0.16.0. Update the pgflow packages and run `npx pgflow@latest install` **before** the maintenance window below, so the new migration files are already in your project - install only copies migration files, it writes no flow definitions. Then follow the steps in order:
+
+<Steps>
+
+1. ### Pause new producers
+
+   Stop new `pgflow.start_flow()` calls (application code, webhooks, cron) so no new runs and messages appear during the upgrade. Runs already in the database are kept as they are; you do not need to empty any queue.
+
+2. ### Record the pre-upgrade worker snapshot
+
+   Save the state you restore later, before anything is disabled, deprecated, or stopped:
+
+   - Edge Function workers: record each row's current value with `select function_name, enabled from pgflow.worker_functions;`. You restore exactly these values in step 9, including rows that were already `false`.
+   - Process workers on Node or Bun: note which service-manager units are actually running. You restart only those units in step 9.
+
+3. ### Drain in-flight work while the old schema is present
+
+   Gracefully stop each worker so handlers finish under the old schema: disable automatic restarts first, then deprecate the workers, and wait until every claimed task leaves `started` - the exact sequence and drain queries are in [Update Deployed Flows](/deploy/supabase/update-deployed-flows/) (its first step records each function's `enabled` value: the same pre-disable values you saved in step 2). What you are waiting for is in-flight handlers and their transactions to finish, **not** for queues to become empty: queued tasks and their messages are retained by the migration and are claimed by the new workers afterwards. `worker.stop()` is a graceful-shutdown signal that finishes in-flight tasks; it does not empty any queue.
+
+4. ### Stop every worker, including re-invocation
+
+   After the drain, make sure nothing can start a worker again before the migration runs:
+
+   - Edge Function workers: keep every `pgflow.worker_functions` row `enabled = false` (the drain in the previous step disabled them; their pre-upgrade values are saved in your step 2 snapshot) so the `ensure_workers()` cron does not re-invoke the function, and stop any external pings or direct HTTP requests to the function (a direct request starts a worker even while the row is disabled).
+   - Process workers on Node or Bun: stop the processes (the units you noted in step 2 are the ones that were running), and make sure your service manager does not restart them.
+
+5. ### Quiesce maintenance, recovery, and definition writers
+
+   Stop the writers that touch pgflow state besides workers: the stalled-task recovery (`requeue_stalled_tasks` cron), the optional pruning helper's pg_cron job, and flow definition writes (worker startups, `create_flow`/`add_step`). No pgflow code may run against the database between here and the matching deployment.
+
+6. ### Apply the migration transactionally
+
+   Apply the new migrations through Supabase's migration runner while everything is stopped: `npx supabase migrations up --linked` for a linked production project, `npx supabase migrations up --db-url "<percent-encoded-url>"` for an explicit database, or `npx supabase migrations up --local` for a local project - the CLI applies to the **local** database by default, so a bare `migrations up` leaves a linked production database untouched. Your project's migration pipeline is equally fine. The migration runs in a single transaction with bounded lock waits: if your database contains conflicting data (two flows whose slugs differ only by case, duplicate `(queue_name, message_id)` pairs, or queue names longer than PGMQ's limit), it **fails and leaves the database unchanged** - fix the conflict manually (pick one spelling, deduplicate, or rename before migrating; pgflow never renames or deletes definitions for you) and re-run it. A failed migration rolls back completely; after a **successful** migration, old workers cannot simply restart - the three-argument claim signature no longer exists.
+
+7. ### Replace the pruning helper if installed
+
+   If you installed the optional `pgflow.prune_data_older_than()` helper, replace it with the current version from [Prune Old Data](/deploy/prune-records/). If you customized your copy, adapt it yourself: message cleanup now goes through each task's stored `queue_name` snapshot, and archive-table cleanup derives each table name from the persisted route through `pgmq.format_table_name()` (which lowercases the name itself - no queue listing is consulted).
+
+8. ### Deploy matching packages and workers
+
+   Update the whole pgflow package set to the same version - npm packages, the JSR edge-worker import, and any custom code that calls `start_tasks()`/`startTasks()` explicitly (it must now pass the queue's canonical name: `lower(flow_slug)`) - and deploy the new worker code.
+
+9. ### Resume in the safe order
+
+   Re-enable maintenance jobs and the pruning cron, then restore each `pgflow.worker_functions` row to the exact value you recorded in step 2 - set `enabled = true` only for rows that were `true` before the upgrade; rows you had intentionally disabled stay `false`. Restart only the process-worker units you noted as running in step 2. Then resume your producers of new runs. Queued tasks from before the upgrade are claimed and processed by the new workers.
+
+</Steps>
+
+<Aside type="caution" title="pgflow manages its queues">
+pgflow owns the lifecycle of the queues it creates: it provisions the default queue when a flow is compiled, dispatches and archives through the stored queue identity, and drops the queue when the flow is deleted. Applications must not send messages directly to pgflow queues and must not create, replace, or alter them. Send work through `pgflow.start_flow()`; protection against concurrent external PGMQ changes is outside pgflow's supported boundary.
+</Aside>
 
 ## Remove manual flow compilation
 
@@ -203,6 +269,8 @@ npm update pgflow @pgflow/core @pgflow/client @pgflow/dsl
 npx pgflow@latest install -y  # Auto-confirm for faster development
 npx supabase migrations up
 ```
+
+If this update crosses 0.16.0 to 0.17.0, do not apply the migration here: follow the [Persist queue identity (0.17.0)](#persist-queue-identity-0170) maintenance sequence, even for a local database, with workers stopped.
 
 ### Production Environment
 
