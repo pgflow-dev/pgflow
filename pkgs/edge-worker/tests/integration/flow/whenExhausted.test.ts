@@ -53,7 +53,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, FailOnErrorFlow, workerConfig);
+    const worker = await startWorker(sql, FailOnErrorFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, FailOnErrorFlow);
@@ -125,7 +125,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, SkipOnErrorFlow, workerConfig);
+    const worker = await startWorker(sql, SkipOnErrorFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, SkipOnErrorFlow);
@@ -194,7 +194,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, SkipCascadeOnErrorFlow, workerConfig);
+    const worker = await startWorker(sql, SkipCascadeOnErrorFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, SkipCascadeOnErrorFlow);
@@ -267,7 +267,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, RetryThenSkipFlow, workerConfig);
+    const worker = await startWorker(sql, RetryThenSkipFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, RetryThenSkipFlow);
@@ -325,7 +325,7 @@ Deno.test(
         return { result: deps.maybe_skip ?? null };
       });
 
-    const worker = startWorker(sql, SuccessfulHandlerFlow, workerConfig);
+    const worker = await startWorker(sql, SuccessfulHandlerFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, SuccessfulHandlerFlow);
@@ -396,7 +396,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, CombinedConditionsFlow, workerConfig);
+    const worker = await startWorker(sql, CombinedConditionsFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, CombinedConditionsFlow);

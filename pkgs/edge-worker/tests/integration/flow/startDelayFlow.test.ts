@@ -72,7 +72,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, RootStepDelayFlow, {
+    const worker = await startWorker(sql, RootStepDelayFlow, {
       maxConcurrent: 1,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -127,7 +127,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, NormalStepDelayFlow, {
+    const worker = await startWorker(sql, NormalStepDelayFlow, {
       maxConcurrent: 2,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -187,7 +187,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, CascadedDelayFlow, {
+    const worker = await startWorker(sql, CascadedDelayFlow, {
       maxConcurrent: 3,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -293,7 +293,7 @@ Deno.test(
         return `Success on attempt ${attemptCount}`;
       });
 
-    const worker = startWorker(sql, FlowWithRetry, {
+    const worker = await startWorker(sql, FlowWithRetry, {
       maxConcurrent: 1,
       batchSize: 10,
       maxPollSeconds: 1,

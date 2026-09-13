@@ -40,7 +40,7 @@ Deno.test(
     await sql`select pgflow.add_step(${flowSlug}::text, 'step2'::text, ARRAY['step1']::text[], null, null, null, null)`;
     
     // Start the flow worker
-    const worker = startWorker(sql, flow, {
+    const worker = await startWorker(sql, flow, {
       maxPollSeconds: 1,
       pollIntervalMs: 50,
     });
@@ -160,12 +160,12 @@ Deno.test(
     await sql`select pgflow.add_step(${flowSlug}::text, 'step2'::text, ARRAY['step1']::text[], null, null, null, null)`;
     
     // Start two workers for the same flow
-    const worker1 = startWorker(sql, flow1, {
+    const worker1 = await startWorker(sql, flow1, {
       maxPollSeconds: 1,
       pollIntervalMs: 50,
     });
 
-    const worker2 = startWorker(sql, flow2, {
+    const worker2 = await startWorker(sql, flow2, {
       maxPollSeconds: 1,
       pollIntervalMs: 50,
     });

@@ -55,7 +55,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, ContextResourcesFlow, {
+    const worker = await startWorker(sql, ContextResourcesFlow, {
       maxConcurrent: 1,
       batchSize: 10,
       maxPollSeconds: 1,
