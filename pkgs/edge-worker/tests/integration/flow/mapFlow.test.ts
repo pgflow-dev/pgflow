@@ -66,7 +66,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, RootMapFlow, {
+    const worker = await startWorker(sql, RootMapFlow, {
       maxConcurrent: 3,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -114,7 +114,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, DependentMapFlow, {
+    const worker = await startWorker(sql, DependentMapFlow, {
       maxConcurrent: 3,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -176,7 +176,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, EmptyArrayMapFlow, {
+    const worker = await startWorker(sql, EmptyArrayMapFlow, {
       maxConcurrent: 3,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -226,7 +226,7 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    const worker = startWorker(sql, SlotRefillFlow, {
+    const worker = await startWorker(sql, SlotRefillFlow, {
       maxConcurrent: 2,
       batchSize: 2,
       maxPollSeconds: 1,

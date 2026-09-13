@@ -49,7 +49,7 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
   };
 }
 
-export function startWorker<TFlow extends AnyFlow>(
+export async function startWorker<TFlow extends AnyFlow>(
   sql: postgres.Sql,
   flow: TFlow,
   options: FlowWorkerConfig
@@ -84,7 +84,13 @@ export function startWorker<TFlow extends AnyFlow>(
 
   const worker = createFlowWorker(flow, mergedOptions, () => consoleLogger, createTestPlatformAdapter(sql));
 
-  worker.startOnlyOnce({
+  // Await startup: ensure_flow_compiled may create the flow, its queue, or
+  // destructively recompile (dropping queues). Fire-and-forget startup lets
+  // that transaction race the test body's own create_flow/add_step calls and,
+  // under load, commit after the test finished — leaving a listed queue with
+  // no owning flow row, which the create_flow ownership guard then rejects in
+  // a later test (#650).
+  await worker.startOnlyOnce({
     edgeFunctionName: 'test_flow',
     workerId: crypto.randomUUID(),
   });

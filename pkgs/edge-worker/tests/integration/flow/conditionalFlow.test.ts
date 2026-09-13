@@ -49,7 +49,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, ConditionalIfMetFlow, workerConfig);
+    const worker = await startWorker(sql, ConditionalIfMetFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, ConditionalIfMetFlow);
@@ -118,7 +118,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, ConditionalIfUnmetFlow, workerConfig);
+    const worker = await startWorker(sql, ConditionalIfUnmetFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, ConditionalIfUnmetFlow);
@@ -192,7 +192,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, ConditionalIfNotMetFlow, workerConfig);
+    const worker = await startWorker(sql, ConditionalIfNotMetFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, ConditionalIfNotMetFlow);
@@ -260,7 +260,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, ConditionalIfNotUnmetFlow, workerConfig);
+    const worker = await startWorker(sql, ConditionalIfNotUnmetFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, ConditionalIfNotUnmetFlow);
@@ -333,7 +333,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, SkipCascadeFlow, workerConfig);
+    const worker = await startWorker(sql, SkipCascadeFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, SkipCascadeFlow);
@@ -434,7 +434,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, NonCascadeSkipFlow, workerConfig);
+    const worker = await startWorker(sql, NonCascadeSkipFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, NonCascadeSkipFlow);
@@ -529,7 +529,7 @@ Deno.test(
         }
       );
 
-    const worker = startWorker(sql, FailOnUnmetFlow, workerConfig);
+    const worker = await startWorker(sql, FailOnUnmetFlow, workerConfig);
 
     try {
       await createFlowInDb(sql, FailOnUnmetFlow);

@@ -253,7 +253,7 @@ interface WorkerConfig {
   [key: string]: unknown;
 }
 
-const startWorkers = (
+const startWorkers = async (
   sql: postgres.Sql,
   flow: typeof LargeArrayMapFlow,
   numWorkers: number,
@@ -262,7 +262,7 @@ const startWorkers = (
   const workers = [];
 
   for (let i = 0; i < numWorkers; i++) {
-    const worker = startWorker(sql, flow, {
+    const worker = await startWorker(sql, flow, {
       ...config,
       // Add slight variation to worker configs to simulate real-world
       maxConcurrent: config.maxConcurrent + (i % 2) * 5,
@@ -342,7 +342,7 @@ Deno.test(
     const NUM_WORKERS = 4;
     const ELEMENTS_PER_FLOW = 100;
 
-    const workers = startWorkers(sql, LargeArrayMapFlow, NUM_WORKERS, {
+    const workers = await startWorkers(sql, LargeArrayMapFlow, NUM_WORKERS, {
       maxConcurrent: 25,
       batchSize: 10,
       maxPollSeconds: 1,
@@ -498,7 +498,7 @@ Deno.test(
     console.log = () => {};
     console.debug = () => {};
 
-    const worker = startWorker(sql, LargeArrayMapFlow, {
+    const worker = await startWorker(sql, LargeArrayMapFlow, {
       maxConcurrent: 50, // Higher concurrency for performance test
       batchSize: 25, // Larger batch size for better throughput
       maxPollSeconds: 1,
@@ -725,7 +725,7 @@ Deno.test(
     console.log = () => {};
     console.debug = () => {};
 
-    const worker = startWorker(sql, LargeArrayMapFlow, {
+    const worker = await startWorker(sql, LargeArrayMapFlow, {
       maxConcurrent: 100, // Even higher concurrency for stress test
       batchSize: 50,
       maxPollSeconds: 2,
