@@ -52,6 +52,35 @@ export class Queries {
     return result || { is_deprecated: true };
   }
 
+  /**
+   * Resolves the physical spelling of a canonical (lowercase) queue name
+   * through pgmq.list_queues() (#650). Queues created by older pgflow
+   * releases keep their original mixed-case spelling.
+   *
+   * Resolves every listed spelling of the normalized name before preferring
+   * any single match: an ambiguous match is rejected even when one spelling
+   * is exact. Returns the unique case-insensitive match, or null when the
+   * queue is not listed.
+   */
+  async resolveQueueName(canonicalQueueName: string): Promise<string | null> {
+    const rows = await this.sql<{ queue_name: string }[]>`
+      SELECT queue_name
+      FROM pgmq.list_queues()
+      WHERE lower(queue_name) = ${canonicalQueueName}
+    `;
+
+    if (rows.length > 1) {
+      throw new Error(
+        `Queue name '${canonicalQueueName}' is ambiguous: it matches listed queues ` +
+          rows.map((row) => `'${row.queue_name}'`).join(', ')
+      );
+    }
+    if (rows.length === 1) {
+      return rows[0].queue_name;
+    }
+    return null;
+  }
+
   async ensureFlowCompiled(
     flowSlug: string,
     shape: FlowShape

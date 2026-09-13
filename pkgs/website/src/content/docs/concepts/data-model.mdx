@@ -22,13 +22,13 @@ The schema uses composite primary and foreign keys that include denormalized slu
 ```sql
 -- Definition tables
 flows:       (flow_slug)
-steps:       (flow_slug, step_slug)
+steps:       (flow_slug, step_slug) + denormalized queue_name
 deps:        (flow_slug, dep_slug, step_slug)
 
 -- Runtime tables
 runs:        (run_id) + denormalized flow_slug
 step_states: (run_id, step_slug) + denormalized flow_slug
-step_tasks:  (run_id, step_slug, task_index) + denormalized flow_slug
+step_tasks:  (run_id, step_slug, task_index) + denormalized flow_slug, queue_name
 ```
 
 Denormalized slugs simplify queries - no joins needed:
@@ -38,6 +38,10 @@ Denormalized slugs simplify queries - no joins needed:
 SELECT * FROM pgflow.step_tasks
 WHERE flow_slug = 'my_flow' AND step_slug = 'my_step';
 ```
+
+### 📮 Queue identity
+
+PGMQ message ids are queue-scoped, so a task's message identity is `(queue_name, message_id)`, not `message_id` alone. Every step stores its canonical queue name (`steps.queue_name`, always the lowercase `lower(flow_slug)` today), and every task snapshots that value at creation (`step_tasks.queue_name`). Runtime code never rewrites the snapshot: dispatch, claims, visibility, completion, retries, skip/cancel cascades, late callbacks, stalled recovery, and pruning all address the queue through it. `(queue_name, message_id)` is unique per queue, while `message_id` alone stays nullable. pgflow manages its queues exclusively - do not send to them or create, replace, or alter them from application code.
 
 ## Two Categories of Tables
 
@@ -81,6 +85,7 @@ These tables track the execution state of flow instances:
 - Single steps create 1 task, map steps create N tasks
 - Each task has retry counter and attempts tracking
 - Contains `task_index` for map task array elements
+- Stores `queue_name`, the queue snapshot the task's message was dispatched to; the `(queue_name, message_id)` pair identifies the message and is unique per queue
 - Tracks task status (`queued`, `started`, `completed`, `failed`, `skipped`, `cancelled`)
 - `skipped` marks the logical orchestration state: the parent step was skipped, so the task will never run; an already-running handler is not forcibly terminated
 - `cancelled` marks unfinished tasks whose run failed: the task that caused the failure stays `failed` (with its error), completed work stays `completed`, and every remaining queued or started task becomes `cancelled`. `runs.failed_at` is the cancellation time; there is no separate `cancelled_at` column

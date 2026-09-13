@@ -17,6 +17,9 @@ create table pgflow.flows (
 create table pgflow.steps (
   flow_slug text not null references pgflow.flows(flow_slug),
   step_slug text not null,
+  -- Canonical queue this step's tasks are dispatched to (#650).
+  -- For this stage every step routes to the flow's default queue: lower(flow_slug).
+  queue_name text not null,
   step_type text not null default 'single',
   step_index int not null default 0,
   deps_count int not null default 0 check (deps_count >= 0),
@@ -38,6 +41,7 @@ create table pgflow.steps (
   primary key (flow_slug, step_slug),
   unique (flow_slug, step_index),  -- Ensure step_index is unique within a flow
   check (pgflow.is_valid_slug(step_slug)),
+  constraint queue_name_is_valid check (pgflow.is_valid_queue_name(queue_name)),
   check (step_type in ('single', 'map')),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay is null or opt_base_delay >= 0),
@@ -63,3 +67,8 @@ create table pgflow.deps (
 
 create index if not exists idx_deps_by_flow_step on pgflow.deps (flow_slug, step_slug);
 create index if not exists idx_deps_by_flow_dep on pgflow.deps (flow_slug, dep_slug);
+
+-- Two concrete flows must not address the same normalized default queue (#650).
+-- The expression index also rejects direct SQL creation of conflicting flows.
+create unique index if not exists idx_flows_normalized_slug
+on pgflow.flows (lower(flow_slug));

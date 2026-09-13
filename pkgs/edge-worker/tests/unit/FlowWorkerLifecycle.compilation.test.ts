@@ -30,6 +30,11 @@ class MockQueries extends Queries {
     return Promise.resolve(this.nextCompilationResult);
   }
 
+  override resolveQueueName(_canonicalQueueName: string): Promise<string | null> {
+    this.calls.push('resolve-queue');
+    return Promise.resolve(null); // not listed: keep the canonical name
+  }
+
   override trackWorkerFunction(functionName: string, startMode = 'http'): Promise<void> {
     this.calls.push('track');
     this.trackWorkerFunctionCallCount++;
@@ -93,7 +98,7 @@ Deno.test('FlowWorkerLifecycle - compiles before registration', async () => {
     edgeFunctionName: 'test-function',
   });
 
-  assertEquals(queries.calls, ['compile', 'track', 'worker']);
+  assertEquals(queries.calls, ['compile', 'resolve-queue', 'track', 'worker']);
 });
 
 Deno.test('FlowWorkerLifecycle - compilation failure does not register', async () => {

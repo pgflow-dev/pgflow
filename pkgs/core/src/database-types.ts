@@ -208,6 +208,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string
@@ -227,6 +228,7 @@ export type Database = {
           message_id?: number | null
           output?: Json | null
           permanently_stalled_at?: string | null
+          queue_name: string
           queued_at?: string
           requeued_count?: number
           run_id: string
@@ -246,6 +248,7 @@ export type Database = {
           message_id?: number | null
           output?: Json | null
           permanently_stalled_at?: string | null
+          queue_name?: string
           queued_at?: string
           requeued_count?: number
           run_id?: string
@@ -295,6 +298,7 @@ export type Database = {
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          queue_name: string
           required_input_pattern: Json | null
           step_index: number
           step_slug: string
@@ -311,6 +315,7 @@ export type Database = {
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          queue_name: string
           required_input_pattern?: Json | null
           step_index?: number
           step_slug: string
@@ -327,6 +332,7 @@ export type Database = {
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          queue_name?: string
           required_input_pattern?: Json | null
           step_index?: number
           step_slug?: string
@@ -425,7 +431,9 @@ export type Database = {
         Args: { p_flow_slug: string; p_shape: Json }
         Returns: undefined
       }
+      _effective_queue_name: { Args: { p_queue_name: string }; Returns: string }
       _get_flow_shape: { Args: { p_flow_slug: string }; Returns: Json }
+      _listed_queue_name: { Args: { p_queue_name: string }; Returns: string }
       add_step: {
         Args: {
           base_delay?: number
@@ -450,6 +458,7 @@ export type Database = {
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          queue_name: string
           required_input_pattern: Json | null
           step_index: number
           step_slug: string
@@ -497,6 +506,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string
@@ -567,6 +577,7 @@ export type Database = {
           message_id: number | null
           output: Json | null
           permanently_stalled_at: string | null
+          queue_name: string
           queued_at: string
           requeued_count: number
           run_id: string
@@ -584,6 +595,7 @@ export type Database = {
       }
       get_run_with_states: { Args: { run_id: string }; Returns: Json }
       is_local: { Args: never; Returns: boolean }
+      is_valid_queue_name: { Args: { queue_name: string }; Returns: boolean }
       is_valid_slug: { Args: { slug: string }; Returns: boolean }
       mark_worker_stopped: { Args: { worker_id: string }; Returns: undefined }
       maybe_complete_run: { Args: { run_id: string }; Returns: undefined }
@@ -649,7 +661,12 @@ export type Database = {
       }
       start_ready_steps: { Args: { run_id: string }; Returns: undefined }
       start_tasks: {
-        Args: { flow_slug: string; msg_ids: number[]; worker_id: string }
+        Args: {
+          flow_slug: string
+          msg_ids: number[]
+          queue_name?: string
+          worker_id: string
+        }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
         SetofOptions: {
           from: "*"

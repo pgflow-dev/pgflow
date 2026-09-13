@@ -13,7 +13,7 @@ describe('Supabase Flow Context Inference', () => {
 
         // FlowContext properties
         expectTypeOf(context.stepTask.run_id).toEqualTypeOf<string>();
-        expectTypeOf(context.rawMessage.msg_id).toEqualTypeOf<number>();
+        expectTypeOf(context.rawMessage.msg_id).toEqualTypeOf<string>();
         expectTypeOf(context.workerConfig.maxConcurrent).toEqualTypeOf<number>();
         expectTypeOf(context.env).toMatchTypeOf<Record<string, string | undefined>>();
         expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();

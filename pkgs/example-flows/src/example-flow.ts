@@ -39,7 +39,7 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
     // thirdStep: { finalValue: 23 }, --- this should be an error
     // normalStep: { doubledValueArray: [1, 2, 3] }, --- this should be an error
   },
-  msg_id: 1,
+  msg_id: '1',
   flow_input: { value: 23 },
 };
 

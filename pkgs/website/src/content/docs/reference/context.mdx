@@ -57,7 +57,7 @@ The original message from the pgmq queue, containing metadata like message ID, r
 
 ```typescript
 interface PgmqMessageRecord<T> {
-  msg_id: number;       // Unique message ID from pgmq
+  msg_id: string;      // Queue-scoped exact decimal message ID from pgmq
   read_ct: number;      // How many times this message has been read
   enqueued_at: string;  // ISO timestamp when message was enqueued
   vt: string;           // ISO timestamp for visibility timeout
@@ -86,7 +86,7 @@ interface StepTaskRecord<TFlow> {
   step_slug: string;    // Slug identifier of the current step
   task_index: number;   // Task index (0 for single steps, 0..N-1 for map steps)
   input: StepInput;     // Typed input for this specific step (inferred from flow)
-  msg_id: number;       // pgmq message ID
+  msg_id: string;      // Queue-scoped exact decimal pgmq message ID
 }
 ```
 

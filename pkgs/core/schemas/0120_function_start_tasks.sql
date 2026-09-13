@@ -1,7 +1,14 @@
+-- Claim queued tasks for the given flow by persisted (queue_name, message_id)
+-- identity (#650).
+--
+-- queue_name is the queue the caller actually polled; identity matching uses
+-- its canonical lowercase form. NULL keeps the released call signature and
+-- derives the default queue from lower(flow_slug).
 create or replace function pgflow.start_tasks(
   flow_slug text,
   msg_ids bigint [],
-  worker_id uuid
+  worker_id uuid,
+  queue_name text default null
 )
 returns setof pgflow.step_task_record
 volatile
@@ -18,6 +25,7 @@ as $$
     from pgflow.step_tasks as task
     join pgflow.runs r on r.run_id = task.run_id
     where task.flow_slug = start_tasks.flow_slug
+      and task.queue_name = lower(coalesce(start_tasks.queue_name, start_tasks.flow_slug))
       and task.message_id = any(msg_ids)
       and task.status = 'queued'
       and r.status = 'started'
@@ -43,6 +51,7 @@ as $$
     from task_candidates as candidate
     where step_tasks.message_id = candidate.message_id
       and step_tasks.flow_slug = candidate.flow_slug
+      and step_tasks.queue_name = lower(coalesce(start_tasks.queue_name, start_tasks.flow_slug))
       and step_tasks.status = 'queued'
     returning
       step_tasks.flow_slug,
@@ -96,7 +105,9 @@ as $$
   -- only the shorter initial PGMQ read visibility (#656).
   visibility_reset as (
     select pgflow.set_vt_batch(
-      start_tasks.flow_slug,
+      pgflow._effective_queue_name(
+        lower(coalesce(start_tasks.queue_name, start_tasks.flow_slug))
+      ),
       array_agg(t.message_id order by t.message_id),
       array_agg(t.vt_delay order by t.message_id)
     )

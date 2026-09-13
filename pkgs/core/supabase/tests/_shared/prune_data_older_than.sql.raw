@@ -11,13 +11,19 @@
  *
  * WARNING: Ensure retention_interval is longer than your longest start_delay to avoid
  * deleting tasks before they have a chance to execute.
+ *
+ * pgflow 0.17 note: message cleanup uses each task's stored queue snapshot
+ * (step_tasks.queue_name) and archive cleanup uses persisted definition routes
+ * (pgflow.steps.queue_name). If you installed an earlier copy of this snippet,
+ * replace it with this version; adapt any customized copies yourself.
  */
 create or replace function pgflow.prune_data_older_than(
   retention_interval INTERVAL
 ) returns void language plpgsql as $$
 DECLARE
   cutoff_timestamp TIMESTAMPTZ := now() - retention_interval;
-  flow_record RECORD;
+  task_record RECORD;
+  route_record RECORD;
   archive_table TEXT;
   dynamic_sql TEXT;
 BEGIN
@@ -27,9 +33,10 @@ BEGIN
 
   -- Delete PGMQ messages from active queues BEFORE deleting step_tasks
   -- This prevents orphaned messages that would appear after tasks are deleted
-  FOR flow_record IN
+  -- Messages are addressed through each task's stored queue snapshot (#650)
+  FOR task_record IN
     SELECT
-      r.flow_slug,
+      st.queue_name,
       ARRAY_AGG(st.message_id) FILTER (WHERE st.message_id IS NOT NULL) as message_ids
     FROM pgflow.runs r
     JOIN pgflow.step_tasks st ON st.run_id = r.run_id
@@ -37,11 +44,14 @@ BEGIN
       (r.completed_at IS NOT NULL AND r.completed_at < cutoff_timestamp) OR
       (r.failed_at IS NOT NULL AND r.failed_at < cutoff_timestamp)
     )
-    GROUP BY r.flow_slug
+    GROUP BY st.queue_name
   LOOP
     -- Delete messages in batch (pgmq.delete ignores non-existent messages)
-    IF flow_record.message_ids IS NOT NULL AND array_length(flow_record.message_ids, 1) > 0 THEN
-      PERFORM pgmq.delete(flow_record.flow_slug, flow_record.message_ids);
+    IF task_record.message_ids IS NOT NULL AND array_length(task_record.message_ids, 1) > 0 THEN
+      PERFORM pgmq.delete(
+        pgflow._effective_queue_name(task_record.queue_name),
+        task_record.message_ids
+      );
     END IF;
   END LOOP;
 
@@ -73,12 +83,21 @@ BEGIN
     (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
   );
 
-  -- Prune archived messages from PGMQ archive tables (pgmq.a_{flow_slug})
-  -- For each flow, delete old archived messages
-  FOR flow_record IN SELECT DISTINCT flow_slug FROM pgflow.flows
+  -- Prune archived messages from PGMQ archive tables.
+  -- Walk the persisted definition routes (plus each flow's default queue) so
+  -- queues that keep an original mixed-case spelling are found (#650).
+  FOR route_record IN
+    SELECT DISTINCT queue_name FROM (
+      SELECT queue_name FROM pgflow.steps
+      UNION
+      SELECT lower(flow_slug) FROM pgflow.flows
+    ) routes
   LOOP
-    -- Build the archive table name
-    archive_table := pgmq.format_table_name(flow_record.flow_slug, 'a');
+    -- Build the archive table name from the listed spelling
+    archive_table := pgmq.format_table_name(
+      pgflow._effective_queue_name(route_record.queue_name),
+      'a'
+    );
 
     -- Check if the archive table exists
     IF EXISTS (

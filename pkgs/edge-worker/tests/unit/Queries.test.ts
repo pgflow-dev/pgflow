@@ -1,4 +1,4 @@
-import { assertEquals } from '@std/assert';
+import { assertEquals, assertRejects } from '@std/assert';
 import { Queries } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
 import type { postgres } from '../sql.ts';
@@ -17,6 +17,14 @@ function createMockSql() {
   }) as unknown as postgres.Sql;
 
   return { mockSql, calls };
+}
+
+// Mock SQL client returning canned rows for queue-name resolution
+function createQueueSql(queues: string[]) {
+  return ((
+    _strings: TemplateStringsArray,
+    ..._values: unknown[]
+  ) => Promise.resolve(queues.map((queue_name) => ({ queue_name })))) as unknown as postgres.Sql;
 }
 
 Deno.test('Queries.trackWorkerFunction - calls correct SQL function', async () => {
@@ -100,4 +108,28 @@ Deno.test('Queries.sendHeartbeat treats missing worker row as deprecated', async
   const result = await queries.sendHeartbeat(workerRow);
 
   assertEquals(result.is_deprecated, true);
+});
+
+Deno.test('Queries.resolveQueueName returns the unique case-insensitive match', async () => {
+  const queries = new Queries(createQueueSql(['LegacyCase']));
+
+  assertEquals(await queries.resolveQueueName('legacycase'), 'LegacyCase');
+});
+
+Deno.test('Queries.resolveQueueName returns null when the queue is not listed', async () => {
+  const queries = new Queries(createQueueSql([]));
+
+  assertEquals(await queries.resolveQueueName('gone'), null);
+});
+
+Deno.test('Queries.resolveQueueName rejects an ambiguous match before preferring an exact one', async () => {
+  // Review regression (#650): an exact spelling must not short-circuit the
+  // ambiguity rejection
+  const queries = new Queries(createQueueSql(['ambcase', 'AmbCase']));
+
+  await assertRejects(
+    () => queries.resolveQueueName('ambcase'),
+    Error,
+    "Queue name 'ambcase' is ambiguous: it matches listed queues 'ambcase', 'AmbCase'"
+  );
 });

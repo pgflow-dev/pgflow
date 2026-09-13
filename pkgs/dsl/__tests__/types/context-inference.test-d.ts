@@ -21,7 +21,7 @@ describe('Context Type Inference Tests', () => {
         expectTypeOf(context.env).toEqualTypeOf<Record<string, string | undefined>>();
         expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();
         expectTypeOf(context.stepTask.run_id).toEqualTypeOf<string>();
-        expectTypeOf(context.rawMessage.msg_id).toEqualTypeOf<number>();
+        expectTypeOf(context.rawMessage.msg_id).toEqualTypeOf<string>();
 
         return { processed: true };
       });

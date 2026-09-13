@@ -52,6 +52,10 @@ class MockQueries extends Queries {
     return Promise.resolve({ status: 'verified', differences: [] });
   }
 
+  override resolveQueueName(_canonicalQueueName: string): Promise<string | null> {
+    return Promise.resolve(null);
+  }
+
   override trackWorkerFunction(_functionName: string): Promise<void> {
     return Promise.resolve();
   }

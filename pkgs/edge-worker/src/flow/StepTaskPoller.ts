@@ -7,6 +7,9 @@ import type { PgmqMessageRecord } from '../queue/types.js';
 
 export interface StepTaskPollerConfig {
   batchSize: number;
+  /** Flow identity used to select claimable tasks */
+  flowSlug: string;
+  /** Default queue name; the supplier can override it with the polled name */
   queueName: string;
   visibilityTimeout?: number;
   maxPollSeconds?: number;
@@ -24,16 +27,22 @@ export class StepTaskPoller<TFlow extends AnyFlow>
   // TODO: Temporary supplier pattern until we refactor initialization
   // to pass workerId directly to createWorkerFn
   private readonly getWorkerId: Supplier<string>;
+  // Queue name supplier defers resolution until after startup, when the
+  // queue is known to exist (queues created by older releases may keep a
+  // mixed-case spelling; #650)
+  private readonly getQueueName: Supplier<string>;
 
   constructor(
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
     private readonly config: StepTaskPollerConfig,
     workerIdSupplier: Supplier<string>,
-    logger: Logger
+    logger: Logger,
+    queueNameSupplier?: Supplier<string>
   ) {
     this.getWorkerId = workerIdSupplier;
     this.logger = logger;
+    this.getQueueName = queueNameSupplier ?? (() => this.config.queueName);
   }
 
   async poll(limit?: number): Promise<StepTaskWithMessage<TFlow>[]> {
@@ -43,6 +52,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     }
 
     const workerId = this.getWorkerId();
+    const queueName = this.getQueueName();
     const batchSize = limit === undefined
       ? this.config.batchSize
       : Math.min(this.config.batchSize, limit);
@@ -53,7 +63,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     try {
       // Phase 1: Read messages from queue
       const messages = await this.adapter.readMessages(
-        this.config.queueName,
+        queueName,
         this.config.visibilityTimeout ?? 2,
         batchSize,
         this.config.maxPollSeconds,
@@ -67,30 +77,39 @@ export class StepTaskPoller<TFlow extends AnyFlow>
 
       this.logger.debug(`Found ${messages.length} messages, starting tasks`);
 
-      // Phase 2: Start tasks for the retrieved messages
+      // Phase 2: Start tasks for the retrieved messages. The claim receives
+      // the actual polled queue and matches the persisted
+      // (queue_name, message_id) identity (#650).
       const msgIds = messages.map((msg) => msg.msg_id);
       const tasks = await this.adapter.startTasks(
-        this.config.queueName,
+        this.config.flowSlug,
         msgIds,
-        workerId
+        workerId,
+        queueName
       );
 
       this.logger.debug(
         `Started ${tasks.length} tasks from ${messages.length} messages`
       );
 
-      // Log if we got fewer tasks than messages (indicates some messages had no matching queued tasks)
+      // Messages without a claimable task are preserved: they recur after
+      // their visibility timeout until an operator handles them. Warn with
+      // identifiers only, never message bodies (#650).
       if (tasks.length < messages.length) {
-        this.logger.debug(
-          `Note: Started ${tasks.length} tasks from ${messages.length} messages. ` +
-            `${
-              messages.length - tasks.length
-            } messages had no queued tasks (may retry later).`
+        const claimedIds = new Set(tasks.map((task) => task.msg_id));
+        const unmatchedIds = messages
+          .filter((msg) => !claimedIds.has(msg.msg_id))
+          .map((msg) => msg.msg_id);
+        this.logger.warn(
+          `Queue '${queueName}': ${unmatchedIds.length} of ${messages.length} message(s) ` +
+            `matched no claimable task for flow '${this.config.flowSlug}' ` +
+            `(msg_ids: ${unmatchedIds.join(', ')}). ` +
+            'Messages are left for their visibility timeout; recurring ids need operator attention.'
         );
       }
 
       // Create a map of message ID to message for quick lookup
-      const messageMap = new Map<number, PgmqMessageRecord<AllStepInputs<TFlow>>>();
+      const messageMap = new Map<string, PgmqMessageRecord<AllStepInputs<TFlow>>>();
       for (const msg of messages) {
         messageMap.set(msg.msg_id, msg as PgmqMessageRecord<AllStepInputs<TFlow>>);
       }

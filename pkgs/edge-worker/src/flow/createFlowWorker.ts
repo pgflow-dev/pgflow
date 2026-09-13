@@ -95,8 +95,9 @@ export function createFlowWorker<
   // Create the pgflow adapter
   const pgflowAdapter = new PgflowSqlClient<TFlow>(sql);
 
-  // Use flow slug as queue name, or fallback to 'tasks'
-  const queueName = flow.slug || 'tasks';
+  // Canonical queue identity is the normalized slug; the worker polls the
+  // resolved physical spelling (see FlowWorkerLifecycle.polledQueueName) (#650)
+  const queueName = (flow.slug || 'tasks').toLowerCase();
   logger.debug(`Using queue name: ${queueName}`);
 
   // Create specialized FlowWorkerLifecycle with the proxied queue and flow
@@ -116,7 +117,8 @@ export function createFlowWorker<
   // Create StepTaskPoller with two-phase approach
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: resolvedConfig.batchSize,
-    queueName: flow.slug,
+    flowSlug: flow.slug,
+    queueName,
     visibilityTimeout: resolvedConfig.visibilityTimeout,
     maxPollSeconds: resolvedConfig.maxPollSeconds,
     pollIntervalMs: resolvedConfig.pollIntervalMs,
@@ -127,7 +129,8 @@ export function createFlowWorker<
     abortSignal,
     pollerConfig,
     () => lifecycle.workerId,
-    createLogger('StepTaskPoller')
+    createLogger('StepTaskPoller'),
+    () => lifecycle.polledQueueName
   );
 
   // Create executor factory with proper typing
