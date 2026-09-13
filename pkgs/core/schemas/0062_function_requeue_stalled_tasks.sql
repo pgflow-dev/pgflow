@@ -23,6 +23,7 @@ begin
       st.step_slug,
       st.task_index,
       st.message_id,
+      st.queue_name,
       r.flow_slug,
       st.requeued_count
     from pgflow.step_tasks st
@@ -59,12 +60,13 @@ begin
     where st.run_id = tr.run_id
       and st.step_slug = tr.step_slug
       and st.task_index = tr.task_index
-    returning tr.flow_slug as queue_name, tr.message_id
+    returning tr.queue_name as queue_name, tr.message_id
   ),
-  -- Make requeued messages visible immediately (batched per queue)
+  -- Make requeued messages visible immediately (batched per queue, through
+  -- the tasks' stored queue snapshots resolved to their listed spelling #650)
   visibility_reset as (
     select pgflow.set_vt_batch(
-      r.queue_name,
+      pgflow._effective_queue_name(r.queue_name),
       array_agg(r.message_id),
       array_agg(0)  -- all offsets are 0 (immediate visibility)
     )
@@ -84,10 +86,13 @@ begin
   ),
   -- Archive messages for tasks that exceeded max requeues (batched per queue)
   archived as (
-    select pgmq.archive(ta.flow_slug, array_agg(ta.message_id))
+    select pgmq.archive(
+      pgflow._effective_queue_name(ta.queue_name),
+      array_agg(ta.message_id)
+    )
     from to_archive ta
     where ta.message_id is not null
-    group by ta.flow_slug
+    group by ta.queue_name
   ),
   -- Force execution of visibility_reset CTE
   _vr as (select count(*) from visibility_reset),

@@ -26,7 +26,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     // Check startTasks method types
     expectTypeOf(client.startTasks).toBeFunction();
     expectTypeOf(client.startTasks).parameters.toMatchTypeOf<
-      [string, number[], string]
+      [string, string[], string, string?]
     >();
     expectTypeOf(client.startTasks).returns.toEqualTypeOf<
       Promise<StepTaskRecord<typeof flow>[]>
@@ -66,19 +66,20 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     const client = new PgflowSqlClient<typeof flow>(sql);
 
     // Valid calls should compile
-    client.startTasks('flow_slug', [1, 2, 3], 'worker-id');
+    client.startTasks('flow_slug', ['1', '2', '3'], 'worker-id');
     client.startTasks('flow_slug', [], 'worker-id');
+    client.startTasks('flow_slug', ['1'], 'worker-id', 'queue_name');
 
     // @ts-expect-error - flowSlug must be string
-    client.startTasks(123, [1, 2, 3], 'worker-id');
+    client.startTasks(123, ['1', '2', '3'], 'worker-id');
 
-    // @ts-expect-error - msgIds must be number array
-    client.startTasks('flow_slug', ['1', '2', '3'], 'worker-id');
+    // @ts-expect-error - msgIds must be string array (exact decimal strings, #650)
+    client.startTasks('flow_slug', [1, 2, 3], 'worker-id');
 
     // @ts-expect-error - msgIds must be array
     client.startTasks('flow_slug', 123, 'worker-id');
 
     // @ts-expect-error - workerId must be string
-    client.startTasks('flow_slug', [1, 2, 3], 123);
+    client.startTasks('flow_slug', ['1', '2', '3'], 123);
   });
 });

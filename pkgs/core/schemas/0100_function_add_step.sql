@@ -37,15 +37,17 @@ BEGIN
   FROM pgflow.steps s
   WHERE s.flow_slug = add_step.flow_slug;
 
-  -- Create the step
+  -- Create the step. queue_name records the step's resolved default route:
+  -- lower(flow_slug) for this stage (#650).
   INSERT INTO pgflow.steps (
-    flow_slug, step_slug, step_type, step_index, deps_count,
+    flow_slug, step_slug, queue_name, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
     required_input_pattern, forbidden_input_pattern, when_unmet, when_exhausted
   )
   VALUES (
     add_step.flow_slug,
     add_step.step_slug,
+    lower(add_step.flow_slug),
     COALESCE(add_step.step_type, 'single'),
     next_idx,
     COALESCE(array_length(add_step.deps_slugs, 1), 0),
@@ -59,7 +61,9 @@ BEGIN
     add_step.when_exhausted
   )
   ON CONFLICT ON CONSTRAINT steps_pkey
-  DO UPDATE SET step_slug = EXCLUDED.step_slug
+  DO UPDATE SET
+    step_slug = EXCLUDED.step_slug,
+    queue_name = EXCLUDED.queue_name
   RETURNING * INTO result_step;
 
   -- Insert dependencies

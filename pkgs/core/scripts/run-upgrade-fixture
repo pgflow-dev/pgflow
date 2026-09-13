@@ -1,61 +1,88 @@
 #!/bin/bash
 set -euo pipefail
 
-# 0.15.0 upgrade fixture for the consolidated task_lifecycle_hardening migration.
+# Upgrade fixtures for released migration boundaries.
 #
-# Proves on a fresh database that:
+# Fixture 1 (0.15.0, consolidated task_lifecycle_hardening migration) proves:
 #   1. a database at 0.15.0 (migrations up to 20260607175525) upgrades cleanly,
 #   2. both migration-only data repairs run, in the required order,
 #   3. final runtime behavior works (start_tasks extends PGMQ visibility).
 #
+# Fixtures 2/3 (0.16.0, persist_queue_identity migration) prove:
+#   1. a populated database at 0.16.0 (migrations up to 20260907082520)
+#      backfills queue identity snapshots, including tasks with NULL
+#      message_id and ids beyond the JavaScript safe integer range,
+#   2. post-upgrade runtime works through persisted queue identity,
+#      including a legacy mixed-case physical queue and deletion by route,
+#   3. conflicting normalized flow definitions block the migration and the
+#      failed migration leaves the database unchanged (atomic rollback).
+#
 # Uses the same postgres image and baseline schema as the atlas dev database
 # (pg_cron / pg_net cannot be created in a non-postgres database of the
-# Supabase dev instance, so the fixture gets its own container).
+# Supabase dev instance, so each fixture gets its own container).
 # Runs as part of `pnpm nx test:pgtap core`.
 
 cd "$(dirname "$0")/.."
 
 IMAGE="jumski/atlas-postgres-pgflow:17.6.1.054"
-CONTAINER=pgflow-upgrade-fixture
+
 # Last migration released in 0.15.0; everything after it is replaced by the
 # consolidated migration.
-BASELINE_MIGRATION="20260607175525_pgflow_worker_start_mode.sql"
+BASELINE_0_15="20260607175525_pgflow_worker_start_mode.sql"
+# Last migration released in 0.16.0.
+BASELINE_0_16="20260907082520_pgflow_remove_legacy_flow_compilation.sql"
 
-cleanup() { docker rm -f "$CONTAINER" >/dev/null 2>&1 || true; }
+CONTAINER=""
+
+cleanup() { [[ -n "$CONTAINER" ]] && docker rm -f "$CONTAINER" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-cleanup
 
-echo "upgrade fixture: starting postgres container"
-docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
-
-for _ in $(seq 1 30); do
-  if docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
-    break
-  fi
-  sleep 1
-done
+start_container() {
+  cleanup
+  CONTAINER="$1"
+  echo "upgrade fixture: starting postgres container $CONTAINER"
+  docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+  local waited=0
+  until docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; do
+    ((waited+=1))
+    if ((waited > 30)); then
+      echo "upgrade fixture: $CONTAINER never became ready" >&2
+      exit 1
+    fi
+    sleep 1
+  done
+}
 
 psql_in() {
   docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -X -q -U postgres -d postgres
 }
 
+# apply_migrations_up_to <baseline-migration-filename>
+apply_migrations_up_to() {
+  local baseline="$1" reached=false f
+  for f in supabase/migrations/*.sql; do
+    psql_in < "$f"
+    if [[ "$(basename "$f")" == "$baseline" ]]; then
+      reached=true
+      break
+    fi
+  done
+  if [[ "$reached" != true ]]; then
+    echo "upgrade fixture: baseline migration $baseline not found" >&2
+    exit 1
+  fi
+}
+
+# =====================================================================
+# Fixture 1: 0.15.0 -> consolidated task_lifecycle_hardening
+# =====================================================================
+start_container pgflow-upgrade-fixture
+
 echo "upgrade fixture: applying supabase baseline schema"
 psql_in < atlas/supabase-baseline-schema.sql
 
-echo "upgrade fixture: applying pgflow migrations up to 0.15.0 ($BASELINE_MIGRATION)"
-reached_baseline=false
-for f in supabase/migrations/*.sql; do
-  echo "  $(basename "$f")"
-  psql_in < "$f"
-  if [[ "$(basename "$f")" == "$BASELINE_MIGRATION" ]]; then
-    reached_baseline=true
-    break
-  fi
-done
-if [[ "$reached_baseline" != true ]]; then
-  echo "upgrade fixture: baseline migration $BASELINE_MIGRATION not found" >&2
-  exit 1
-fi
+echo "upgrade fixture: applying pgflow migrations up to 0.15.0 ($BASELINE_0_15)"
+apply_migrations_up_to "$BASELINE_0_15"
 
 echo "upgrade fixture: seeding stale 0.15.0 data"
 psql_in < supabase/upgrade_fixture/seed.sql
@@ -65,4 +92,66 @@ echo "upgrade fixture: applying consolidated migration $(basename "$consolidated
 psql_in < "$consolidated"
 
 psql_in < supabase/upgrade_fixture/assertions.sql
-echo "upgrade fixture: PASS"
+echo "upgrade fixture: PASS (0.15.0)"
+
+# =====================================================================
+# Fixture 2: populated 0.16.0 -> persist_queue_identity
+# =====================================================================
+start_container pgflow-upgrade-fixture-016
+
+echo "upgrade fixture 0.16.0: applying supabase baseline schema"
+psql_in < atlas/supabase-baseline-schema.sql
+
+echo "upgrade fixture 0.16.0: applying pgflow migrations up to 0.16.0 ($BASELINE_0_16)"
+apply_migrations_up_to "$BASELINE_0_16"
+
+echo "upgrade fixture 0.16.0: seeding populated 0.16.0 data"
+psql_in < supabase/upgrade_fixture/seed_0_16.sql
+
+persist_queue=$(ls supabase/migrations/*_pgflow_persist_queue_identity.sql)
+echo "upgrade fixture 0.16.0: applying migration $(basename "$persist_queue") (single transaction)"
+docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -X -q -1 -U postgres -d postgres < "$persist_queue"
+
+psql_in < supabase/upgrade_fixture/assertions_0_16.sql
+echo "upgrade fixture: PASS (0.16.0 backfill + runtime)"
+
+# =====================================================================
+# Fixture 3: conflicting 0.16.0 definitions -> migration rolls back atomically
+# =====================================================================
+start_container pgflow-upgrade-fixture-016-conflict
+
+echo "upgrade fixture conflict: applying supabase baseline schema"
+psql_in < atlas/supabase-baseline-schema.sql
+
+echo "upgrade fixture conflict: applying pgflow migrations up to 0.16.0 ($BASELINE_0_16)"
+apply_migrations_up_to "$BASELINE_0_16"
+
+echo "upgrade fixture conflict: seeding conflicting flow definitions"
+psql_in < supabase/upgrade_fixture/seed_0_16_conflict.sql
+
+echo "upgrade fixture conflict: applying migration $(basename "$persist_queue") (must fail and roll back)"
+if docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -X -q -1 -U postgres -d postgres < "$persist_queue" 2>/dev/null; then
+  echo "upgrade fixture conflict: migration unexpectedly succeeded on conflicting definitions" >&2
+  exit 1
+fi
+
+# The failed single-transaction migration must leave the database unchanged:
+# no queue_name column, conflicting flows intact.
+psql_in <<'SQL'
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'pgflow' and table_name = 'steps' and column_name = 'queue_name'
+  ) then
+    raise exception 'upgrade fixture conflict: steps.queue_name exists after a failed migration';
+  end if;
+
+  if (select count(*) from pgflow.flows where flow_slug in ('MyConflict', 'myconflict')) <> 2 then
+    raise exception 'upgrade fixture conflict: seeded flows were modified by the failed migration';
+  end if;
+end $$;
+select 'PASS: conflict migration rolled back atomically' as result;
+SQL
+
+echo "upgrade fixture: PASS (0.16.0 conflict rollback)"

@@ -20,6 +20,9 @@ export type { Json };
  * Note: flow_input is nullable because start_tasks only includes it for root non-map steps.
  * For dependent and map steps, flow_input is NULL to avoid data duplication.
  * Workers can access the original flow input via ctx.flowInput (lazy loaded).
+ *
+ * msg_id is an exact decimal string: PGMQ message ids are queue-scoped bigints
+ * that can exceed the JavaScript safe integer range (#650).
  */
 export type StepTaskRecord<TFlow extends AnyFlow> = {
   [StepSlug in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
@@ -28,7 +31,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     step_slug: StepSlug;
     task_index: number;
     input: Simplify<StepInput<TFlow, StepSlug>>;
-    msg_id: number;
+    msg_id: string;
     flow_input: ExtractFlowInput<TFlow> | null;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
@@ -43,9 +46,12 @@ export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug' |
 
 /**
  * Record representing a message from queue polling
+ *
+ * msg_id is an exact decimal string: PGMQ message ids are queue-scoped
+ * bigints that can exceed the JavaScript safe integer range (#650).
  */
 export type MessageRecord = {
-  msg_id: number;
+  msg_id: string;
   read_ct: number;
   enqueued_at: string;
   vt: string;
@@ -84,13 +90,17 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
    * Starts tasks for given message IDs (phase 2 of two-phase approach)
    * @param flowSlug - The flow slug to start tasks from
-   * @param msgIds - Array of message IDs from readMessages
+   * @param msgIds - Array of message IDs (exact decimal strings) from readMessages
    * @param workerId - ID of the worker starting the tasks
+   * @param queueName - The queue that was actually polled; claims match the
+   *   persisted (queue_name, message_id) identity. Optional: defaults to the
+   *   flow's normalized default queue (#650).
    */
   startTasks(
     flowSlug: string,
-    msgIds: number[],
-    workerId: string
+    msgIds: string[],
+    workerId: string,
+    queueName?: string
   ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**

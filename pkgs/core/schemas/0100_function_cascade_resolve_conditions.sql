@@ -19,7 +19,7 @@ DECLARE
   v_processed_count int;
   v_run_transitioned boolean;
   v_flow_slug text;
-  v_cancelled_message_ids bigint[];
+  v_archived_queues int;
 BEGIN
   -- ==========================================
   -- GUARD: Early return if run is already terminal
@@ -158,24 +158,27 @@ BEGIN
         );
 
         -- Terminalize every unfinished task across all branches as cancelled,
-        -- capturing their message ids for archival below. Lock-order invariant:
-        -- always lock/update step_tasks before PGMQ queue rows.
+        -- then archive the messages batched per stored queue route (#650).
+        -- Lock-order invariant: always lock/update step_tasks before PGMQ
+        -- queue rows; the archive reads the terminalized rows through the CTE.
         WITH cancelled_tasks AS (
           UPDATE pgflow.step_tasks AS task
           SET status = 'cancelled'
           WHERE task.run_id = cascade_resolve_conditions.run_id
             AND task.status IN ('queued', 'started')
-          RETURNING task.message_id
+          RETURNING task.message_id, task.queue_name
+        ),
+        archived_messages AS (
+          SELECT pgmq.archive(
+            pgflow._effective_queue_name(ct.queue_name),
+            ARRAY_AGG(ct.message_id)
+          )
+          FROM cancelled_tasks ct
+          WHERE ct.message_id IS NOT NULL
+          GROUP BY ct.queue_name
         )
-        SELECT ARRAY_AGG(ct.message_id) INTO v_cancelled_message_ids
-        FROM cancelled_tasks ct
-        WHERE ct.message_id IS NOT NULL;
-
-        -- Archive the cancelled task messages captured above (only after their
-        -- task rows are terminalized)
-        IF v_cancelled_message_ids IS NOT NULL THEN
-          PERFORM pgmq.archive(v_first_fail.flow_slug, v_cancelled_message_ids);
-        END IF;
+        SELECT COUNT(*)::int INTO v_archived_queues
+        FROM archived_messages;
       END IF;
 
       RETURN false;

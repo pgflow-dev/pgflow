@@ -75,6 +75,7 @@ message_batches AS (
     started_step.flow_slug,
     started_step.run_id,
     started_step.step_slug,
+    step.queue_name,
     COALESCE(step.opt_start_delay, 0) as delay,
     array_agg(
       jsonb_build_object(
@@ -91,31 +92,41 @@ message_batches AS (
     AND step.step_slug = started_step.step_slug
   -- Generate task indices from 0 to initial_tasks-1
   CROSS JOIN LATERAL generate_series(0, started_step.initial_tasks - 1) AS task_idx(task_index)
-  GROUP BY started_step.flow_slug, started_step.run_id, started_step.step_slug, step.opt_start_delay
+  GROUP BY started_step.flow_slug, started_step.run_id, started_step.step_slug, step.queue_name, step.opt_start_delay
 ),
 -- ---------- Send messages to queue ----------
--- Uses batch sending for performance with large arrays
+-- Uses batch sending for performance with large arrays.
+-- Messages go through the step's persisted queue route, resolved to the
+-- spelling listed in pgmq (#650).
 sent_messages AS (
   SELECT
     mb.flow_slug,
     mb.run_id,
     mb.step_slug,
+    mb.queue_name,
     task_indices.task_index,
     msg_ids.msg_id
   FROM message_batches mb
   CROSS JOIN LATERAL unnest(mb.task_indices) WITH ORDINALITY AS task_indices(task_index, idx_ord)
-  CROSS JOIN LATERAL pgmq.send_batch(mb.flow_slug, mb.messages, mb.delay) WITH ORDINALITY AS msg_ids(msg_id, msg_ord)
+  CROSS JOIN LATERAL pgmq.send_batch(
+    pgflow._effective_queue_name(mb.queue_name),
+    mb.messages,
+    mb.delay
+  ) WITH ORDINALITY AS msg_ids(msg_id, msg_ord)
   WHERE task_indices.idx_ord = msg_ids.msg_ord
 )
 
 -- ==========================================
 -- PHASE 3: RECORD TASKS IN DATABASE
 -- ==========================================
-INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
+-- The task stores the step's queue_name snapshot; runtime message operations
+-- use that snapshot, never a queue reconstructed from flow_slug (#650).
+INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, queue_name, task_index, message_id)
 SELECT
   sent_messages.flow_slug,
   sent_messages.run_id,
   sent_messages.step_slug,
+  sent_messages.queue_name,
   sent_messages.task_index,
   sent_messages.msg_id
 FROM sent_messages;

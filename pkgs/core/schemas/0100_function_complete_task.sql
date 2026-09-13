@@ -14,7 +14,7 @@ declare
   v_dependent_map_slug text;
   v_run_record pgflow.runs%ROWTYPE;
   v_step_record pgflow.step_states%ROWTYPE;
-  v_violation_archived_ids bigint[];
+  v_violation_archived_queues int;
 begin
 
 -- ==========================================
@@ -68,16 +68,13 @@ END IF;
 -- If the step is not in 'started' state, this is a late callback.
 -- Do not mutate step_states or runs, archive message, return task row.
 IF v_step_record.status != 'started' THEN
-  -- Archive the task message if present (prevents stuck work)
-  PERFORM pgmq.archive(
-    v_run_record.flow_slug,
-    st.message_id
-  )
-  FROM pgflow.step_tasks st
-  WHERE st.run_id = complete_task.run_id
-    AND st.step_slug = complete_task.step_slug
-    AND st.task_index = complete_task.task_index
-    AND st.message_id IS NOT NULL;
+  -- Archive the task message if present (prevents stuck work), through the
+  -- task's stored queue snapshot (#650)
+  PERFORM pgflow._archive_task_message(
+    complete_task.run_id,
+    complete_task.step_slug,
+    complete_task.task_index
+  );
   -- Return the current task row without any mutations
   RETURN QUERY SELECT * FROM pgflow.step_tasks
     WHERE pgflow.step_tasks.run_id = complete_task.run_id
@@ -171,37 +168,43 @@ IF v_dependent_map_slug IS NOT NULL THEN
     false
   );
 
-  -- Terminalize every other unfinished task as cancelled, capturing their
-  -- message ids for archival below. Lock-order invariant: always lock/update
-  -- step_tasks before PGMQ queue rows. The culprit task is already terminal
-  -- (failed above), so it is excluded from the cancellation set.
+  -- Terminalize every other unfinished task as cancelled, then archive the
+  -- culprit and cancelled messages batched per stored queue route (#650).
+  -- Lock-order invariant: always lock/update step_tasks before PGMQ queue
+  -- rows; the archive reads the terminalized rows through the CTE.
+  -- The culprit task is already terminal (failed above), so it is excluded
+  -- from the cancellation set.
   WITH cancelled_tasks AS (
     UPDATE pgflow.step_tasks AS task
     SET status = 'cancelled'
     WHERE task.run_id = complete_task.run_id
       AND task.status IN ('queued', 'started')
-    RETURNING task.message_id
+    RETURNING task.message_id, task.queue_name
   ),
   culprit_task AS (
     -- Terminal culprit row: safe to read for its message id after terminalization
-    SELECT st.message_id
+    SELECT st.message_id, st.queue_name
     FROM pgflow.step_tasks st
     WHERE st.run_id = complete_task.run_id
       AND st.step_slug = complete_task.step_slug
       AND st.task_index = complete_task.task_index
       AND st.message_id IS NOT NULL
-  )
-  SELECT ARRAY_AGG(ids.message_id) INTO v_violation_archived_ids
-  FROM (
-    SELECT message_id FROM culprit_task
+  ),
+  terminal_messages AS (
+    SELECT message_id, queue_name FROM culprit_task
     UNION ALL
-    SELECT message_id FROM cancelled_tasks WHERE message_id IS NOT NULL
-  ) ids;
-
-  -- Archive the culprit and cancelled task messages (only after their task rows are terminalized)
-  IF v_violation_archived_ids IS NOT NULL THEN
-    PERFORM pgmq.archive(v_run_record.flow_slug, v_violation_archived_ids);
-  END IF;
+    SELECT message_id, queue_name FROM cancelled_tasks WHERE message_id IS NOT NULL
+  ),
+  archived_messages AS (
+    SELECT pgmq.archive(
+      pgflow._effective_queue_name(tm.queue_name),
+      ARRAY_AGG(tm.message_id)
+    )
+    FROM terminal_messages tm
+    GROUP BY tm.queue_name
+  )
+  SELECT COUNT(*)::int INTO v_violation_archived_queues
+  FROM archived_messages;
 
   -- Return the failed task row (API contract: always return task row)
   RETURN QUERY
@@ -379,12 +382,10 @@ IF v_step_state.status = 'completed' THEN
   IF NOT pgflow.cascade_resolve_conditions(complete_task.run_id) THEN
     -- Run was failed due to a condition with when_unmet='fail'
     -- Archive the current task's message before returning
-    PERFORM pgmq.archive(
-      (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id),
-      (SELECT st.message_id FROM pgflow.step_tasks st
-       WHERE st.run_id = complete_task.run_id
-         AND st.step_slug = complete_task.step_slug
-         AND st.task_index = complete_task.task_index)
+    PERFORM pgflow._archive_task_message(
+      complete_task.run_id,
+      complete_task.step_slug,
+      complete_task.task_index
     );
     RETURN QUERY SELECT * FROM pgflow.step_tasks
       WHERE pgflow.step_tasks.run_id = complete_task.run_id
@@ -399,18 +400,18 @@ IF v_step_state.status = 'completed' THEN
 END IF;
 
 -- ---------- Archive completed task message ----------
--- Move message from active queue to archive table
+-- Move message from active queue to archive table, through the task's
+-- stored queue snapshot (#650)
 PERFORM (
   WITH completed_tasks AS (
-    SELECT r.flow_slug, st.message_id
+    SELECT st.queue_name, st.message_id
     FROM pgflow.step_tasks st
-    JOIN pgflow.runs r ON st.run_id = r.run_id
     WHERE st.run_id = complete_task.run_id
       AND st.step_slug = complete_task.step_slug
       AND st.task_index = complete_task.task_index
       AND st.status = 'completed'
   )
-  SELECT pgmq.archive(ct.flow_slug, ct.message_id)
+  SELECT pgmq.archive(pgflow._effective_queue_name(ct.queue_name), ct.message_id)
   FROM completed_tasks ct
   WHERE EXISTS (SELECT 1 FROM completed_tasks)
 );

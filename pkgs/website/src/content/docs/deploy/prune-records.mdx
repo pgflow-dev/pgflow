@@ -31,7 +31,7 @@ When a run (completed or failed) exceeds the retention period, **ALL** associate
 **Deleted:**
 - Run records (`pgflow.runs`)
 - Step states and tasks - all statuses (`pgflow.step_states`, `pgflow.step_tasks`)
-- PGMQ messages - active queue (`pgmq.q_{flow_slug}`) and archived (`pgmq.a_{flow_slug}`)
+- PGMQ messages - active queues addressed through each task's stored queue name (`step_tasks.queue_name`) and archive tables through persisted queue routes (`pgflow.steps.queue_name`)
 - Inactive workers (based on `last_heartbeat_at`)
 
 **Preserved:**
@@ -70,6 +70,10 @@ Use pg_cron to schedule automated pruning. **Run during low-traffic periods** as
 
 <Aside type="caution">
 This function is not yet included in default pgflow migrations. Install it manually by running the [pruning function SQL](#the-pruning-function) using psql or Supabase Studio.
+</Aside>
+
+<Aside type="note" title="Updating an installed copy">
+pgflow 0.17.0 changed how the helper addresses PGMQ: message cleanup now goes through each task's stored queue snapshot (`step_tasks.queue_name`) and archive cleanup through persisted definition routes. If you installed an earlier copy, replace it by re-running the SQL below (the `create or replace function` statement overwrites the old body). If you customized your copy, adapt the highlighted changes yourself: group message cleanup by `step_tasks.queue_name`, resolve names through `pgflow._effective_queue_name()`, and walk archive tables from `pgflow.steps.queue_name`.
 </Aside>
 
 ### 2. Setup pg_cron schedule

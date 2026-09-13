@@ -27,6 +27,9 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   // TODO: Temporary field for supplier pattern until we refactor initialization
   private _workerId?: string;
   private _edgeFunctionName?: string;
+  // Queue actually polled: canonical spelling, or the original mixed-case
+  // spelling for queues created by older releases (#650)
+  private _polledQueueName?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
 
@@ -47,6 +50,17 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
 
     // Compile/verify the flow before any registration write
     const compilationStatus = await this.ensureFlowCompiled();
+
+    // Resolve the physical spelling of the canonical queue name after the
+    // flow (and its queue) exist. Falls back to the canonical name when the
+    // queue is not listed; polling then behaves as before (#650).
+    const resolved = await this.queries.resolveQueueName(this.queueName);
+    this._polledQueueName = resolved ?? this.queueName;
+    if (resolved && resolved !== this.queueName) {
+      this.logger.info(
+        `Queue '${this.queueName}' is listed as '${resolved}'; polling the original spelling`
+      );
+    }
 
     // Register this edge function for monitoring by ensure_workers() cron.
     const startMode = workerBootstrap.startMode ?? 'http';
@@ -112,7 +126,16 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   }
 
   get queueName() {
-    return this.flow.slug;
+    // Canonical queue identity: lower(flow slug) (#650)
+    return this.flow.slug.toLowerCase();
+  }
+
+  /**
+   * The queue this worker actually polls (original spelling for legacy
+   * mixed-case queues). Only valid after acknowledgeStart().
+   */
+  get polledQueueName() {
+    return this._polledQueueName ?? this.queueName;
   }
 
   // TODO: Temporary getter for supplier pattern until we refactor initialization

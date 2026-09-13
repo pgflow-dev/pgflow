@@ -130,6 +130,25 @@ Where:
 
 The original timestamp allows pgflow to search for and detect which migrations have already been installed, while the new timestamp prefix ensures Supabase can apply the migration without timestamp ordering errors.
 
+## Persist queue identity (0.17.0)
+
+pgflow 0.17.0 stores each step's and task's physical queue identity in the database: `pgflow.steps.queue_name` and `pgflow.step_tasks.queue_name`, always the canonical lowercase `lower(flow_slug)` for now. A task's message identity is `(queue_name, message_id)` instead of `message_id` alone, so the same message id in two queues can never collide.
+
+This is a maintenance upgrade from 0.16.0: no online-upgrade guarantee, no mixed-version rolling upgrade. Follow the fenced procedure:
+
+1. **Stop and drain workers**: disable each pgflow worker (edge function or process worker) and wait until no tasks are `started`.
+2. **Pause writers**: pause flow producers (`pgflow.start_flow` callers), definition writes (worker startups, `create_flow`/`add_step`), and maintenance/recovery jobs (`requeue_stalled_tasks`, the pruning cron) so no queue operations run during the migration.
+3. **Apply the migration** through Supabase's migration runner (`npx supabase migrations up`, or your project's migration pipeline). The migration is transactional and uses bounded lock waits. If your database contains conflicting data (two flows whose slugs differ only by case, duplicate `(queue, message_id)` pairs, or queue names longer than PGMQ's limit), it fails and leaves the database unchanged. Resolve the conflict manually (pick one spelling, deduplicate, or rename before migrating); pgflow never renames or deletes definitions for you.
+4. **Update the pruning helper** if you installed the optional `pgflow.prune_data_older_than()`: replace it with the current version from [Prune Old Data](/deploy/prune-records/). Adapt any customized copies yourself.
+5. **Deploy matching packages**: update the whole pgflow package set to the same version (npm packages and the JSR edge-worker import).
+6. **Resume**: re-enable workers, producers, and maintenance jobs.
+
+Queues created by older releases keep their original mixed-case spelling in pgmq and continue to work through it; pgflow resolves the spelling through `pgmq.list_queues()` and never creates a second metadata entry.
+
+<Aside type="caution" title="pgflow manages its queues">
+pgflow owns the lifecycle of the queues it creates: it provisions the default queue when a flow is compiled, dispatches and archives through the stored queue identity, and drops the queue when the flow is deleted. Applications must not send messages directly to pgflow queues and must not create, replace, or alter them. Send work through `pgflow.start_flow()`; protection against concurrent external PGMQ changes is outside pgflow's supported boundary.
+</Aside>
+
 ## Remove manual flow compilation
 
 pgflow 0.16.0 removed `compileFlow()`, ControlPlane, `pgflow compile`, and the `FlowWorkerConfig.compilation` option, and replaced `pgflow.ensure_flow_compiled(text, jsonb, boolean)` with a two-argument startup-only signature. Old workers cannot start after the database migration.

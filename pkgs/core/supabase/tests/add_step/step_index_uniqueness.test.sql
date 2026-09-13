@@ -19,8 +19,8 @@ select is(
 -- Test: Cannot have two steps with the same index in the same flow
 select throws_ok(
   $$ 
-  INSERT INTO pgflow.steps (flow_slug, step_slug, step_index) 
-  VALUES ('test_flow', 'duplicate_index_step', 0)
+  INSERT INTO pgflow.steps (flow_slug, step_slug, queue_name, step_index)
+  VALUES ('test_flow', 'duplicate_index_step', 'test_flow', 0)
   $$,
   '23505', -- Unique violation error code
   'duplicate key value violates unique constraint "steps_flow_slug_step_index_key"',
