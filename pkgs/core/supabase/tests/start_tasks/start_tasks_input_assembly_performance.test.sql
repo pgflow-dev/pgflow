@@ -78,7 +78,7 @@ BEGIN
       'input_perf_flow',
       v_msg_ids,
       '11111111-1111-1111-1111-111111111111'::uuid
-    );
+    , 'input_perf_flow');
     v_end_time := clock_timestamp();
 
     v_current_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;

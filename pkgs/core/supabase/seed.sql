@@ -111,12 +111,15 @@ as $$
   ids AS (
     SELECT array_agg(msg_id) AS msg_ids FROM msgs
   )
-  -- 4. start the tasks and return the resulting rows
+  -- 4. start the tasks and return the resulting rows. The claim receives
+  -- the queue this helper read from (canonical lower(flow_slug), matching
+  -- the tasks' stored queue snapshots #650).
   SELECT *
     FROM pgflow.start_tasks(
            flow_slug,
            (SELECT msg_ids FROM ids),
-           (SELECT wid FROM w)
+           (SELECT wid FROM w),
+           lower(flow_slug)
          );
 $$;
 

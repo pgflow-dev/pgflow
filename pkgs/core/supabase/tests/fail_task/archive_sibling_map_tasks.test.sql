@@ -30,12 +30,12 @@ select pgflow_tests.ensure_worker('test_map_fail') as test_worker_id \gset
 -- Start task 0 (will be the failing task)
 select message_id as msg_0 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_step' and task_index = 0 \gset
-select pgflow.start_tasks('test_map_fail', array[:'msg_0'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('test_map_fail', array[:'msg_0'::bigint], :'test_worker_id'::uuid, 'test_map_fail');
 
 -- Start task 1 (unfinished started sibling)
 select message_id as msg_1 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_step' and task_index = 1 \gset
-select pgflow.start_tasks('test_map_fail', array[:'msg_1'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('test_map_fail', array[:'msg_1'::bigint], :'test_worker_id'::uuid, 'test_map_fail');
 
 -- Task 2 stays queued
 

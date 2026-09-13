@@ -21,7 +21,7 @@ started_tasks as (
     'single_task',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'single_task')
 )
 select is(
   (select task_index from started_tasks),
@@ -50,7 +50,7 @@ started_tasks as (
     'map_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  ) order by task_index
+  , 'map_flow') order by task_index
 )
 select is(
   array_agg(task_index order by task_index),
@@ -79,7 +79,7 @@ started_tasks as (
     'map_five',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  ) order by task_index
+  , 'map_five') order by task_index
 )
 select is(
   array_agg(task_index order by task_index),
@@ -130,7 +130,7 @@ started_tasks as (
     'map_chain',
     (select ids from msg_ids),
     '22222222-2222-2222-2222-222222222222'::uuid
-  ) order by task_index
+  , 'map_chain') order by task_index
 )
 select is(
   array_agg(task_index order by task_index),
@@ -171,7 +171,7 @@ started_tasks as (
     'sequential',
     (select ids from msg_ids),
     '33333333-3333-3333-3333-333333333333'::uuid
-  )
+  , 'sequential')
 )
 select is(
   (select task_index from started_tasks),

@@ -41,7 +41,7 @@ select is(
     'large_array_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'large_array_flow')),
   row('1'::jsonb, 0),
   'Task at index 0 should receive element 1 with task_index = 0'
 );
@@ -55,7 +55,7 @@ select is(
     'large_array_flow',
     ARRAY[:'msg_id_49'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'large_array_flow')),
   '50'::jsonb,
   'Task at index 49 should receive element 50'
 );
@@ -69,7 +69,7 @@ select is(
     'large_array_flow',
     ARRAY[:'msg_id_99'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'large_array_flow')),
   '100'::jsonb,
   'Task at index 99 should receive element 100'
 );
@@ -83,7 +83,7 @@ select is(
     'large_array_flow',
     ARRAY[:'msg_id_149'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'large_array_flow')),
   row('150'::jsonb, 149),
   'Task at index 149 should receive element 150 with task_index = 149'
 );

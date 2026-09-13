@@ -11,12 +11,12 @@ export interface IPoller<IMessage> {
 }
 
 export interface IExecutor {
-  get msgId(): number;
+  get msgId(): string;
   execute(): Promise<unknown>;
 }
 
 export interface IMessage {
-  msg_id: number;
+  msg_id: string;
 }
 
 export interface ILifecycle {

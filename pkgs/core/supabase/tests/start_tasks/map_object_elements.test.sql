@@ -81,7 +81,7 @@ select is(
     'object_elements_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'object_elements_flow')),
   'Alice',
   'Task 0 should receive complete Alice object'
 );
@@ -91,7 +91,7 @@ select is(
     'object_elements_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'object_elements_flow')),
   'light',
   'Task 1 should receive complete Bob object with nested preferences'
 );
@@ -101,7 +101,7 @@ select is(
     'object_elements_flow',
     ARRAY[:'msg_id_2'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'object_elements_flow')),
   'null'::jsonb,
   'Task 2 should receive Charlie object with null metadata'
 );
@@ -117,7 +117,7 @@ select is(
     'object_elements_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'object_elements_flow')),
   2,
   'Task 0 object should have tags array with 2 elements'
 );

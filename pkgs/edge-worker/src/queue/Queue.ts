@@ -42,7 +42,7 @@ export class Queue<TPayload extends Json> {
     `;
   }
 
-  async archive(msgId: number): Promise<void> {
+  async archive(msgId: string): Promise<void> {
     this.logger.debug(
       `Archiving message ${msgId} from queue '${this.queueName}'`
     );
@@ -51,7 +51,7 @@ export class Queue<TPayload extends Json> {
     `;
   }
 
-  async archiveBatch(msgIds: number[]): Promise<void> {
+  async archiveBatch(msgIds: string[]): Promise<void> {
     this.logger.debug(
       `Archiving ${msgIds.length} messages from queue '${this.queueName}'`
     );
@@ -99,7 +99,7 @@ export class Queue<TPayload extends Json> {
    * The only change made is now() replaced with clock_timestamp().
    */
   async setVt(
-    msgId: number,
+    msgId: string,
     vtOffsetSeconds: number
   ): Promise<PgmqMessageRecord<TPayload>> {
     this.logger.debug(

@@ -112,7 +112,10 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   }
 
   get queueName() {
-    return this.flow.slug;
+    // Canonical queue identity: lower(flow slug) (#650). PGMQ message
+    // operations normalize names themselves, so polling and claiming address
+    // mixed-case physical queues through the canonical name directly.
+    return this.flow.slug.toLowerCase();
   }
 
   // TODO: Temporary getter for supplier pattern until we refactor initialization

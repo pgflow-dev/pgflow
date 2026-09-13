@@ -26,7 +26,7 @@ where run_id = :'run_id' and step_slug = 'step2' limit 1 \gset
 select pgflow_tests.ensure_worker('test_flow');
 
 -- Start both tasks (simulating workers picking them up)
-select pgflow.start_tasks('test_flow', ARRAY[:msg1, :msg2]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('test_flow', ARRAY[:msg1, :msg2]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid, 'test_flow');
 
 -- Fail step2 which will fail the entire run (max_attempts=1)
 select pgflow.fail_task(:'run_id', 'step2', 0, 'Simulated failure');

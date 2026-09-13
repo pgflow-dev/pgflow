@@ -23,7 +23,7 @@ select pgflow.start_tasks(
   'status_flow',
   (select ids from msg_ids), 
   '11111111-1111-1111-1111-111111111111'::uuid
-);
+, 'status_flow');
 
 -- TEST: Task status should be 'started' after start_tasks
 select is(

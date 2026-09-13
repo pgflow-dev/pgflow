@@ -47,7 +47,7 @@ with started as (
     'mixeddup',
     (select ids from mixeddup_msgs),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'mixeddup')
 )
 select is(
   (select count(*)::int from started),
@@ -70,7 +70,7 @@ with started as (
     'mixeddup',
     (select ids from mixeddup_msgs),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'mixeddup')
 )
 select is(
   (select count(*)::int from started
@@ -104,7 +104,7 @@ select is(
   (select count(*)::int from pgflow.start_tasks(
     'mixeddup',
     (select array_agg(msg_id) from mixeddup_dup_msg where msg_id is not null),
-    '11111111-1111-1111-1111-111111111111'::uuid)),
+    '11111111-1111-1111-1111-111111111111'::uuid, 'mixeddup')),
   0,
   'repeatedly visible started message returns no task'
 );

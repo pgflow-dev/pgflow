@@ -91,7 +91,7 @@ BEGIN
   FOR i IN 1..(v_array_size - 1) LOOP
     SELECT * INTO v_msg FROM pgmq.read('bench_map_single', 1, 1) LIMIT 1;
 
-    PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid);
+    PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid, 'bench_map_single');
 
     SELECT task_index INTO v_task_index
     FROM pgflow.step_tasks WHERE message_id = v_msg.msg_id;
@@ -102,7 +102,7 @@ BEGIN
 
   -- Time the FINAL complete_task (triggers aggregation in OLD code, stores in NEW code)
   SELECT * INTO v_msg FROM pgmq.read('bench_map_single', 1, 1) LIMIT 1;
-  PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid);
+  PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid, 'bench_map_single');
   SELECT task_index INTO v_task_index FROM pgflow.step_tasks WHERE message_id = v_msg.msg_id;
 
   v_start_time := clock_timestamp();
@@ -140,7 +140,7 @@ BEGIN
 
     v_start_time := clock_timestamp();
 
-    PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid);
+    PERFORM pgflow.start_tasks('bench_map_single', ARRAY[v_msg.msg_id], '11111111-1111-1111-1111-111111111111'::uuid, 'bench_map_single');
 
     v_end_time := clock_timestamp();
     v_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;
@@ -185,7 +185,7 @@ BEGIN
 
   FOR i IN 1..v_array_size LOOP
     SELECT * INTO v_msg FROM pgmq.read('bench_map_map', 1, 1) LIMIT 1;
-    PERFORM pgflow.start_tasks('bench_map_map', ARRAY[v_msg.msg_id], '22222222-2222-2222-2222-222222222222'::uuid);
+    PERFORM pgflow.start_tasks('bench_map_map', ARRAY[v_msg.msg_id], '22222222-2222-2222-2222-222222222222'::uuid, 'bench_map_map');
     SELECT task_index INTO v_task_index FROM pgflow.step_tasks WHERE message_id = v_msg.msg_id;
     PERFORM pgflow.complete_task(v_run_id, 'producer', v_task_index,
       jsonb_build_object('idx', v_task_index, 'value', i * 10));
@@ -217,7 +217,7 @@ BEGIN
 
     v_start_time := clock_timestamp();
 
-    PERFORM pgflow.start_tasks('bench_map_map', v_msg_ids, '22222222-2222-2222-2222-222222222222'::uuid);
+    PERFORM pgflow.start_tasks('bench_map_map', v_msg_ids, '22222222-2222-2222-2222-222222222222'::uuid, 'bench_map_map');
 
     v_end_time := clock_timestamp();
     v_ms := EXTRACT(EPOCH FROM (v_end_time - v_start_time)) * 1000;

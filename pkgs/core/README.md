@@ -288,7 +288,8 @@ SELECT * FROM pgmq.read_with_poll(
 SELECT * FROM pgflow.start_tasks(
   flow_slug => 'analyze_website',
   msg_ids => ARRAY[101, 102, 103], -- message IDs from phase 1
-  worker_id => '550e8400-e29b-41d4-a716-446655440000'::uuid
+  worker_id => '550e8400-e29b-41d4-a716-446655440000'::uuid,
+  queue_name => 'analyze_website' -- the queue's canonical name: lower(flow_slug), the exact spelling tasks store (#650)
 );
 ```
 

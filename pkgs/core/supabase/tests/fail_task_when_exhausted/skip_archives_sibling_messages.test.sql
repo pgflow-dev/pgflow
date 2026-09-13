@@ -33,13 +33,13 @@ select pgflow_tests.ensure_worker('skip_archive_test') as test_worker_id \gset
 select message_id as msg_0 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_a' and task_index = 0 \gset
 
-select pgflow.start_tasks('skip_archive_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('skip_archive_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid, 'skip_archive_test');
 
 -- Get message_id for task 1
 select message_id as msg_1 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_a' and task_index = 1 \gset
 
-select pgflow.start_tasks('skip_archive_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('skip_archive_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid, 'skip_archive_test');
 
 -- Verify: 2 started, 1 queued
 select is(

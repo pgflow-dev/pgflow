@@ -53,9 +53,10 @@ export async function readAndStart<TFlow extends AnyFlow>(
     return [];
   }
 
-  // 4. Start the tasks and return the resulting rows
+  // 4. Start the tasks and return the resulting rows. The claim receives the
+  // queue this helper read from (the canonical lowercase flow slug)
   const msgIds = messages.map(m => m.msg_id);
-  const tasks = await sqlClient.startTasks(flowSlug, msgIds, workerId);
+  const tasks = await sqlClient.startTasks(flowSlug, msgIds, workerId, flowSlug.toLowerCase());
 
   return tasks;
 }

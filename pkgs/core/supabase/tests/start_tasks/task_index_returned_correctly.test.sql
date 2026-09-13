@@ -62,7 +62,7 @@ started_tasks as (
     'test_task_index',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'test_task_index')
 )
 -- TEST: All returned task_index values match the expected indices
 select is(

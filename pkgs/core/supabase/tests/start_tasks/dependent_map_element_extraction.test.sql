@@ -89,7 +89,7 @@ select is(
     'dep_map_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'dep_map_flow')),
   '10'::jsonb,
   'Task 0 should receive first element (10) from producer_step'
 );
@@ -99,7 +99,7 @@ select is(
     'dep_map_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'dep_map_flow')),
   '20'::jsonb,
   'Task 1 should receive second element (20) from producer_step'
 );
@@ -109,7 +109,7 @@ select is(
     'dep_map_flow',
     ARRAY[:'msg_id_3'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'dep_map_flow')),
   '40'::jsonb,
   'Task 3 should receive fourth element (40) from producer_step'
 );

@@ -17,8 +17,8 @@ DECLARE
   v_differences text[];
   v_is_local boolean;
 BEGIN
-  -- Generate lock key from flow_slug (deterministic hash)
-  v_lock_key := hashtext(ensure_flow_compiled.flow_slug);
+  -- Generate lock key from the normalized flow identity (deterministic hash)
+  v_lock_key := hashtext(lower(ensure_flow_compiled.flow_slug));
 
   -- Acquire transaction-level advisory lock
   -- Serializes concurrent compilation attempts for same flow

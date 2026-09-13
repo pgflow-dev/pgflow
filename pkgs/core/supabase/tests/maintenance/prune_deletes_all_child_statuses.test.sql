@@ -58,11 +58,12 @@ set
   failed_at = NULL
 where flow_slug = 'status_test_flow' and step_slug = 'step2';
 
-insert into pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, status, queued_at, started_at)
+insert into pgflow.step_tasks (flow_slug, run_id, step_slug, queue_name, task_index, status, queued_at, started_at)
 select
   'status_test_flow',
   run_id,
   'step2',
+  'status_test_flow',
   0,
   'started',
   now() - interval '36 days',

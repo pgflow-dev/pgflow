@@ -28,12 +28,12 @@ select pgflow_tests.ensure_worker('late_complete_test') as test_worker_id \gset
 select message_id as msg_0 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_a' and task_index = 0 \gset
 
-select pgflow.start_tasks('late_complete_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('late_complete_test', array[:'msg_0'::bigint], :'test_worker_id'::uuid, 'late_complete_test');
 
 select message_id as msg_1 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'map_a' and task_index = 1 \gset
 
-select pgflow.start_tasks('late_complete_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid);
+select pgflow.start_tasks('late_complete_test', array[:'msg_1'::bigint], :'test_worker_id'::uuid, 'late_complete_test');
 
 -- Fail map_a[0] to trigger skip (max_attempts=0, when_exhausted='skip')
 -- This makes the step transition to 'skipped'

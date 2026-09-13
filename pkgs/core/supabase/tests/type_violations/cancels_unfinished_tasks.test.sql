@@ -78,11 +78,11 @@ select :'test_run_id'::uuid as run_id into temporary test_run_ids;
 -- Start branch1 and branch2 (started siblings); branch3 stays queued
 select message_id as msg_b1 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'branch1' \gset
-select pgflow.start_tasks('type_violation_cancel', array[:'msg_b1'::bigint], '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('type_violation_cancel', array[:'msg_b1'::bigint], '11111111-1111-1111-1111-111111111111'::uuid, 'type_violation_cancel');
 
 select message_id as msg_b2 from pgflow.step_tasks
 where run_id = :'test_run_id'::uuid and step_slug = 'branch2' \gset
-select pgflow.start_tasks('type_violation_cancel', array[:'msg_b2'::bigint], '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('type_violation_cancel', array[:'msg_b2'::bigint], '11111111-1111-1111-1111-111111111111'::uuid, 'type_violation_cancel');
 
 -- Trigger type violation by completing branch1 with a non-array (consumer_map expects array)
 select lives_ok(

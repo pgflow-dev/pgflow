@@ -85,6 +85,10 @@ create table pgflow.step_tasks (
   flow_slug text not null references pgflow.flows(flow_slug),
   run_id uuid not null references pgflow.runs(run_id),
   step_slug text not null,
+  -- Snapshot of steps.queue_name taken at task creation (#650).
+  -- Runtime code never changes this value; PGMQ message IDs are queue-scoped,
+  -- so a task's message identity is (queue_name, message_id).
+  queue_name text not null,
   message_id bigint,
   task_index int not null default 0,
   status text not null default 'queued',
@@ -117,10 +121,17 @@ create table pgflow.step_tasks (
   constraint completed_at_is_after_started_at check (
     completed_at is null or started_at is null or completed_at >= started_at
   ),
-  constraint failed_at_is_after_started_at check (failed_at is null or started_at is null or failed_at >= started_at)
+  constraint failed_at_is_after_started_at check (failed_at is null or started_at is null or failed_at >= started_at),
+  constraint queue_name_is_valid check (pgflow.is_valid_queue_name(queue_name))
 );
 
-create index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id);
+-- A message ID identifies at most one task per queue (#650).
+-- NULL message_ids (pre-dispatch rows) are not part of the identity.
+-- This index also serves queue-scoped message lookups for claims and pruning,
+-- replacing the former message_id-only index.
+create unique index if not exists idx_step_tasks_queue_message
+on pgflow.step_tasks (queue_name, message_id)
+where message_id is not null;
 create index if not exists idx_step_tasks_queued on pgflow.step_tasks (run_id, step_slug) where status = 'queued';
 create index if not exists idx_step_tasks_completed on pgflow.step_tasks (run_id, step_slug) where status = 'completed';
 create index if not exists idx_step_tasks_failed on pgflow.step_tasks (run_id, step_slug) where status = 'failed';

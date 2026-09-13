@@ -28,7 +28,7 @@ started_tasks as (
     'root_step_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'root_step_flow')
 )
 select is(
   (select flow_input from started_tasks),
@@ -69,7 +69,7 @@ started_tasks as (
     'dep_flow',
     (select ids from msg_ids),
     '22222222-2222-2222-2222-222222222222'::uuid
-  )
+  , 'dep_flow')
 )
 select is(
   (select flow_input from started_tasks),
@@ -97,7 +97,7 @@ started_tasks as (
     'root_map_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'root_map_flow')
 )
 select is(
   (select flow_input from started_tasks limit 1),
@@ -138,7 +138,7 @@ started_tasks as (
     'dep_map_flow',
     (select ids from msg_ids),
     '33333333-3333-3333-3333-333333333333'::uuid
-  )
+  , 'dep_map_flow')
 )
 select is(
   (select flow_input from started_tasks limit 1),
@@ -166,7 +166,7 @@ started_tasks as (
     'parallel_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'parallel_flow')
 )
 select ok(
   (select bool_and(flow_input = '{"batch": "test"}'::jsonb) from started_tasks),
@@ -195,7 +195,7 @@ started_tasks as (
     'mixed_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )
+  , 'mixed_flow')
 )
 select is(
   (select count(*)::int from started_tasks where flow_input is not null),

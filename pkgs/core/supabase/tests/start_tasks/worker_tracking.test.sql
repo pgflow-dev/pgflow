@@ -19,7 +19,7 @@ select pgflow.start_tasks(
   'simple',
   (select ids from msg_ids), 
   '00000000-0000-0000-0000-000000000001'::uuid
-);
+, 'simple');
 
 -- TEST: Task should be assigned to the worker
 select is(
@@ -38,7 +38,7 @@ select pgflow.start_tasks(
   'simple',
   (select ids from msg_ids), 
   '00000000-0000-0000-0000-000000000002'::uuid
-);
+, 'simple');
 
 -- TEST: Second task should be assigned to different worker
 select is(
@@ -53,7 +53,7 @@ select is(
     'simple',
     array[]::bigint[], 
     '00000000-0000-0000-0000-000000000001'::uuid
-  )),
+  , 'simple')),
   0,
   'start_tasks with empty array should return no tasks'
 );

@@ -243,7 +243,7 @@ All platforms provide these core resources:
 - **`ctx.rawMessage`** - Original pgmq message with metadata
   ```typescript
   interface PgmqMessageRecord<T> {
-    msg_id: number;
+    msg_id: string; // queue-scoped exact decimal string
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
@@ -256,7 +256,7 @@ All platforms provide these core resources:
     flow_slug: string;
     run_id: string;
     step_slug: string;
-    msg_id: number;
+    msg_id: string; // queue-scoped exact decimal string
   }
   ```
 - **`ctx.workerConfig`** - Resolved worker configuration with all defaults applied

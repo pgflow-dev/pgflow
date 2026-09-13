@@ -49,7 +49,7 @@ select is(
     'root_map_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'root_map_flow')),
   row('"apple"'::jsonb, 0),
   'Task 0 should receive first array element (apple) with task_index = 0'
 );
@@ -60,7 +60,7 @@ select is(
     'root_map_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'root_map_flow')),
   row('"banana"'::jsonb, 1),
   'Task 1 should receive second array element (banana) with task_index = 1'
 );
@@ -71,7 +71,7 @@ select is(
     'root_map_flow',
     ARRAY[:'msg_id_2'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  , 'root_map_flow')),
   row('"cherry"'::jsonb, 2),
   'Task 2 should receive third array element (cherry) with task_index = 2'
 );
