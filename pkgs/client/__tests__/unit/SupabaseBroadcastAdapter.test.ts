@@ -376,32 +376,6 @@ describe('SupabaseBroadcastAdapter', () => {
     });
   });
 
-  // NOTE: Reconnection logic tests have been moved to a separate file
-  // See SupabaseBroadcastAdapter.reconnect.test.ts for the tests using the new approach
-  describe('reconnection logic', () => {
-    // This is a placeholder to indicate the tests have been moved
-    test('has been moved to a separate file', () => {
-      expect(true).toBe(true);
-    });
-
-    // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
-
-    // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
-
-    // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
-
-    // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
-  });
-
-  // NOTE: Snapshot refresh tests have been moved to the reconnection test file
-  // See SupabaseBroadcastAdapter.reconnect.test.ts for the tests using the new approach
-  describe('snapshot refresh', () => {
-    // This is a placeholder to indicate the tests have been moved
-    test('has been moved to a separate file', () => {
-      expect(true).toBe(true);
-    });
-  });
-
   describe('data access methods', () => {
     test('fetchFlowDefinition queries flow and steps tables', async () => {
       const { client, mocks } = createMockClient();

@@ -68,8 +68,6 @@ deno-dist/
 # Output files
 *.out
 
-# Local Netlify folder
-.netlify
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 config.toml.backup

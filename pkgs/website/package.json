@@ -13,13 +13,11 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
-    "@astrojs/cloudflare": "^12.6.0",
     "@astrojs/react": "^4.3.0",
     "@astrojs/starlight": "^0.34.3",
     "@supabase/supabase-js": "^2.56.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
-    "@vercel/analytics": "^1.5.0",
     "astro": "^5.7.14",
     "astro-d2": "^0.8.0",
     "astro-robots-txt": "^1.0.0",
