@@ -252,7 +252,6 @@ Extended explanation with H3 headings.
 - [ ] Code blocks: proper language tags, `frame="none"` for bash
 - [ ] File name: kebab-case, action verb
 - [ ] Redirects if moving existing pages
-- [ ] No special characters (em-dash, curly quotes, etc.)
 - [ ] Correct terminology (pgflow not pgFlow, correct architecture terms)
 
 **Nice-to-have (context-dependent):**
@@ -260,12 +259,6 @@ Extended explanation with H3 headings.
 - [ ] Sequential steps: `<Steps>` (for tutorials)
 - [ ] Next steps: Cards/CardGrid (for longer docs)
 - [ ] Tone matches type (be helpful, not rigid)
-
-## Character Guidelines
-
-**Never use**: Em-dash (—), curly quotes/apostrophes ("" ' '), ellipsis (…), non-breaking spaces
-
-**Fix with**: `./scripts/replace-special-chars.sh <file_path>`
 
 ## Integration with Diátaxis
 
