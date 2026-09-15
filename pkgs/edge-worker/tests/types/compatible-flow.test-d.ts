@@ -1,5 +1,6 @@
-import { Flow as SupabaseFlow } from '@pgflow/dsl/supabase';
+import { Flow as SupabaseFlow, withStepQueues } from '@pgflow/dsl/supabase';
 import { EdgeWorker } from '../../src/EdgeWorker.js';
+import { Flow as RootFlow, withStepQueues as rootWithStepQueues } from '@pgflow/dsl';
 import type { Json } from '@pgflow/dsl';
 
 // Example 1: Flow using only platform resources - should work
@@ -33,6 +34,12 @@ interface ArrayItemDto {
   id: string;
   status: 'queued' | 'done';
 }
+
+// Root (npm) flow used for the plain-overload regression below
+const baseRootFlow = new RootFlow({ slug: 'base_root_flow' }).step(
+  { slug: 'a' },
+  () => ({ ok: true })
+);
 
 interface MappedItemDto {
   id: string;
@@ -185,3 +192,41 @@ EdgeWorker.start(interfaceDtoMapFlow);
 EdgeWorker.start(validFlow, {
   compilation: false,
 });
+
+// Example 10: Step-queued Supabase flows (#651) keep platform-resource
+// checks; stepSlug autocompletes from the wrapped flow's exact step union.
+const stepQueuedSupabaseFlow = withStepQueues(validFlow);
+
+// Separate entry points select separate steps; both compile without errors
+EdgeWorker.start(stepQueuedSupabaseFlow, { stepSlug: 'query' });
+EdgeWorker.startFlowWorker(stepQueuedSupabaseFlow, { stepSlug: 'notify' });
+
+// @ts-expect-error - unknown step slugs are rejected
+EdgeWorker.start(stepQueuedSupabaseFlow, { stepSlug: 'notAStep' });
+
+// @ts-expect-error - a step-queued flow requires its stepSlug
+EdgeWorker.start(stepQueuedSupabaseFlow, {});
+
+// @ts-expect-error - plain flows reject a supplied stepSlug
+EdgeWorker.start(validFlow, { stepSlug: 'query' });
+
+// @ts-expect-error - platform-resource checks are preserved through the wrapper
+EdgeWorker.start(withStepQueues(invalidFlow), { stepSlug: 'cache' });
+
+// Example 11: root (npm) step-queued flows get the same correlated overloads
+const rootStepQueuedFlow = rootWithStepQueues(
+  new RootFlow<{ text: string }>({ slug: 'root_step_flow' })
+    .step({ slug: 'classify' }, (flowInput) => ({ route: flowInput.text }))
+    .step({ slug: 'deliver', dependsOn: ['classify'] }, (deps) => ({
+      delivered: deps.classify.route,
+    }))
+);
+
+EdgeWorker.start(rootStepQueuedFlow, { stepSlug: 'classify' });
+EdgeWorker.startFlowWorker(rootStepQueuedFlow, { stepSlug: 'deliver' });
+
+// @ts-expect-error - root path: unknown step slugs are rejected too
+EdgeWorker.start(rootStepQueuedFlow, { stepSlug: 'nope' });
+
+// @ts-expect-error - root path: plain flows reject a supplied stepSlug
+EdgeWorker.start(baseRootFlow, { stepSlug: 'a' });

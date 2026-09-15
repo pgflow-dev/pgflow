@@ -46,3 +46,20 @@ export class Flow<
   S, D,
   TEnv
 > {}
+
+/* ---------- 5. step-queue deployment metadata (#651) ---------------- */
+export {
+  withStepQueues,
+  isStepQueuedFlow,
+  StepQueuedFlow,
+  StepQueueError,
+  resolveStepQueueName,
+  resolveQueueRouteMap,
+  MAX_PGMQ_QUEUE_NAME_LENGTH,
+  FlowQueueNameError,
+  StepQueueNameError,
+  EmptyStepQueuedFlowError,
+  DuplicateStepSlugError,
+  DuplicateQueueRouteError,
+} from '../index.js';
+export type { QueueMode, StepRoute } from '../index.js';

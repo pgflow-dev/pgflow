@@ -29,6 +29,57 @@ SELECT pgflow.track_worker_function('my-worker');
 
 Once registered, pgflow tracks the worker in the `worker_functions` table and keeps it alive automatically.
 
+## Per-step queue workers
+
+`withStepQueues()` assigns each step its own private queue. Start one worker entry point for each selected step. An Edge Function or process calls `EdgeWorker.start()` once, so do not start two selected steps in the same entry point.
+
+```ts
+import { Flow, withStepQueues } from '@pgflow/dsl';
+import { EdgeWorker } from '@pgflow/edge-worker';
+
+const flow = withStepQueues(
+  new Flow<{ text: string }>({ slug: 'communityThreads' })
+    .step({ slug: 'classify' }, (flowInput) => ({ text: flowInput.text }))
+    .step(
+      { slug: 'deliver', dependsOn: ['classify'] },
+      (deps) => ({ delivered: deps.classify.text })
+    )
+);
+
+EdgeWorker.start(flow, { stepSlug: 'classify' });
+```
+
+Deploy another entry point with `stepSlug: 'deliver'`. Each startup checks the complete flow definition, but polls and claims only its selected route.
+
+### Check route coverage
+
+Use this query to list every private route and count only live workers. The liveness predicates stay in the `LEFT JOIN`; moving them into `WHERE` hides uncovered routes. A current heartbeat means the last heartbeat is less than six seconds old.
+
+```sql
+SELECT
+  flow.flow_slug,
+  step.step_slug,
+  step.queue_name,
+  COUNT(worker.worker_id) AS live_workers
+FROM pgflow.flows AS flow
+JOIN pgflow.steps AS step
+  ON step.flow_slug = flow.flow_slug
+LEFT JOIN pgflow.workers AS worker
+  ON worker.queue_name = step.queue_name
+  AND worker.stopped_at IS NULL
+  AND worker.deprecated_at IS NULL
+  AND worker.last_heartbeat_at > now() - interval '6 seconds'
+WHERE flow.queue_mode = 'step'
+GROUP BY flow.flow_slug, step.step_slug, step.queue_name
+ORDER BY flow.flow_slug, step.step_slug;
+```
+
+A route with `live_workers = 0` has no fresh worker. Duplicate live workers count as more than one; stopped, deprecated, and stale workers count as zero.
+
+<Aside type="caution" title="pgflow exclusively manages step queues">
+Do not send application messages directly to generated queues. Do not create, rename, purge, or drop `flow__step` queues. Start work with `pgflow.start_flow()` and let pgflow provision, dispatch, archive, and delete its queues.
+</Aside>
+
 ## Worker Deprecation
 
 To gracefully stop workers for a specific function, you can deprecate them. This ensures in-flight tasks complete before shutdown:

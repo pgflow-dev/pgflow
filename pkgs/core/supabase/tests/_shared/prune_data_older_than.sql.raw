@@ -14,8 +14,12 @@
  *
  * pgflow 0.17 note: message cleanup uses each task's stored queue snapshot
  * (step_tasks.queue_name) and archive cleanup uses persisted definition routes
- * (pgflow.steps.queue_name). If you installed an earlier copy of this snippet,
- * replace it with this version; adapt any customized copies yourself.
+ * (pgflow.steps.queue_name), including per-step queues. The default-queue
+ * fallback in archive cleanup is mode-aware: only flows in 'flow' queue mode
+ * own their default queue, and a step-mode flow never prunes or drops an
+ * unrelated <flow_slug> queue. If you installed an earlier copy of this
+ * snippet, replace it with this version; adapt any customized copies
+ * yourself.
  */
 create or replace function pgflow.prune_data_older_than(
   retention_interval INTERVAL
@@ -85,8 +89,11 @@ BEGIN
   );
 
   -- Prune archived messages from PGMQ archive tables.
-  -- Walk the persisted definition routes (plus each flow's default queue) so
-  -- queues that keep an original mixed-case spelling are found (#650).
+  -- Walk the persisted definition routes (plus each flow-mode flow's default
+  -- queue) so queues that keep an original mixed-case spelling are found
+  -- (#650). Step-mode flows contribute only their step routes: the
+  -- unconditional default-queue fallback was removed because a step flow
+  -- must not prune an unrelated <flow_slug> queue (#651).
   -- pgmq.format_table_name() lowercases its input itself, so the canonical
   -- route addresses the physical archive table directly: no queue listing
   -- is consulted and no ambiguous-match failure can abort pruning.
@@ -94,7 +101,7 @@ BEGIN
     SELECT DISTINCT queue_name FROM (
       SELECT queue_name FROM pgflow.steps
       UNION
-      SELECT lower(flow_slug) FROM pgflow.flows
+      SELECT lower(flow_slug) FROM pgflow.flows WHERE queue_mode = 'flow'
     ) routes
   LOOP
     -- Build the archive table name from the canonical route

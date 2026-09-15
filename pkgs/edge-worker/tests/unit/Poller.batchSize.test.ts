@@ -250,12 +250,14 @@ Deno.test('StepTaskPoller claims through the polled queue name and warns for unm
 
   const tasks = await poller.poll();
 
-  // The claim received the expected flow, exact msg ids, and the polled queue
+  // The claim received the expected flow, exact msg ids, the polled queue,
+  // and no step selector (flow mode)
   assertEquals(started, [[
     'TestFlow',
     ['7', '9223372036854775807'],
     'worker-id',
     'testflow',
+    undefined,
   ]]);
   assertEquals(tasks.length, 1);
   assertEquals(tasks[0].msg_id, '7');

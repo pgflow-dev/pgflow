@@ -59,6 +59,7 @@ export type Database = {
           opt_base_delay: number
           opt_max_attempts: number
           opt_timeout: number
+          queue_mode: string
         }
         Insert: {
           created_at?: string
@@ -66,6 +67,7 @@ export type Database = {
           opt_base_delay?: number
           opt_max_attempts?: number
           opt_timeout?: number
+          queue_mode?: string
         }
         Update: {
           created_at?: string
@@ -73,6 +75,7 @@ export type Database = {
           opt_base_delay?: number
           opt_max_attempts?: number
           opt_timeout?: number
+          queue_mode?: string
         }
         Relationships: []
       }
@@ -419,6 +422,10 @@ export type Database = {
         Args: { p_run_id: string; p_step_slug: string; p_task_index: number }
         Returns: undefined
       }
+      _assert_step_queue_available: {
+        Args: { p_flow_slug: string; p_queue_name: string }
+        Returns: boolean
+      }
       _cascade_force_skip_steps: {
         Args: { run_id: string; skip_reason: string; step_slug: string }
         Returns: number
@@ -428,11 +435,19 @@ export type Database = {
         Returns: string[]
       }
       _create_flow_from_shape: {
-        Args: { p_flow_slug: string; p_shape: Json }
+        Args: { p_flow_slug: string; p_queue_mode?: string; p_shape: Json }
         Returns: undefined
+      }
+      _derive_queue_routes: {
+        Args: { p_flow_slug: string; p_queue_mode: string; p_shape: Json }
+        Returns: Json
       }
       _get_flow_shape: { Args: { p_flow_slug: string }; Returns: Json }
       _listed_queue_name: { Args: { p_queue_name: string }; Returns: string }
+      _resolve_step_queue_name: {
+        Args: { p_flow_slug: string; p_step_index: number; p_step_slug: string }
+        Returns: string
+      }
       add_step: {
         Args: {
           base_delay?: number
@@ -534,6 +549,7 @@ export type Database = {
           opt_base_delay: number
           opt_max_attempts: number
           opt_timeout: number
+          queue_mode: string
         }
         SetofOptions: {
           from: "*"
@@ -547,7 +563,12 @@ export type Database = {
         Returns: undefined
       }
       ensure_flow_compiled: {
-        Args: { flow_slug: string; shape: Json }
+        Args: {
+          flow_slug: string
+          queue_mode?: string
+          route_map?: Json
+          shape: Json
+        }
         Returns: Json
       }
       ensure_workers: {
@@ -664,6 +685,7 @@ export type Database = {
           flow_slug: string
           msg_ids: number[]
           queue_name: string
+          step_slug?: string
           worker_id: string
         }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]

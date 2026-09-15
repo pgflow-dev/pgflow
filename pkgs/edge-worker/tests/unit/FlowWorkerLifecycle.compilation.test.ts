@@ -3,6 +3,7 @@ import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
 import { Queries, type EnsureFlowCompiledResult } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
 import { Flow, type FlowShape } from '@pgflow/dsl';
+import { resolveWorkerRouting } from '../../src/flow/workerRouting.ts';
 import type { Logger } from '../../src/platform/types.ts';
 import type { postgres } from '../sql.ts';
 
@@ -86,7 +87,12 @@ const createLogger = (): Logger => ({
 
 Deno.test('FlowWorkerLifecycle - compiles before registration', async () => {
   const queries = new MockQueries();
-  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
+  const lifecycle = new FlowWorkerLifecycle(
+    queries,
+    createMockFlow(),
+    resolveWorkerRouting(createMockFlow(), undefined),
+    createLogger()
+  );
 
   await lifecycle.acknowledgeStart({
     workerId: 'test-worker-id',
@@ -102,7 +108,12 @@ Deno.test('FlowWorkerLifecycle - compilation failure does not register', async (
     status: 'mismatch',
     differences: ['Step count differs: 1 vs 2'],
   };
-  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
+  const lifecycle = new FlowWorkerLifecycle(
+    queries,
+    createMockFlow(),
+    resolveWorkerRouting(createMockFlow(), undefined),
+    createLogger()
+  );
 
   await assertRejects(
     () =>
@@ -119,7 +130,12 @@ Deno.test('FlowWorkerLifecycle - compilation failure does not register', async (
 
 Deno.test('FlowWorkerLifecycle - calls trackWorkerFunction during startup', async () => {
   const queries = new MockQueries();
-  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
+  const lifecycle = new FlowWorkerLifecycle(
+    queries,
+    createMockFlow(),
+    resolveWorkerRouting(createMockFlow(), undefined),
+    createLogger()
+  );
 
   await lifecycle.acknowledgeStart({
     workerId: 'test-worker-id',
@@ -133,7 +149,12 @@ Deno.test('FlowWorkerLifecycle - calls trackWorkerFunction during startup', asyn
 
 Deno.test('FlowWorkerLifecycle - passes process start mode during startup', async () => {
   const queries = new MockQueries();
-  const lifecycle = new FlowWorkerLifecycle(queries, createMockFlow(), createLogger());
+  const lifecycle = new FlowWorkerLifecycle(
+    queries,
+    createMockFlow(),
+    resolveWorkerRouting(createMockFlow(), undefined),
+    createLogger()
+  );
 
   const workerBootstrap = {
     workerId: 'test-worker-id',

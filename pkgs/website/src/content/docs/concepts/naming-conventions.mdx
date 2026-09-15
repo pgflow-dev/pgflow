@@ -31,6 +31,26 @@ export const AnalyzeWebsite = new Flow<Input>({ slug: 'analyzeWebsite' })
 
 Flow slugs are stored in the database and used to identify flows when starting runs. Using camelCase keeps them consistent with step slugs and JavaScript conventions.
 
+## Valid slug syntax
+
+The same rules apply to flow and step slugs:
+
+- Start with a letter.
+- Use only letters, numbers, and single internal underscores.
+- End with a letter or number.
+- Use at most 128 characters.
+- Do not use `run`, a leading underscore, a trailing underscore, or `__`.
+
+`__` is reserved for pgflow-generated queue names. Flow slugs are unique without regard to case. Step slugs are unique without regard to case within one flow. For example, `Classify` and `classify` cannot be steps of the same flow.
+
+```ts
+new Flow({ slug: 'dailyReport' })
+  .step({ slug: 'fetch_users' }, () => [])
+
+new Flow({ slug: '_dailyReport' }) // invalid: leading underscore
+new Flow({ slug: 'daily__report' }) // invalid: reserved separator
+```
+
 ## File naming
 
 Flow files use **kebab-case** (industry standard for TypeScript):
@@ -159,6 +179,12 @@ Most real-world steps both perform actions AND return data. The naming should re
   return analyzeProfiles(input.userProfiles);
 });
 ```
+
+## Per-step queue names
+
+A flow wrapped with `withStepQueues()` gives each step a private pgmq queue. pgflow first tries `lower(flowSlug__stepSlug)`. pgmq queue names are limited to 47 characters, so pgflow uses `lower(flowSlug__stepIndex)` only when the readable name is too long. It never truncates or hashes a name. If neither form fits, worker startup fails before it writes a flow definition.
+
+Do not rely on fallback names as an application API. Keep flow and step slugs short enough for readable routes when operational inspection matters.
 
 ## Consistency matters
 

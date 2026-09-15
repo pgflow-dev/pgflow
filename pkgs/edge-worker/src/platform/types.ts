@@ -26,6 +26,8 @@ export interface StartupContext {
   queueName: string;
   flows: Array<{
     flowSlug: string;
+    /** Selected step for step-queued workers; undefined for flow-wide workers (#651) */
+    stepSlug?: string;
     compilationStatus: 'compiled' | 'verified' | 'recompiled' | 'mismatch';
   }>;
 }

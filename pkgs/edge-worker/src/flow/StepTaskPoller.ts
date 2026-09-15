@@ -9,8 +9,10 @@ export interface StepTaskPollerConfig {
   batchSize: number;
   /** Flow identity used to select claimable tasks */
   flowSlug: string;
-  /** Canonical queue name the worker polls (lowercased flow slug) */
+  /** Canonical queue name the worker polls */
   queueName: string;
+  /** Exact step selector for step-queued flows (#651); undefined in flow mode */
+  stepSlug?: string;
   visibilityTimeout?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
@@ -72,15 +74,16 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       this.logger.debug(`Found ${messages.length} messages, starting tasks`);
 
       // Phase 2: Start tasks for the retrieved messages. The claim receives
-      // this poller's queue name — the canonical lowercased flow slug, the
-      // exact spelling tasks store — and matches the persisted
-      // (queue_name, message_id) identity (#650).
+      // this poller's queue name — the canonical spelling tasks store — and,
+      // for step-queued flows, its exact step selector. Both match the
+      // persisted (queue_name, message_id) identity and route (#650, #651).
       const msgIds = messages.map((msg) => msg.msg_id);
       const tasks = await this.adapter.startTasks(
         this.config.flowSlug,
         msgIds,
         workerId,
-        queueName
+        queueName,
+        this.config.stepSlug
       );
 
       this.logger.debug(
@@ -89,15 +92,19 @@ export class StepTaskPoller<TFlow extends AnyFlow>
 
       // Messages without a claimable task are preserved: they recur after
       // their visibility timeout until an operator handles them. Warn with
-      // identifiers only, never message bodies (#650).
+      // identifiers (queue, message ids, selected flow and step) only,
+      // never message bodies (#650, #651).
       if (tasks.length < messages.length) {
         const claimedIds = new Set(tasks.map((task) => task.msg_id));
         const unmatchedIds = messages
           .filter((msg) => !claimedIds.has(msg.msg_id))
           .map((msg) => msg.msg_id);
+        const stepPart = this.config.stepSlug !== undefined
+          ? ` step '${this.config.stepSlug}'`
+          : '';
         this.logger.warn(
           `Queue '${queueName}': ${unmatchedIds.length} of ${messages.length} message(s) ` +
-            `matched no claimable task for flow '${this.config.flowSlug}' ` +
+            `matched no claimable task for flow '${this.config.flowSlug}'${stepPart} ` +
             `(msg_ids: ${unmatchedIds.join(', ')}). ` +
             'Messages are left for their visibility timeout; recurring ids need operator attention.'
         );

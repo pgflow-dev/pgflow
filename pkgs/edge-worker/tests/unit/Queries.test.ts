@@ -101,3 +101,53 @@ Deno.test('Queries.sendHeartbeat treats missing worker row as deprecated', async
 
   assertEquals(result.is_deprecated, true);
 });
+
+// Mock SQL that also supports the .json() helper used by ensureFlowCompiled
+function createMockSqlWithJson() {
+  const calls: { query: string; values: unknown[] }[] = [];
+
+  const mockSql = ((
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ) => {
+    calls.push({ query: strings.join('?'), values });
+    return Promise.resolve([{ result: { status: 'verified', differences: [] } }]);
+  }) as unknown as postgres.Sql;
+
+  (mockSql as unknown as { json: (v: unknown) => unknown }).json = (v: unknown) => v;
+
+  return { mockSql, calls };
+}
+
+Deno.test('Queries.ensureFlowCompiled - sends shape, queue mode, and complete route map', async () => {
+  const { mockSql, calls } = createMockSqlWithJson();
+  const queries = new Queries(mockSql);
+
+  const shape = {
+    steps: [{ slug: 'classify', stepType: 'single', dependencies: [] }],
+  } as never;
+
+  await queries.ensureFlowCompiled('communityThreadsV1', shape, 'step', [
+    { stepSlug: 'classify', stepIndex: 0, queueName: 'communitythreadsv1__classify' },
+  ]);
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].query.includes('pgflow.ensure_flow_compiled'), true);
+  // Ordered arguments: slug, shape, mode, routes
+  assertEquals(calls[0].values[0], 'communityThreadsV1');
+  assertEquals(calls[0].values[1], shape);
+  assertEquals(calls[0].values[2], 'step');
+  assertEquals(calls[0].values[3], [
+    { stepSlug: 'classify', queueName: 'communitythreadsv1__classify' },
+  ]);
+});
+
+Deno.test('Queries.ensureFlowCompiled - defaults to flow mode without routes', async () => {
+  const { mockSql, calls } = createMockSqlWithJson();
+  const queries = new Queries(mockSql);
+
+  await queries.ensureFlowCompiled('plainFlow', { steps: [] } as never);
+
+  assertEquals(calls[0].values[2], 'flow');
+  assertEquals(calls[0].values[3], null);
+});

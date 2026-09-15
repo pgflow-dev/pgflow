@@ -4,6 +4,7 @@ import { TransitionError } from '../../src/core/WorkerState.ts';
 import { Queries, type EnsureFlowCompiledResult } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
 import { Flow, type FlowShape } from '@pgflow/dsl';
+import { resolveWorkerRouting } from '../../src/flow/workerRouting.ts';
 import type { Logger } from '../../src/platform/types.ts';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
 import type { postgres } from '../sql.ts';
@@ -70,6 +71,7 @@ Deno.test('FlowWorkerLifecycle - should transition to deprecated state when hear
   const lifecycle = new FlowWorkerLifecycle(
     mockQueries, 
     mockFlow, 
+    resolveWorkerRouting(mockFlow, undefined),
     logger,
     { heartbeatInterval: 0 } // No interval for testing
   );
@@ -106,6 +108,7 @@ Deno.test('FlowWorkerLifecycle - should only transition to deprecated once', asy
   const lifecycle = new FlowWorkerLifecycle(
     mockQueries, 
     mockFlow, 
+    resolveWorkerRouting(mockFlow, undefined),
     logger,
     { heartbeatInterval: 0 } // No interval for testing
   );
@@ -132,7 +135,12 @@ Deno.test('FlowWorkerLifecycle - should only transition to deprecated once', asy
 Deno.test('FlowWorkerLifecycle - should handle missing heartbeat gracefully', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   // Don't start the worker, so workerRow is not initialized
   await lifecycle.sendHeartbeat(); // Should not throw
@@ -146,7 +154,12 @@ Deno.test('FlowWorkerLifecycle - should handle missing heartbeat gracefully', as
 Deno.test('FlowWorkerLifecycle - deprecated state transitions', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   // Start and deprecate the worker
   await lifecycle.acknowledgeStart({
@@ -169,7 +182,12 @@ Deno.test('FlowWorkerLifecycle - deprecated state transitions', async () => {
 Deno.test('FlowWorkerLifecycle - stopping a never-started lifecycle reaches Stopped without a worker row', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   lifecycle.transitionToStopping();
   assertEquals(lifecycle.isStopping, true);
@@ -181,7 +199,12 @@ Deno.test('FlowWorkerLifecycle - stopping a never-started lifecycle reaches Stop
 Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-running states', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   // Try to transition to deprecated from created state
   assertThrows(
@@ -215,6 +238,7 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
   const lifecycle = new FlowWorkerLifecycle(
     mockQueries, 
     mockFlow, 
+    resolveWorkerRouting(mockFlow, undefined),
     testLogger,
     { heartbeatInterval: 0 } // No interval for testing
   );
@@ -239,7 +263,12 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
 Deno.test('FlowWorkerLifecycle - queueName should return flow slug', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   assertEquals(lifecycle.queueName, 'test_flow');
 });
@@ -247,7 +276,12 @@ Deno.test('FlowWorkerLifecycle - queueName should return flow slug', () => {
 Deno.test('FlowWorkerLifecycle - workerId getter should work after start', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
+    logger
+  );
 
   // Start the worker
   await lifecycle.acknowledgeStart({
@@ -264,6 +298,7 @@ Deno.test('FlowWorkerLifecycle - should respect heartbeat interval', async () =>
   const lifecycle = new FlowWorkerLifecycle(
     mockQueries,
     mockFlow,
+    resolveWorkerRouting(mockFlow, undefined),
     logger,
     { heartbeatInterval: 5000 } // 5 second interval
   );

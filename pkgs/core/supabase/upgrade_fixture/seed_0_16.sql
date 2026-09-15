@@ -1,5 +1,5 @@
 -- 0.16.0 upgrade fixture seed: populated database state immediately before
--- the persist_queue_identity migration (#650). Runs on a database at 0.16.0
+-- the consolidated private_step_queues migration. Runs on a database at 0.16.0
 -- (migrations up to 20260907082520 only), using the 0.16.0 functions.
 
 -- Plain lowercase flow with real dispatched messages

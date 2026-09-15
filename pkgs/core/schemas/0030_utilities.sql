@@ -31,7 +31,12 @@ begin
       and slug <> ''
       and length(slug) <= 128
       and slug ~ '^[a-zA-Z_][a-zA-Z0-9_]*$'
-      and slug NOT IN ('run'); -- reserved words
+      and slug NOT IN ('run') -- reserved words
+      -- #651: '__' is reserved for pgflow-generated queue names and
+      -- boundary underscores are rejected for flows and steps alike
+      and left(slug, 1) ~ '[a-zA-Z]'
+      and right(slug, 1) ~ '[a-zA-Z0-9]'
+      and position('__' in slug) = 0;
 end;
 $$;
 

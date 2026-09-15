@@ -6,19 +6,25 @@ create table pgflow.flows (
   opt_max_attempts int not null default 3,
   opt_base_delay int not null default 1,
   opt_timeout int not null default 60,
+  -- Deployment metadata, persisted separately from the shape (#651):
+  -- 'flow' routes every step to lower(flow_slug), 'step' gives every step
+  -- its own generated private queue.
+  queue_mode text not null default 'flow',
   created_at timestamptz not null default now(),
   constraint slug_is_valid check (pgflow.is_valid_slug(flow_slug)),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay >= 0),
-  constraint opt_timeout_is_positive check (opt_timeout > 0)
+  constraint opt_timeout_is_positive check (opt_timeout > 0),
+  constraint queue_mode_is_valid check (queue_mode in ('flow', 'step'))
 );
 
 -- Steps table - stores individual steps within flows
 create table pgflow.steps (
   flow_slug text not null references pgflow.flows(flow_slug),
   step_slug text not null,
-  -- Canonical queue this step's tasks are dispatched to (#650).
-  -- For this stage every step routes to the flow's default queue: lower(flow_slug).
+  -- Canonical queue this step's tasks are dispatched to (#650, #651):
+  -- 'flow' mode routes every step to lower(flow_slug); 'step' mode routes
+  -- each step to its generated private queue (_derive_queue_routes).
   queue_name text not null,
   step_type text not null default 'single',
   step_index int not null default 0,
@@ -67,6 +73,11 @@ create table pgflow.deps (
 
 create index if not exists idx_deps_by_flow_step on pgflow.deps (flow_slug, step_slug);
 create index if not exists idx_deps_by_flow_dep on pgflow.deps (flow_slug, dep_slug);
+
+-- Case-only duplicate step slugs within one flow normalize to the same
+-- generated queue name and are rejected (#651).
+create unique index if not exists idx_steps_normalized_slug
+on pgflow.steps (flow_slug, lower(step_slug));
 
 -- Two concrete flows must not address the same normalized default queue (#650).
 -- The expression index also rejects direct SQL creation of conflicting flows.
