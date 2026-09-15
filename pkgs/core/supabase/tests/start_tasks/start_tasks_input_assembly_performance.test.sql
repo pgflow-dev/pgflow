@@ -73,6 +73,16 @@ BEGIN
 
   -- Run multiple iterations to get stable measurements
   FOR v_iteration IN 1..p_iterations LOOP
+    -- Reset the batch to its claimable state before the timed window
+    -- (#651 correction): start_tasks transitions claimed tasks to 'started',
+    -- so without this reset iterations 2..N would claim zero tasks and
+    -- measure a no-op claim instead of real input-assembly work. The reset
+    -- itself stays outside the timed window.
+    UPDATE pgflow.step_tasks
+    SET status = 'queued', started_at = null, last_worker_id = null
+    WHERE run_id = v_run_id
+      AND message_id = any(v_msg_ids);
+
     v_start_time := clock_timestamp();
     PERFORM * FROM pgflow.start_tasks(
       'input_perf_flow',
@@ -266,7 +276,6 @@ select ok(
 );
 
 -- Batch polling should have good per-task efficiency
--- Relaxed for CI environments (was 3ms)
 select ok(
   (
     select avg(avg_time_per_task_ms) < 5.0
@@ -276,14 +285,16 @@ select ok(
   'Batch-10 should average < 5ms per task'
 );
 
--- Relaxed for CI environments (was 1.5ms)
+-- Recalibrated for real claims (#651 correction): every timed iteration now
+-- claims the batch again, so per-task time reflects actual input assembly
+-- (the old 1.5ms bound held only when later iterations claimed nothing).
 select ok(
   (
-    select avg(avg_time_per_task_ms) < 3.0
+    select avg(avg_time_per_task_ms) < 12.0
     from input_assembly_performance
     where batch_size = 50
   ),
-  'Batch-50 should average < 3ms per task'
+  'Batch-50 should average < 12ms per task'
 );
 
 -- Large arrays shouldn't significantly degrade performance
@@ -324,22 +335,26 @@ select ok(
   'Batch-10 polling should NOT degrade > 8x from 100 to 10k elements (realistic worker scenario)'
 );
 
--- Batch efficiency test
+-- Batch overhead bound (recalibrated for real claims, #651 correction):
+-- claiming ten tasks in one call must not be more than ~3x slower per task
+-- than single-task polling. The old >1.5x speedup claim was an artifact of
+-- no-op iterations: later iterations claimed nothing, making batches look
+-- free. Real claims cost input assembly per task, so efficiency is neutral.
 with batch_speedup as (
   select
     (
       select avg_time_per_task_ms from input_assembly_performance
-      where array_size = 1000 and batch_size = 1
+      where array_size = 1000 and batch_size = 10
     ) /
     (
       select avg_time_per_task_ms from input_assembly_performance
-      where array_size = 1000 and batch_size = 10
-    ) as speedup_10
+      where array_size = 1000 and batch_size = 1
+    ) as per_task_ratio
 )
 
 select ok(
-  (select speedup_10 > 1.5 from batch_speedup),
-  'Batch-10 should be > 1.5x more efficient per task than single polling'
+  (select per_task_ratio < 3.0 from batch_speedup),
+  'Batch-10 per-task cost should stay within 3x of single-task polling'
 );
 
 -- Absolute performance bounds
@@ -361,13 +376,14 @@ select ok(
   'All 10-task batches should complete in < 150ms'
 );
 
--- Relaxed for CI environments (was 300ms)
+-- Relaxed for CI environments (was 300ms, then 500ms; recalibrated for
+-- real claims, #651 correction)
 select ok(
   (
     select max(avg_time_per_batch_ms) from input_assembly_performance
     where batch_size = 50
-  ) < 500,
-  'All 50-task batches should complete in < 500ms'
+  ) < 800,
+  'All 50-task batches should complete in < 800ms'
 );
 
 -- Consistency check - max should not be too far from average

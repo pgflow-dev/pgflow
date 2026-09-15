@@ -1,12 +1,22 @@
 import type postgres from 'postgres';
 import type { WorkerRow, WorkerStartMode } from './types.js';
-import type { FlowShape, Json } from '@pgflow/dsl';
+import type {
+  FlowShape,
+  Json,
+  QueueMode,
+  StepRoute,
+} from '@pgflow/dsl';
 
 export type EnsureFlowCompiledStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
+
+/** Which deployment metadata layer drifted on a production mismatch. */
+export type EnsureFlowMismatchKind = 'shape' | 'routing';
 
 export interface EnsureFlowCompiledResult {
   status: EnsureFlowCompiledStatus;
   differences: string[];
+  /** Present only on mismatch: DAG shape drift vs queue mode/route drift. */
+  mismatchKind?: EnsureFlowMismatchKind;
 }
 
 export class Queries {
@@ -54,21 +64,30 @@ export class Queries {
 
   async ensureFlowCompiled(
     flowSlug: string,
-    shape: FlowShape
+    shape: FlowShape,
+    queueMode: QueueMode = 'flow',
+    routes: readonly StepRoute[] | null = null
   ): Promise<EnsureFlowCompiledResult> {
     // SAFETY: FlowShape is JSON-compatible by construction (only strings, numbers,
     // arrays, and plain objects), but TypeScript can't prove this because FlowShape
     // uses specific property names while Json uses index signatures. This cast is
     // safe because we control both sides: extractFlowShape() builds the object and
     // this method consumes it - no untrusted input crosses this boundary.
-    //
-    // TODO: If FlowShape ever becomes part of a public API or accepts external input,
-    // add a runtime assertion function (assertJsonCompatible) to validate at the boundary.
     const shapeJson = this.sql.json(shape as unknown as Json);
+    // The ordered (stepSlug, queueName) route map: SQL derives the authoritative
+    // routes from shape and mode and rejects a supplied map that disagrees (#651).
+    // null omits the map and lets SQL derive it (legacy two-argument calls).
+    const routesJson = routes === null
+      ? null
+      : this.sql.json(
+          routes.map(({ stepSlug, queueName }) => ({ stepSlug, queueName })) as unknown as Json
+        );
     const [result] = await this.sql<{ result: EnsureFlowCompiledResult }[]>`
       SELECT pgflow.ensure_flow_compiled(
         ${flowSlug},
-        ${shapeJson}::jsonb
+        ${shapeJson}::jsonb,
+        ${queueMode}::text,
+        ${routesJson}::jsonb
       ) as result
     `;
     return result.result;

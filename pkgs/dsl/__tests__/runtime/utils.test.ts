@@ -6,7 +6,18 @@ describe('validateSlug', () => {
     expect(() => validateSlug('valid_slug')).not.toThrowError();
     expect(() => validateSlug('valid_slug_123')).not.toThrowError();
     expect(() => validateSlug('validSlug123')).not.toThrowError();
-    expect(() => validateSlug('_valid_slug')).not.toThrowError();
+  });
+
+  it('rejects boundary underscores and double underscores (#651)', () => {
+    expect(() => validateSlug('_valid_slug')).toThrowError(
+      `Slug '_valid_slug' cannot start with an underscore`
+    );
+    expect(() => validateSlug('valid_slug_')).toThrowError(
+      `Slug 'valid_slug_' cannot end with an underscore`
+    );
+    expect(() => validateSlug('valid__slug')).toThrowError(
+      `Slug 'valid__slug' cannot contain a double underscore; '__' is reserved for pgflow-generated queue names`
+    );
   });
 
   it('rejects slugs that start with numbers', () => {

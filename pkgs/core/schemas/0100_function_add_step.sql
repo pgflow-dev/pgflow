@@ -21,6 +21,13 @@ DECLARE
   result_step pgflow.steps;
   next_idx int;
 BEGIN
+  -- Serialize with ensure_flow_compiled and every other definition writer on
+  -- the same normalized flow identity (#651): the max(step_index)+1 read and
+  -- the insert below must not interleave with a concurrent compilation of
+  -- the same flow. Re-entrant under ensure_flow_compiled's lock; taken
+  -- before any table access.
+  PERFORM pg_advisory_xact_lock(1, hashtext(lower(add_step.flow_slug)));
+
   -- Validate map step constraints
   -- Map steps can have either:
   --   0 dependencies (root map - maps over flow input array)
@@ -36,6 +43,25 @@ BEGIN
   SELECT COALESCE(MAX(s.step_index) + 1, 0) INTO next_idx
   FROM pgflow.steps s
   WHERE s.flow_slug = add_step.flow_slug;
+
+  -- add_step stays flow-only (#651): a step-mode definition is provisioned
+  -- exclusively by the complete-route compilation path. An incremental
+  -- add_step on a step-mode flow would bypass complete-route preflight and
+  -- persist a route to a queue compilation never created, so it is rejected;
+  -- recompile the complete definition instead. Repeated add_step calls on a
+  -- flow-mode flow never reset a persisted route: it stays lower(flow_slug).
+  IF EXISTS (
+    SELECT 1
+    FROM pgflow.flows AS f
+    WHERE f.flow_slug = add_step.flow_slug
+      AND f.queue_mode = 'step'
+  ) THEN
+    RAISE EXCEPTION
+      'Flow "%" uses per-step queues: steps cannot be added incrementally.',
+      add_step.flow_slug
+      USING detail = 'A step-mode definition is provisioned only by complete compilation.',
+      hint = 'Recompile the complete flow definition with every step instead.';
+  END IF;
 
   -- Create the step. queue_name records the step's resolved default route:
   -- lower(flow_slug) for this stage (#650).
@@ -62,8 +88,7 @@ BEGIN
   )
   ON CONFLICT ON CONSTRAINT steps_pkey
   DO UPDATE SET
-    step_slug = EXCLUDED.step_slug,
-    queue_name = EXCLUDED.queue_name
+    step_slug = EXCLUDED.step_slug
   RETURNING * INTO result_step;
 
   -- Insert dependencies

@@ -26,6 +26,7 @@ interface StartupContext {
   queueName: string;
   flows: Array<{
     flowSlug: string;
+    stepSlug?: string;
     compilationStatus: 'compiled' | 'verified' | 'recompiled' | 'mismatch';
   }>;
 }
@@ -33,6 +34,64 @@ interface StartupContext {
 // ============================================================
 // Fancy Formatter Tests
 // ============================================================
+
+Deno.test('startupBanner includes the selected step for step workers (#651)', () => {
+  const consoleSpy = spy(console, 'info');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_URL: 'http://kong:8000',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: StartupContext = {
+      workerName: 'classify-worker',
+      workerId: 'abc123',
+      queueName: 'communitythreadsv1__classify',
+      flows: [
+        { flowSlug: 'communityThreadsV1', stepSlug: 'classify', compilationStatus: 'compiled' },
+      ],
+    };
+
+    logger.startupBanner(ctx);
+
+    const allOutput = consoleSpy.calls.map((c) => c.args[0] as string).join('\n');
+    assertStringIncludes(allOutput, 'communityThreadsV1');
+    assertStringIncludes(allOutput, 'step=classify');
+    assertStringIncludes(allOutput, 'communitythreadsv1__classify');
+  } finally {
+    restore();
+  }
+});
+
+Deno.test('SimpleFormatter startupBanner includes the selected step (#651)', () => {
+  const consoleSpy = spy(console, 'info');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_URL: 'http://kong:8000',
+      EDGE_WORKER_LOG_FORMAT: 'simple',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: StartupContext = {
+      workerName: 'classify-worker',
+      workerId: 'abc123',
+      queueName: 'communitythreadsv1__classify',
+      flows: [
+        { flowSlug: 'communityThreadsV1', stepSlug: 'classify', compilationStatus: 'verified' },
+      ],
+    };
+
+    logger.startupBanner(ctx);
+
+    const allOutput = consoleSpy.calls.map((c) => c.args[0] as string).join('\n');
+    assertStringIncludes(allOutput, 'flow=communityThreadsV1');
+    assertStringIncludes(allOutput, 'step=classify');
+  } finally {
+    restore();
+  }
+});
 
 Deno.test('FancyFormatter - taskCompleted outputs correct format with worker prefix and flow/step path', () => {
   const consoleSpy = spy(console, 'log');

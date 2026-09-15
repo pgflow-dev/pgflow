@@ -1,9 +1,10 @@
 import { assertEquals, assertAlmostEquals } from '@std/assert';
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
+import type { AnyFlow, ExtractFlowInput, StepQueuedFlow } from '@pgflow/dsl';
 import {
   createFlowWorker,
   type FlowWorkerConfig,
 } from '../../src/flow/createFlowWorker.ts';
+import type { StepWorkerConfig } from '../../src/core/workerConfigTypes.ts';
 import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 import type { PlatformAdapter, CreateWorkerFn } from '../../src/platform/types.ts';
@@ -51,8 +52,8 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
 
 export async function startWorker<TFlow extends AnyFlow>(
   sql: postgres.Sql,
-  flow: TFlow,
-  options: FlowWorkerConfig
+  flow: TFlow | StepQueuedFlow<TFlow>,
+  options: FlowWorkerConfig | StepWorkerConfig<TFlow>
 ) {
   const defaultOptions = {
     sql,

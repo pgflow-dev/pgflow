@@ -93,18 +93,20 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
    * @param msgIds - Array of message IDs (exact decimal strings) from readMessages
    * @param workerId - ID of the worker starting the tasks
    * @param queueName - The canonical queue identity of the polled queue:
-   *   `lower(flowSlug)` today, the exact spelling tasks store. pgflow workers
-   *   poll the canonical lowercased queue, so they pass the queue they polled
-   *   even when PGMQ lists an older queue with mixed-case spelling. Claims
-   *   match the persisted (queue_name, message_id) identity exactly. Required
-   *   (#650): there is no default and no fallback to a queue derived from the
-   *   flow slug.
+   *   `lower(flowSlug)` in flow mode, the step's generated queue in step mode.
+   *   Claims match the persisted (queue_name, message_id) identity exactly.
+   *   Required (#650): there is no default and no fallback to a queue derived
+   *   from the flow slug.
+   * @param stepSlug - Exact step selector for step-queued flows (#651).
+   *   Required (and must map to queueName) when the flow's persisted queue
+   *   mode is 'step'; rejected in flow mode. Omitted for flow-wide claims.
    */
   startTasks(
     flowSlug: string,
     msgIds: string[],
     workerId: string,
-    queueName: string
+    queueName: string,
+    stepSlug?: string
   ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**

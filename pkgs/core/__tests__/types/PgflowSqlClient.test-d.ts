@@ -26,7 +26,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     // Check startTasks method types
     expectTypeOf(client.startTasks).toBeFunction();
     expectTypeOf(client.startTasks).parameters.toMatchTypeOf<
-      [string, string[], string, string]
+      [string, string[], string, string, string?]
     >();
     expectTypeOf(client.startTasks).returns.toEqualTypeOf<
       Promise<StepTaskRecord<typeof flow>[]>
@@ -68,6 +68,8 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     // Valid calls should compile
     client.startTasks('flow_slug', ['1', '2', '3'], 'worker-id', 'flow_slug');
     client.startTasks('flow_slug', [], 'worker-id', 'flow_slug');
+    // stepSlug is the additive exact step selector (#651)
+    client.startTasks('flow_slug', ['1'], 'worker-id', 'flow_slug', 'step');
 
     // @ts-expect-error - queueName is required (#650): no default queue fallback
     client.startTasks('flow_slug', ['1'], 'worker-id');

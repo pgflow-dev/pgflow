@@ -165,8 +165,13 @@ class FancyFormatter {
         : colorize('!', ANSI.yellow, this.colorsEnabled);
 
       const statusText = colorize(`(${flow.compilationStatus})`, ANSI.dim, this.colorsEnabled);
+      // A step worker states only its own selected step; it never claims
+      // coverage of other steps' workers (#651).
+      const stepText = flow.stepSlug !== undefined
+        ? colorize(` step=${flow.stepSlug}`, ANSI.dim, this.colorsEnabled)
+        : '';
       const label = index === 0 ? '   Flows:' : '         ';
-      lines.push(`${label} ${statusIcon} ${flow.flowSlug} ${statusText}`);
+      lines.push(`${label} ${statusIcon} ${flow.flowSlug}${stepText} ${statusText}`);
     });
 
     return lines;
@@ -234,7 +239,8 @@ class SimpleFormatter {
     // Phase 3b: Multi-flow support
     const lines: string[] = [];
     for (const flow of ctx.flows) {
-      lines.push(`[INFO] worker=${ctx.workerName} queue=${ctx.queueName} flow=${flow.flowSlug} status=${flow.compilationStatus} worker_id=${ctx.workerId}`);
+      const stepText = flow.stepSlug !== undefined ? ` step=${flow.stepSlug}` : '';
+      lines.push(`[INFO] worker=${ctx.workerName} queue=${ctx.queueName} flow=${flow.flowSlug}${stepText} status=${flow.compilationStatus} worker_id=${ctx.workerId}`);
     }
     return lines;
   }

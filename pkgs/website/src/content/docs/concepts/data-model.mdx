@@ -13,7 +13,7 @@ pgflow's data model separates flow definitions from runtime execution state. Flo
 
 ### 🏷️ Slugs as Identifiers
 
-Flows and steps are identified by slugs - simple text identifiers like `'analyzeWebsite'` or `'fetchData'`. Slugs use camelCase and must be valid identifiers (alphanumeric, max 128 characters), serving as natural, readable keys throughout the system.
+Flows and steps are identified by slugs - simple text identifiers like `'analyzeWebsite'` or `'fetchData'`. A slug starts with a letter, uses letters, numbers, and single internal underscores, ends with a letter or number, and has at most 128 characters. `run`, leading or trailing underscores, and `__` are invalid. Flow slugs are unique without regard to case; step slugs are unique without regard to case within one flow.
 
 ### 🔑 Composite Keys with Denormalization
 
@@ -41,7 +41,7 @@ WHERE flow_slug = 'my_flow' AND step_slug = 'my_step';
 
 ### 📮 Queue identity
 
-PGMQ message ids are queue-scoped, so a task's message identity is `(queue_name, message_id)`, not `message_id` alone. Every step stores its canonical queue name (`steps.queue_name`, always the lowercase `lower(flow_slug)` today), and every task snapshots that value at creation (`step_tasks.queue_name`). Runtime code never rewrites the snapshot: dispatch, claims, visibility, completion, retries, skip/cancel cascades, late callbacks, stalled recovery, and pruning all address the queue through it. `(queue_name, message_id)` is unique per queue, while `message_id` alone stays nullable. pgflow manages its queues exclusively - do not send to them or create, replace, or alter them from application code.
+PGMQ message ids are queue-scoped, so a task's message identity is `(queue_name, message_id)`, not `message_id` alone. Every step stores its canonical route (`steps.queue_name`), and every task snapshots that value at creation (`step_tasks.queue_name`). A flow-mode route is `lower(flow_slug)`. A step-mode route is `lower(flow_slug__step_slug)`, or a zero-based index fallback when the readable name exceeds pgmq's 47-character limit. Runtime code never rewrites the snapshot: dispatch, claims, visibility, completion, retries, skip/cancel cascades, late callbacks, stalled recovery, and pruning all address the queue through it. `(queue_name, message_id)` is unique per queue, while `message_id` alone stays nullable. pgflow manages its queues exclusively - do not send to them or create, replace, or alter them from application code.
 
 ## Two Categories of Tables
 
