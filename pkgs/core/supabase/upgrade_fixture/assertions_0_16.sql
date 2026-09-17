@@ -1,5 +1,5 @@
--- 0.16.0 upgrade fixture assertions: run AFTER the persist_queue_identity
--- migration is applied to the seeded 0.16.0 database (#650).
+-- 0.16.0 upgrade fixture assertions: run after the consolidated
+-- private_step_queues migration is applied to the seeded 0.16.0 database.
 -- Plain DO-block asserts (the fixture container has no pgTAP); any failure
 -- raises, psql runs with ON_ERROR_STOP=1, the script exits non-zero.
 
@@ -9,8 +9,13 @@ declare
   v_queue text;
 begin
   -- ==========================================
-  -- Backfill: every step routes to lower(flow_slug)
+  -- Backfill: every existing flow stays in default queue mode
   -- ==========================================
+  if (select count(*) from pgflow.flows where queue_mode is distinct from 'flow') <> 0 then
+    raise exception 'flows backfill: existing flows must use queue_mode=flow';
+  end if;
+
+  -- Every existing step routes to lower(flow_slug).
   select count(*) into v_count
   from pgflow.steps
   where queue_name is distinct from lower(flow_slug);
@@ -97,7 +102,7 @@ begin
 end $$;
 
 -- Read the physical mixed-case queue and claim through the canonical name.
--- queue_name is required (#650): the claim passes the canonical stored name.
+-- queue_name is required: the claim passes the canonical stored name.
 create temp table fixture_claim as
 select msg_id from pgmq.read('MixedCaseFlow', 30, 10);
 

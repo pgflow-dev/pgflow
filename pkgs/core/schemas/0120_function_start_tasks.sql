@@ -1,25 +1,104 @@
 -- Claim queued tasks for the given flow by persisted (queue_name, message_id)
--- identity (#650).
+-- identity (#650), extended with the exact step selector (#651).
 --
 -- queue_name is the canonical queue identity of the polled queue and is
 -- required: there is no default and no flow_slug fallback, so a claim can
--- never target a queue the caller did not read from. Today every caller
--- passes lower(flow_slug) — the spelling tasks store — including when PGMQ
--- still lists the queue under an older mixed-case spelling: PGMQ's message
--- API normalizes names itself, but this match is exact against the stored
--- canonical snapshot, so the polled mixed-case spelling would match nothing.
--- An explicit NULL matches nothing (no silent fallback).
+-- never target a queue the caller did not read from. Today every plain-flow
+-- caller passes lower(flow_slug) — the spelling tasks store — including when
+-- PGMQ still lists the queue under an older mixed-case spelling: PGMQ's
+-- message API normalizes names itself, but this match is exact against the
+-- stored canonical snapshot, so the polled mixed-case spelling would match
+-- nothing. An explicit NULL matches nothing (no silent fallback).
+--
+-- step_slug is the additive exact step selector (#651), defined by the
+-- persisted queue mode:
+-- - step mode: a non-null exact step_slug is required and must map to the
+--   supplied queue. A missing, unknown, wrong-case, or wrong-route selector
+--   never becomes a flow-wide claim and must not mutate tasks or messages.
+-- - flow mode: no selector means the existing flow-wide claim on the
+--   explicit default queue. A supplied selector is rejected rather than
+--   silently changing plain-flow semantics.
+-- These checks apply to direct SQL callers as well as workers; worker
+-- config alone is not the enforcement boundary. Validation runs once per
+-- call through a single combined mode-and-route probe before the claim
+-- query, and a rejected claim fails the whole statement before any task or
+-- message is touched.
 create or replace function pgflow.start_tasks(
   flow_slug text,
   msg_ids bigint [],
   worker_id uuid,
-  queue_name text
+  queue_name text,
+  step_slug text default null
 )
 returns setof pgflow.step_task_record
 volatile
 set search_path to ''
-language sql
+-- plpgsql caches statement plans and switches to generic plans after five
+-- executions. The generic claim plan drives task_candidates from a runs scan
+-- and filters every queued task of the run instead of probing the
+-- (queue_name, message_id) index: claims in one long-lived worker session
+-- degrade quadratically with the backlog and can take minutes on large
+-- flows. Force custom plans so every claim uses the exact msg_ids index;
+-- per-call replanning costs a fraction of a millisecond (#651).
+set plan_cache_mode = 'force_custom_plan'
+language plpgsql
 as $$
+DECLARE
+  v_queue_mode text;
+  v_route_exists boolean;
+BEGIN
+  -- One combined pre-claim probe (#651): the queue mode and, in step mode,
+  -- whether the exact (flow_slug, step_slug, queue_name) route persists.
+  -- Keeping this to a single statement avoids an extra lookup on the claim
+  -- hot path without weakening the exact-selector checks below; in flow
+  -- mode with no selector the route EXISTS() is not evaluated at all.
+  SELECT flow.queue_mode, EXISTS (
+    SELECT 1
+    FROM pgflow.steps AS s
+    WHERE s.flow_slug = start_tasks.flow_slug
+      AND s.step_slug = start_tasks.step_slug
+      AND s.queue_name = start_tasks.queue_name
+  )
+  INTO v_queue_mode, v_route_exists
+  FROM pgflow.flows AS flow
+  WHERE flow.flow_slug = start_tasks.flow_slug;
+
+  IF v_queue_mode IS NULL THEN
+    -- Unknown flow: nothing claimable (preserves the empty-result behavior)
+    RETURN;
+  END IF;
+
+  IF v_queue_mode = 'step' THEN
+    IF start_tasks.step_slug IS NULL THEN
+      RAISE EXCEPTION
+        'Flow "%" uses per-step queues: an exact step_slug is required to claim tasks.',
+        start_tasks.flow_slug
+        USING detail = format(
+          'Queue "%s" is a private step queue; a claim without a step selector could mix steps.',
+          start_tasks.queue_name
+        ),
+        hint = 'Pass the exact step_slug of the polled step; direct SQL cannot obtain flow-wide claims in step mode.';
+    END IF;
+
+    IF NOT v_route_exists THEN
+      RAISE EXCEPTION
+        'Step "%" does not route to queue "%" in flow "%".',
+        start_tasks.step_slug, start_tasks.queue_name, start_tasks.flow_slug
+        USING detail = 'The step selector must match a persisted step route (flow_slug, step_slug, queue_name) exactly.',
+        hint = 'Poll the queue recorded for this step and pass its exact canonical name and spelling.';
+    END IF;
+  ELSIF start_tasks.step_slug IS NOT NULL THEN
+    RAISE EXCEPTION
+      'Flow "%" uses the default flow queue: a step selector is not allowed.',
+      start_tasks.flow_slug
+      USING detail = format(
+        'Step "%s" was supplied, but flow queue mode has no per-step queues.',
+        start_tasks.step_slug
+      ),
+      hint = 'Omit step_slug to claim flow-wide tasks.';
+  END IF;
+
+  RETURN QUERY
   with task_candidates as (
     select
       task.flow_slug,
@@ -31,6 +110,7 @@ as $$
     join pgflow.runs r on r.run_id = task.run_id
     where task.flow_slug = start_tasks.flow_slug
       and task.queue_name = start_tasks.queue_name
+      and (start_tasks.step_slug IS NULL OR task.step_slug = start_tasks.step_slug)
       and task.message_id = any(msg_ids)
       and task.status = 'queued'
       and r.status = 'started'
@@ -193,7 +273,7 @@ as $$
 
       -- -------------------- NON-MAP STEPS --------------------
       -- Regular (non-map) steps receive dependency outputs as a structured object.
-      -- Root steps (no dependencies) get empty object - they access flowInput via context.
+      -- Root steps (no dependencies) get empty object - they access flow_input via context.
       -- Dependent steps get only their dependency outputs.
       ELSE
         -- Non-map steps get structured input with dependency keys only
@@ -227,5 +307,6 @@ as $$
     dep_out.run_id = st.run_id and
     dep_out.step_slug = st.step_slug
   cross join _vr
-  where _vr.visibility_updates >= 0
+  where _vr.visibility_updates >= 0;
+END;
 $$;

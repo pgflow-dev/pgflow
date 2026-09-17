@@ -122,6 +122,127 @@ Throughout, replace `your-worker-name` with your Edge Function name.
 
 </Steps>
 
+## Move a flow to per-step queues
+
+Production cannot change the queue mode of an existing flow slug. The queue mode and the complete step-route map are part of the persisted definition: a worker compiled for a different mode reports a routing mismatch at startup and never deletes or rewrites the definition. Deleting the definition and recreating it under the same slug is not a supported migration either — it destroys every run, every task, and the owned queue, and producers calling `pgflow.start_flow()` against the old slug fail in between.
+
+Use one of these operations instead. A versioned-flow rollout changes the routing; a worker-set replacement changes only the workers.
+
+### Versioned-flow rollout (changes routing)
+
+Deploy the per-step-queue definition as a new flow version: keep the old slug running while the new slug takes over production, then retire the old flow after the switch. The two definitions never share a queue: generated step routes embed the new slug, and startup preflight rejects any collision before a single queue or definition row is written.
+
+<Steps>
+
+1. ### Deploy the versioned flow under a new slug
+
+   Give the new definition a new slug, for example `communityThreadsV2`, and wrap it with `withStepQueues()`. Deploy one Edge Function for every selected `stepSlug`. Deployment only ships code; the new definition and its queues are created on first invoke, which is safe while the old flow keeps running because the generated routes embed the new slug.
+
+2. ### Start the new workers and check route coverage
+
+   Invoke each new entry point once. Each worker registers itself, verifies the complete definition at startup, and polls only its own step queue. Use the [route coverage query](/deploy/worker-management/#check-route-coverage) until every route of the new flow has a fresh worker.
+
+3. ### Switch producers to the new slug
+
+   Point every `pgflow.start_flow()` call at the new slug, one producer at a time. Both flows can run side by side: the old flow keeps processing its in-flight runs while the new flow takes new work.
+
+4. ### Drain and retire the old flow
+
+   Once the old flow has no active runs, export the history you need, then retire it:
+
+   ```sql
+   SELECT run_id, status
+   FROM pgflow.runs
+   WHERE flow_slug = 'yourFlow'
+     AND status = 'started';
+   ```
+
+   This returns no rows when the old flow is drained. Then stop the old workers with steps 1 through 4 of the [update workflow](#update-workflow) and remove the retired definition:
+
+   ```sql
+   SELECT pgflow.delete_flow_and_data('yourFlow');
+   ```
+
+</Steps>
+
+<Aside type="danger" title="Retirement deletes completed history too">
+`pgflow.delete_flow_and_data()` deletes the flow definition, every run, every step task, and the owned queues. It cannot restore them. Export the history you need before the final delete, and run it only after the drain check returns no rows.
+</Aside>
+
+### Replace the worker set without changing routing
+
+Use an in-place update when the function names stay the same. Fence the complete function set before the first deploy so one flow cannot run a mixture of handler versions.
+
+<Steps>
+
+1. ### Record every enabled state
+
+   List the complete function set and save each `enabled` value:
+
+   ```sql
+   SELECT function_name, enabled
+   FROM pgflow.worker_functions
+   WHERE function_name IN ('flow-step-a', 'flow-step-b')
+   ORDER BY function_name;
+   ```
+
+2. ### Disable the complete function set
+
+   Disable every affected function in one statement before deploying any function:
+
+   ```sql
+   UPDATE pgflow.worker_functions
+   SET enabled = false
+   WHERE function_name IN ('flow-step-a', 'flow-step-b');
+   ```
+
+   This stops `ensure_workers()` from restarting the old code. Pause every system that invokes these functions directly before continuing; disabling the rows does not block direct HTTP requests.
+
+3. ### Deprecate and drain every old worker
+
+   Deprecate the complete old worker set together:
+
+   ```sql
+   UPDATE pgflow.workers
+   SET deprecated_at = now()
+   WHERE function_name IN ('flow-step-a', 'flow-step-b')
+     AND deprecated_at IS NULL;
+   ```
+
+   Use the two drain queries from [step 4 of the update workflow](#update-workflow), with the same complete function-name list. Do not deploy until no old worker has a current heartbeat and no deprecated worker owns a started task.
+
+4. ### Deploy the complete function set
+
+   Deploy every affected function while all rows remain disabled and direct invocation stays paused:
+
+   ```bash frame="none"
+   npx supabase functions deploy flow-step-a
+   npx supabase functions deploy flow-step-b
+   ```
+
+5. ### Restore the recorded states and check coverage
+
+   Restore each function's exact recorded value in one statement:
+
+   ```sql
+   UPDATE pgflow.worker_functions AS worker_function
+   SET enabled = recorded.enabled
+   FROM (
+     VALUES
+       ('flow-step-a', true),
+       ('flow-step-b', true)
+   ) AS recorded(function_name, enabled)
+   WHERE worker_function.function_name = recorded.function_name;
+   ```
+
+   Resume direct invocation only after the complete deployment. Use the [route coverage query](/deploy/worker-management/#check-route-coverage) until every enabled route has a fresh worker. A function restored to `false` stays intentionally stopped.
+
+</Steps>
+
+### Blue/green replacement with new function names
+
+Use new function names only when the old and new handlers are safe to run side by side. Deploy the complete new function set, invoke every new entry point, and check route coverage before disabling any old function. Then disable the complete old function set in one statement, deprecate all its workers together, and drain them with the update-workflow queries. This overlap keeps route coverage, but it intentionally allows different handler versions to process different tasks.
+
 ## Why the Order Matters
 
 Two mechanisms overlap during an update:

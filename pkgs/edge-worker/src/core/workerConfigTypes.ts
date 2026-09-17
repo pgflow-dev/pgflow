@@ -1,4 +1,5 @@
 import type postgres from 'postgres';
+import type { AnyFlow, ExtractFlowSteps } from '@pgflow/dsl';
 
 /**
  * Fixed retry strategy configuration
@@ -142,8 +143,16 @@ export type ResolvedQueueWorkerConfig = Required<Omit<QueueWorkerConfig, 'retryD
 
 /**
  * Configuration for the flow worker with two-phase polling
+ *
+ * stepSlug is intentionally absent: a plain Flow keeps its flow-wide call and
+ * rejects a supplied step selector. Step-queued flows use StepWorkerConfig.
  */
 export type FlowWorkerConfig = {
+  /**
+   * Exact step selector for withStepQueues() flows (#651).
+   * Rejected on plain flows; required on step-queued flows.
+   */
+  stepSlug?: never;
   /**
    * How many tasks are processed at the same time
    * @default 10
@@ -202,8 +211,25 @@ export type FlowWorkerConfig = {
  * Resolved flow configuration with all defaults applied
  */
 export type ResolvedFlowWorkerConfig = Required<
-  Omit<FlowWorkerConfig, 'connectionString' | 'env'>
+  Omit<FlowWorkerConfig, 'connectionString' | 'env' | 'stepSlug'>
 > & {
   connectionString: string | undefined;
   env: Record<string, string | undefined>;
+};
+
+/**
+ * Configuration for a step worker polling one step of a withStepQueues()
+ * flow (#651). stepSlug autocompletes from the wrapped flow's exact step
+ * union and is required; unknown values are also rejected at runtime before
+ * worker or database startup.
+ */
+export type StepWorkerConfig<
+  TFlow extends AnyFlow = AnyFlow,
+  TStepSlug extends Extract<keyof ExtractFlowSteps<TFlow>, string> = Extract<
+    keyof ExtractFlowSteps<TFlow>,
+    string
+  >
+> = Omit<FlowWorkerConfig, 'stepSlug'> & {
+  /** The step this worker polls and claims (exact slug from the flow) */
+  stepSlug: TStepSlug;
 };

@@ -1,4 +1,4 @@
-import type { AnyFlow, FlowContext } from '@pgflow/dsl';
+import type { AnyFlow, FlowContext, StepQueuedFlow } from '@pgflow/dsl';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor, type WorkerIdentity } from './StepTaskExecutor.js';
@@ -16,9 +16,14 @@ import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
+import {
+  resolveWorkerRouting,
+  type WorkerRouting,
+} from './workerRouting.js';
 import type {
   FlowWorkerConfig,
   ResolvedFlowWorkerConfig,
+  StepWorkerConfig,
 } from '../core/workerConfigTypes.js';
 
 // Re-export type from workerConfigTypes to maintain backward compatibility
@@ -55,7 +60,11 @@ function normalizeFlowConfig(
  * Creates a new Worker instance for processing flow tasks using the two-phase polling approach.
  * This eliminates race conditions by separating message polling from task processing.
  *
- * @param flow - The Flow DSL definition
+ * Accepts a plain Flow (default queue) or a StepQueuedFlow wrapper with a
+ * stepSlug in config (#651). Routing is validated synchronously inside this
+ * call; EdgeWorker.start() additionally validates before adapter creation.
+ *
+ * @param flowOrWrapper - The Flow DSL definition or a withStepQueues() wrapper
  * @param config - Configuration options for the worker
  * @param createLogger - Function to create loggers for different modules
  * @param platformAdapter - Platform adapter for creating contexts
@@ -65,12 +74,21 @@ export function createFlowWorker<
   TFlow extends AnyFlow,
   TResources extends Record<string, unknown>
 >(
-  flow: TFlow,
-  config: FlowWorkerConfig,
+  flowOrWrapper: TFlow | StepQueuedFlow<TFlow>,
+  config: FlowWorkerConfig | StepWorkerConfig<TFlow>,
   createLogger: (module: string) => Logger,
   platformAdapter: PlatformAdapter<TResources>
 ): Worker {
   const logger = createLogger('createFlowWorker');
+
+  // Resolve and validate queue routing before anything else (#651):
+  // rejects a stepSlug on a plain flow and a missing/unknown stepSlug on a
+  // step-queued flow.
+  const routing: WorkerRouting = resolveWorkerRouting(
+    flowOrWrapper,
+    (config as StepWorkerConfig<TFlow>).stepSlug
+  );
+  const flow = routing.flow as TFlow;
 
   // Use platform's shutdown signal
   const abortSignal = platformAdapter.shutdownSignal;
@@ -89,22 +107,28 @@ export function createFlowWorker<
       prepare: false,
     });
 
-  // Normalize config with all defaults applied ONCE
-  const resolvedConfig = normalizeFlowConfig(config, sql, platformAdapter.env);
+  // Normalize config with all defaults applied ONCE. stepSlug is routing
+  // metadata, not worker configuration; it never reaches the resolved config.
+  const { stepSlug: _stepSlug, ...workerOnlyConfig } = config as FlowWorkerConfig & {
+    stepSlug?: string;
+  };
+  const resolvedConfig = normalizeFlowConfig(workerOnlyConfig, sql, platformAdapter.env);
 
   // Create the pgflow adapter
   const pgflowAdapter = new PgflowSqlClient<TFlow>(sql);
 
-  // Canonical queue identity is the normalized slug; the worker polls it
-  // directly (PGMQ message operations normalize names themselves) (#650)
-  const queueName = (flow.slug || 'tasks').toLowerCase();
+  // Canonical queue identity from the resolved routing: the normalized slug
+  // in flow mode, or the step's persisted generated queue in step mode (#651).
+  // PGMQ message operations normalize names themselves (#650).
+  const queueName = routing.queueName;
   logger.debug(`Using queue name: ${queueName}`);
 
-  // Create specialized FlowWorkerLifecycle with the proxied queue and flow
+  // Create specialized FlowWorkerLifecycle with the routing and flow
   const queries = new Queries(sql);
   const lifecycle = new FlowWorkerLifecycle<TFlow>(
     queries,
     flow,
+    routing,
     createLogger('FlowWorkerLifecycle')
   );
 
@@ -119,6 +143,7 @@ export function createFlowWorker<
     batchSize: resolvedConfig.batchSize,
     flowSlug: flow.slug,
     queueName,
+    stepSlug: routing.stepSlug,
     visibilityTimeout: resolvedConfig.visibilityTimeout,
     maxPollSeconds: resolvedConfig.maxPollSeconds,
     pollIntervalMs: resolvedConfig.pollIntervalMs,

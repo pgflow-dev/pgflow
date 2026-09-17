@@ -5,6 +5,9 @@
  * - Cannot use reserved words
  * - Must contain only letters, numbers, and underscores
  * - Cannot be longer than 128 characters
+ * - Cannot start or end with an underscore
+ * - Cannot contain a double underscore (`__` is reserved for
+ *   pgflow-generated queue names) (#651)
  *
  * @param slug The slug string to validate
  * @throws Error if the slug is invalid
@@ -29,6 +32,24 @@ export function validateSlug(slug: string): void {
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(slug)) {
     throw new Error(
       `Slug '${slug}' can only contain letters, numbers, and underscores`
+    );
+  }
+
+  if (slug.startsWith('_')) {
+    throw new Error(
+      `Slug '${slug}' cannot start with an underscore`
+    );
+  }
+
+  if (slug.endsWith('_')) {
+    throw new Error(
+      `Slug '${slug}' cannot end with an underscore`
+    );
+  }
+
+  if (slug.includes('__')) {
+    throw new Error(
+      `Slug '${slug}' cannot contain a double underscore; '__' is reserved for pgflow-generated queue names`
     );
   }
 }

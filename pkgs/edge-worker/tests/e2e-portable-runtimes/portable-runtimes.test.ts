@@ -12,6 +12,8 @@ import { getPortableExample } from '../../supabase/functions/_shared/portable_ex
 
 const SERVICE_ROLE_KEY = 'test-service-role-key';
 const PROCESS_FIXTURE = 'tests/e2e-portable-runtimes/portable-process-worker.mjs';
+const STEP_QUEUE_FIXTURE = 'tests/e2e-portable-runtimes/portable-step-queue-worker.mjs';
+const STEP_QUEUE_FLOW_SLUG = 'portableStepQueues';
 
 const PROCESS_RUNTIMES = [
   { name: 'node', command: 'node' },
@@ -329,6 +331,178 @@ async function runSupabaseExample(sql: postgres.Sql, exampleName: ExampleName) {
   await waitForExampleAssertion(sql, exampleName, sequenceStartValue);
 }
 
+interface StepQueueWorkerRow {
+  worker_id: string;
+  function_name: string;
+  queue_name: string;
+  stopped_at: string | null;
+}
+
+async function waitForActiveStepWorker(
+  sql: postgres.Sql,
+  functionName: string,
+  queueName: string
+) {
+  return await waitFor(
+    async () => {
+      const rows = await sql<StepQueueWorkerRow[]>`
+        SELECT worker_id, function_name, queue_name, stopped_at
+        FROM pgflow.workers
+        WHERE function_name = ${functionName}
+          AND stopped_at IS NULL
+          AND last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
+        ORDER BY started_at DESC
+        LIMIT 1
+      `;
+
+      const row = rows[0];
+      return row && row.queue_name === queueName ? row : false;
+    },
+    { description: `${functionName} active worker on ${queueName}` }
+  );
+}
+
+async function waitForStoppedWorker(sql: postgres.Sql, workerId: string) {
+  return await waitFor(
+    async () => {
+      const rows = await sql<{ stopped_at: string | null }[]>`
+        SELECT stopped_at
+        FROM pgflow.workers
+        WHERE worker_id = ${workerId}
+      `;
+
+      return rows[0]?.stopped_at ? rows[0] : false;
+    },
+    { description: `worker ${workerId} stopped_at` }
+  );
+}
+
+/**
+ * Portable step-queue fixture (#651): one process per step of a
+ * withStepQueues() flow, asserting the completed run, exact derived
+ * routes, worker registrations, and clean shutdown on both runtimes.
+ */
+async function runStepQueueProcessExample(
+  sql: postgres.Sql,
+  runtime: typeof PROCESS_RUNTIMES[number]
+) {
+  // A fresh flow definition isolates the route and run assertions from
+  // earlier runs of this suite.
+  const existing = await sql`
+    SELECT 1 FROM pgflow.flows WHERE flow_slug = ${STEP_QUEUE_FLOW_SLUG}
+  `;
+  if (existing.length > 0) {
+    await sql`SELECT pgflow.delete_flow_and_data(${STEP_QUEUE_FLOW_SLUG})`;
+  }
+
+  const suffix = crypto.randomUUID().slice(0, 8);
+  const workerNames = {
+    first: `portable_step_first_${runtime.name}_${suffix}`,
+    second: `portable_step_second_${runtime.name}_${suffix}`,
+  };
+
+  const spawnStepWorker = (stepSlug: 'first' | 'second') =>
+    new Deno.Command(runtime.command, {
+      args: [STEP_QUEUE_FIXTURE],
+      cwd: new URL('../..', import.meta.url).pathname,
+      env: {
+        ...Deno.env.toObject(),
+        PORTABLE_STEP_SLUG: stepSlug,
+        WORKER_NAME: workerNames[stepSlug],
+        SUPABASE_URL: e2eConfig.apiUrl,
+        SUPABASE_SERVICE_ROLE_KEY: SERVICE_ROLE_KEY,
+        DATABASE_URL: e2eConfig.dbUrl,
+        EDGE_WORKER_LOG_LEVEL: 'warn',
+      },
+      stdout: 'null',
+      stderr: 'null',
+    }).spawn();
+
+  const firstChild = spawnStepWorker('first');
+  const secondChild = spawnStepWorker('second');
+  const firstStatus = firstChild.status;
+  const secondStatus = secondChild.status;
+  let childrenExited = false;
+
+  try {
+    // Both step workers register as process worker functions
+    await waitForWorkerFunctionMode(sql, workerNames.first, 'process');
+    await waitForWorkerFunctionMode(sql, workerNames.second, 'process');
+
+    // Each worker registers on exactly its step's derived queue
+    const firstWorker = await waitForActiveStepWorker(
+      sql,
+      workerNames.first,
+      'portablestepqueues__first'
+    );
+    const secondWorker = await waitForActiveStepWorker(
+      sql,
+      workerNames.second,
+      'portablestepqueues__second'
+    );
+    assertEquals(firstWorker.queue_name, 'portablestepqueues__first');
+    assertEquals(secondWorker.queue_name, 'portablestepqueues__second');
+
+    // Exact derived routes are persisted by the first compilation
+    const routes = await sql<{ step_slug: string; queue_name: string }[]>`
+      SELECT step_slug, queue_name
+      FROM pgflow.steps
+      WHERE flow_slug = ${STEP_QUEUE_FLOW_SLUG}
+      ORDER BY step_index
+    `;
+    assertEquals([...routes], [
+      { step_slug: 'first', queue_name: 'portablestepqueues__first' },
+      { step_slug: 'second', queue_name: 'portablestepqueues__second' },
+    ]);
+
+    // The two-step flow completes across the two processes
+    const [started] = await sql<{ run_id: string }[]>`
+      SELECT run_id
+      FROM pgflow.start_flow(${STEP_QUEUE_FLOW_SLUG}, ${sql.json({ value: 20 })}::jsonb)
+    `;
+    const completed = await waitFor(
+      async () => {
+        const rows = await sql<{ status: string; output: unknown }[]>`
+          SELECT status, output FROM pgflow.runs WHERE run_id = ${started.run_id}::uuid
+        `;
+        return rows[0]?.status === 'completed' ? rows[0] : false;
+      },
+      { timeoutMs: 30000, description: 'portable step-queue flow completion' }
+    );
+    assertEquals(completed.output, { second: { value: 42 } });
+
+    // Clean shutdown: exit code 0 and stopped_at recorded for both workers
+    firstChild.kill('SIGTERM');
+    secondChild.kill('SIGTERM');
+    assertEquals((await waitForProcessExit(firstChild, firstStatus)).code, 0);
+    assertEquals((await waitForProcessExit(secondChild, secondStatus)).code, 0);
+    childrenExited = true;
+
+    assertExists((await waitForStoppedWorker(sql, firstWorker.worker_id)).stopped_at);
+    assertExists((await waitForStoppedWorker(sql, secondWorker.worker_id)).stopped_at);
+  } finally {
+    if (!childrenExited) {
+      const leftovers: Array<[Deno.ChildProcess, Promise<Deno.CommandStatus>]> = [
+        [firstChild, firstStatus],
+        [secondChild, secondStatus],
+      ];
+      for (const [child, statusPromise] of leftovers) {
+        try {
+          child.kill('SIGTERM');
+        } catch {
+          // Child may already have exited after the assertion path.
+        }
+        await waitForProcessExit(child, statusPromise);
+      }
+    }
+
+    await sql`
+      DELETE FROM pgflow.worker_functions
+      WHERE function_name IN (${workerNames.first}, ${workerNames.second})
+    `;
+  }
+}
+
 for (const exampleName of EXAMPLES) {
   Deno.test(
     {
@@ -349,4 +523,15 @@ for (const exampleName of EXAMPLES) {
       () => withSql((sql) => runProcessExample(sql, runtime, exampleName))
     );
   }
+}
+
+for (const runtime of PROCESS_RUNTIMES) {
+  Deno.test(
+    {
+      name: `portable runtimes - step queues complete in ${runtime.name} processes`,
+      sanitizeOps: false,
+      sanitizeResources: false,
+    },
+    () => withSql((sql) => runStepQueueProcessExample(sql, runtime))
+  );
 }

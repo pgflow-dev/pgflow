@@ -1,5 +1,12 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Flow } from '../src/platforms/supabase.js';
+import {
+  StepQueueError,
+  FlowQueueNameError,
+  DuplicateStepSlugError,
+  withStepQueues,
+} from '../src/platforms/supabase.js';
+import * as platformIndex from '../src/platforms/index.js';
 
 /**
  * This test verifies that the Supabase preset Flow provides
@@ -46,5 +53,33 @@ describe('Supabase Preset Flow', () => {
       });
 
     void flow;
+  });
+});
+
+describe('step-queue runtime values from platform entries (#651)', () => {
+  it('exports StepQueueError and subclasses as runtime values from the Supabase entry', () => {
+    // Platform consumers must be able to instanceof-check without importing
+    // the root entry: these are values, not just types.
+    expect(typeof StepQueueError).toBe('function');
+    expect(typeof FlowQueueNameError).toBe('function');
+    expect(typeof DuplicateStepSlugError).toBe('function');
+    expect(new FlowQueueNameError('f'.repeat(45), 's', 0)).toBeInstanceOf(
+      StepQueueError
+    );
+  });
+
+  it('exports the same runtime values from the shared platform entry', () => {
+    expect(typeof platformIndex.StepQueueError).toBe('function');
+    expect(typeof platformIndex.withStepQueues).toBe('function');
+  });
+
+  it('wraps a Supabase preset flow without losing it', () => {
+    const flow = new Flow({ slug: 'step_preset_flow' }).step(
+      { slug: 'process' },
+      async () => ({ done: true })
+    );
+    const queued = withStepQueues(flow);
+    expect(queued.wrapped).toBe(flow);
+    expect(queued.routes[0]?.queueName).toBe('step_preset_flow__process');
   });
 });

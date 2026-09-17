@@ -1,3 +1,4 @@
+import { DuplicateStepSlugError } from './step-queues.js';
 import { validateRuntimeOptions, validateSlug } from './utils.js';
 
 // ========================
@@ -674,7 +675,9 @@ export class Flow<
    * Type safety is enforced at the method level when adding or retrieving steps.
    */
   private stepDefinitions: Record<string, StepDefinition<AnyInput, AnyOutput>>;
-  public readonly stepOrder: string[];
+  // Frozen at construction: reverse()/push() must never be able to make
+  // startup shape extraction disagree with checked route indices (#651).
+  public readonly stepOrder: readonly string[];
   public readonly slug: string;
   public readonly options: RuntimeOptions;
 
@@ -695,8 +698,8 @@ export class Flow<
     this.slug = slug;
     this.options = options;
     this.stepDefinitions = stepDefinitions;
-    // Defensive copy of stepOrder
-    this.stepOrder = [...stepOrder];
+    // Defensive copy of stepOrder, actually immutable
+    this.stepOrder = Object.freeze([...stepOrder]);
   }
 
   /**
@@ -968,6 +971,15 @@ export class Flow<
       throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
     }
 
+    // Case-only duplicate step slugs normalize to the same generated queue
+    // name and are rejected within one flow (#651)
+    const caseVariant = Object.keys(this.stepDefinitions).find(
+      (existing) => existing.toLowerCase() === slug.toLowerCase()
+    );
+    if (caseVariant !== undefined) {
+      throw new DuplicateStepSlugError(this.slug, caseVariant, slug);
+    }
+
     const dependencies = opts.dependsOn || [];
     // Validate dependencies - check if all referenced steps exist
     if (dependencies.length > 0) {
@@ -1233,6 +1245,15 @@ export class Flow<
 
     if (this.stepDefinitions[slug]) {
       throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
+    }
+
+    // Case-only duplicate step slugs normalize to the same generated queue
+    // name and are rejected within one flow (#651)
+    const caseVariant = Object.keys(this.stepDefinitions).find(
+      (existing) => existing.toLowerCase() === slug.toLowerCase()
+    );
+    if (caseVariant !== undefined) {
+      throw new DuplicateStepSlugError(this.slug, caseVariant, slug);
     }
 
     // Determine dependencies based on whether array is specified

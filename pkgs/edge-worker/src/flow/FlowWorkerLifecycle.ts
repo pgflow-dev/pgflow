@@ -4,7 +4,8 @@ import type { Logger, StartupContext } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
-import { FlowShapeMismatchError } from './errors.js';
+import { FlowRoutingMismatchError, FlowShapeMismatchError } from './errors.js';
+import type { WorkerRouting } from './workerRouting.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
@@ -24,15 +25,23 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
+  private routing: WorkerRouting;
   // TODO: Temporary field for supplier pattern until we refactor initialization
   private _workerId?: string;
   private _edgeFunctionName?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
 
-  constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
+  constructor(
+    queries: Queries,
+    flow: TFlow,
+    routing: WorkerRouting,
+    logger: Logger,
+    config?: FlowLifecycleConfig
+  ) {
     this.queries = queries;
     this.flow = flow;
+    this.routing = routing;
     this.logger = logger;
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
@@ -66,9 +75,20 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   private async ensureFlowCompiled(): Promise<CompilationStatus> {
     const shape = extractFlowShape(this.flow);
 
-    const result = await this.queries.ensureFlowCompiled(this.flow.slug, shape);
+    // Queue mode and the complete ordered route map travel with the shape as
+    // independent deployment metadata; SQL derives the authoritative routes
+    // and compares the supplied map (#651).
+    const result = await this.queries.ensureFlowCompiled(
+      this.flow.slug,
+      shape,
+      this.routing.queueMode,
+      this.routing.routes
+    );
 
     if (result.status === 'mismatch') {
+      if (result.mismatchKind === 'routing') {
+        throw new FlowRoutingMismatchError(this.flow.slug, result.differences);
+      }
       throw new FlowShapeMismatchError(this.flow.slug, result.differences);
     }
 
@@ -76,7 +96,9 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   }
 
   /**
-   * Log the startup banner with worker and flow information
+   * Log the startup banner with worker and flow information. A step worker
+   * states only its own selected (flow_slug, step_slug, queue_name); it does
+   * not claim coverage of other steps' workers (#651).
    */
   private logStartupBanner(compilationStatus: CompilationStatus): void {
     const startupContext: StartupContext = {
@@ -86,6 +108,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
       flows: [
         {
           flowSlug: this.flow.slug,
+          stepSlug: this.routing.stepSlug,
           compilationStatus,
         },
       ],
@@ -112,10 +135,10 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
   }
 
   get queueName() {
-    // Canonical queue identity: lower(flow slug) (#650). PGMQ message
-    // operations normalize names themselves, so polling and claiming address
-    // mixed-case physical queues through the canonical name directly.
-    return this.flow.slug.toLowerCase();
+    // Canonical queue identity from the resolved routing (#650, #651): PGMQ
+    // message operations normalize names themselves, so polling and claiming
+    // address the queue through the canonical name directly.
+    return this.routing.queueName;
   }
 
   // TODO: Temporary getter for supplier pattern until we refactor initialization

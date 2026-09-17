@@ -10,8 +10,15 @@ import {
 import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
-import type { AnyFlow, CompatibleFlow } from '@pgflow/dsl';
+import type {
+  AnyFlow,
+  CompatibleFlow,
+  StepQueuedFlow,
+} from '@pgflow/dsl';
+import { isStepQueuedFlow } from '@pgflow/dsl';
 import type { CurrentPlatformResources } from './types/currentPlatform.js';
+import type { StepWorkerConfig } from './core/workerConfigTypes.js';
+import { resolveWorkerRouting } from './flow/workerRouting.js';
 
 
 /**
@@ -59,6 +66,22 @@ export class EdgeWorker {
   ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
   /**
+   * Start the EdgeWorker for one step of a withStepQueues() flow (#651).
+   *
+   * Start one worker per selected step, in separate entry points or
+   * processes; `EdgeWorker.start()` remains once per process or Edge
+   * Function. The stepSlug is validated at runtime before adapter creation
+   * or database startup.
+   *
+   * @param flow - StepQueuedFlow wrapper produced by withStepQueues()
+   * @param config - Configuration options; stepSlug selects the polled step
+   */
+  static async start<TFlow extends AnyFlow>(
+    flow: StepQueuedFlow<CompatibleFlow<TFlow, CurrentPlatformResources>>,
+    config: StepWorkerConfig<TFlow>
+  ): Promise<PlatformAdapter<CurrentPlatformResources>>;
+
+  /**
    * Start the EdgeWorker with a flow instance.
    *
    * @param flow - Flow instance that defines the workflow to execute
@@ -81,18 +104,31 @@ export class EdgeWorker {
     TPayload extends Json = Json,
     TFlow extends AnyFlow = AnyFlow
   >(
-    handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
-    config?: QueueWorkerConfig | FlowWorkerConfig
+    handlerOrFlow:
+      | MessageHandlerFn<TPayload>
+      | TFlow
+      | StepQueuedFlow<TFlow>,
+    config?: QueueWorkerConfig | FlowWorkerConfig | StepWorkerConfig<TFlow>
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     if (typeof handlerOrFlow === 'function') {
       return await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
-        config
+        config as QueueWorkerConfig | undefined
+      );
+    } else if (isStepQueuedFlow(handlerOrFlow as TFlow | StepQueuedFlow<TFlow>)) {
+      // Route to the correlated step-worker overload; a missing stepSlug is
+      // rejected at runtime by resolveWorkerRouting before adapter creation
+      // (#651).
+      return await this.startFlowWorker(
+        handlerOrFlow as StepQueuedFlow<
+          CompatibleFlow<TFlow, CurrentPlatformResources>
+        >,
+        config as StepWorkerConfig<TFlow>
       );
     } else {
       return await this.startFlowWorker(
         handlerOrFlow as CompatibleFlow<TFlow, CurrentPlatformResources>,
-        config
+        config as FlowWorkerConfig | undefined
       );
     }
   }
@@ -163,6 +199,22 @@ export class EdgeWorker {
   }
 
   /**
+   * Start the EdgeWorker for one step of a withStepQueues() flow (#651).
+   *
+   * Correlated public overload of startFlowWorker: stepSlug autocompletes
+   * from the wrapped flow's exact step union and is required; unknown values
+   * are rejected at runtime before adapter creation or database startup.
+   * One call per process or Edge Function, one step per entry point.
+   *
+   * @param flow - StepQueuedFlow wrapper produced by withStepQueues()
+   * @param config - Configuration options; stepSlug selects the polled step
+   */
+  static async startFlowWorker<TFlow extends AnyFlow>(
+    flow: StepQueuedFlow<CompatibleFlow<TFlow, CurrentPlatformResources>>,
+    config: StepWorkerConfig<TFlow>
+  ): Promise<PlatformAdapter<CurrentPlatformResources>>;
+
+  /**
    * Start the EdgeWorker with the given flow instance and configuration.
    *
    * @param flow - Flow instance that defines the workflow to execute
@@ -190,27 +242,46 @@ export class EdgeWorker {
    */
   static async startFlowWorker<TFlow extends AnyFlow>(
     flow: CompatibleFlow<TFlow, CurrentPlatformResources>,
-    config: FlowWorkerConfig = {}
+    config?: FlowWorkerConfig
+  ): Promise<PlatformAdapter<CurrentPlatformResources>>;
+
+  static async startFlowWorker<TFlow extends AnyFlow>(
+    flow: CompatibleFlow<TFlow, CurrentPlatformResources> |
+      StepQueuedFlow<CompatibleFlow<TFlow, CurrentPlatformResources>>,
+    config: FlowWorkerConfig | StepWorkerConfig<TFlow> = {}
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
 
+    // Validate step-selector routing before adapter creation or any database
+    // work: a plain flow rejects stepSlug; a step-queued flow requires a
+    // stepSlug from its checked route snapshot (#651).
+    resolveWorkerRouting(
+      flow as TFlow | StepQueuedFlow<TFlow>,
+      (config as StepWorkerConfig<TFlow>).stepSlug
+    );
+
     // Create the adapter with connection options
     const platform = await createAdapter({
-      sql: config.sql,
-      connectionString: config.connectionString,
-      maxPgConnections: config.maxPgConnections,
+      sql: (config as FlowWorkerConfig).sql,
+      connectionString: (config as FlowWorkerConfig).connectionString,
+      maxPgConnections: (config as FlowWorkerConfig).maxPgConnections,
     });
     this.platform = platform;
 
     // Use platform's SQL for unified connection
     const workerConfig: FlowWorkerConfig = {
-      ...config,
+      ...(config as FlowWorkerConfig),
       sql: platform.platformResources.sql,
       connectionString: platform.connectionString,
     };
 
     await platform.startWorker((createLoggerFn) => {
-      return createFlowWorker(flow, workerConfig, createLoggerFn, platform);
+      return createFlowWorker(
+        flow as TFlow | StepQueuedFlow<TFlow>,
+        workerConfig as FlowWorkerConfig,
+        createLoggerFn,
+        platform
+      );
     });
 
     return platform;
