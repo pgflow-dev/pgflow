@@ -18,6 +18,7 @@
       "README.md",
       "LICENSE.md",
       "CHANGELOG.md",
+      "package.json",
       "src/**/*.ts"
     ],
     "exclude": [

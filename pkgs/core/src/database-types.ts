@@ -388,6 +388,7 @@ export type Database = {
           deprecated_at: string | null
           function_name: string
           last_heartbeat_at: string
+          pgflow_version: string | null
           queue_name: string
           started_at: string
           stopped_at: string | null
@@ -397,6 +398,7 @@ export type Database = {
           deprecated_at?: string | null
           function_name: string
           last_heartbeat_at?: string
+          pgflow_version?: string | null
           queue_name: string
           started_at?: string
           stopped_at?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           deprecated_at?: string | null
           function_name?: string
           last_heartbeat_at?: string
+          pgflow_version?: string | null
           queue_name?: string
           started_at?: string
           stopped_at?: string | null

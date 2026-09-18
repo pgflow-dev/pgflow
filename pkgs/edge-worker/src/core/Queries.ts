@@ -26,14 +26,16 @@ export class Queries {
     queueName,
     workerId,
     edgeFunctionName,
+    pgflowVersion,
   }: {
     queueName: string;
     workerId: string;
     edgeFunctionName: string;
+    pgflowVersion: string;
   }): Promise<WorkerRow> {
     const [worker] = await this.sql<WorkerRow[]>`
-      INSERT INTO pgflow.workers (queue_name, worker_id, function_name)
-      VALUES (${queueName}, ${workerId}, ${edgeFunctionName})
+      INSERT INTO pgflow.workers (queue_name, worker_id, function_name, pgflow_version)
+      VALUES (${queueName}, ${workerId}, ${edgeFunctionName}, ${pgflowVersion})
       RETURNING *;
     `;
 

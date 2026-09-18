@@ -2,6 +2,7 @@ import type { Queries } from './Queries.js';
 import type { Queue } from '../queue/Queue.js';
 import type { InternalLifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
 import { States, WorkerState } from './WorkerState.js';
+import { pgflowVersion } from './version.js';
 import type { Logger } from '../platform/types.js';
 
 export interface LifecycleConfig {
@@ -39,6 +40,7 @@ export class WorkerLifecycle<IMessage extends Json> implements InternalLifecycle
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
       ...workerBootstrap,
+      pgflowVersion,
     });
 
     this.workerState.transitionTo(States.Running);

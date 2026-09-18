@@ -1,0 +1,11 @@
+name = "pgflow-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[analytics_engine_datasets]]
+binding = "PGFLOW_TELEMETRY"
+dataset = "pgflow_telemetry"
+
+# No request logging: bodies and transport metadata are never stored.
+[observability]
+enabled = false

@@ -53,6 +53,8 @@ export type WorkerRow = {
   deprecated_at: string | null;
   worker_id: string;
   function_name: string;
+  /** pgflow package version stamped at registration (telemetry). */
+  pgflow_version?: string | null;
 };
 
 export type WorkerStartMode = 'http' | 'process';

@@ -6,6 +6,7 @@ import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
 import { FlowRoutingMismatchError, FlowShapeMismatchError } from './errors.js';
 import type { WorkerRouting } from './workerRouting.js';
+import { pgflowVersion } from '../core/version.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
@@ -67,6 +68,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
       ...workerBootstrap,
+      pgflowVersion,
     });
 
     this.workerState.transitionTo(States.Running);

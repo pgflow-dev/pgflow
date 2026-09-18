@@ -15,5 +15,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@pgflow/demo", "@pgflow/website", "@pgflow/example-flows"]
+  "ignore": ["@pgflow/demo", "@pgflow/website", "@pgflow/example-flows", "@pgflow/telemetry-worker"]
 }

@@ -123,4 +123,11 @@ export const redirects = {
   // ============================================================================
 
   '/news/pgflow-0-3-0-fixing-race-conditions/': '/news/',
+
+  // ============================================================================
+  // MAIN BRANCH PATH MIGRATIONS (news - article renamed for 0.17.1)
+  // ============================================================================
+
+  '/news/pgflow-0-17-0-persistent-queue-identity/':
+    '/news/pgflow-0-17-1-persistent-queues-and-telemetry/',
 };

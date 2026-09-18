@@ -25,7 +25,7 @@
     "noUnusedLocals": true,
     "pretty": true,
     "removeComments": false,
-    "resolveJsonModule": false,
+    "resolveJsonModule": true,
     "skipDefaultLibCheck": false,
     "skipLibCheck": true,
     "sourceMap": false,

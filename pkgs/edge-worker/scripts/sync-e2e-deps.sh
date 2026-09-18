@@ -40,6 +40,8 @@ echo "📋 Copying @pgflow/edge-worker..."
 mkdir -p "$VENDOR_DIR/@pgflow/edge-worker"
 # Copy the entire src directory to maintain relative imports
 cp -r "$MONOREPO_ROOT/pkgs/edge-worker/src" "$VENDOR_DIR/@pgflow/edge-worker/"
+# package.json is read by src/core/version.ts (build-time version stamp)
+cp "$MONOREPO_ROOT/pkgs/edge-worker/package.json" "$VENDOR_DIR/@pgflow/edge-worker/"
 
 # Simple fix: replace .js with .ts in imports
 find "$VENDOR_DIR/@pgflow/edge-worker" -name "*.ts" -type f -exec sed -i 's/\.js"/\.ts"/g' {} +
