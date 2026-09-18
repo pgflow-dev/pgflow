@@ -9,7 +9,10 @@
 -- - a queue name routed to by another concrete flow's steps, or defaulted
 --   to by another flow-mode flow (cross-flow reference);
 -- - an ambiguous case-insensitive match among listed PGMQ queues
---   (external damage), even when this flow's definition owns the route.
+--   (external damage), even when this flow's definition owns the route;
+-- - an owned route whose PGMQ queue is not listed (external damage), so a
+--   queue that may contain outstanding task identities is never silently
+--   treated as available.
 --
 -- Allows one exact listed queue only when the existing definition of this
 -- exact flow owns that route (idempotent reuse). A name that is neither
@@ -69,11 +72,21 @@ begin
 
   -- Owned by an existing definition of this exact flow: reuse idempotently.
   -- A verified definition owns every derived route, so its one exact listed
-  -- queue is allowed here.
+  -- queue is allowed here. An owned route without its listed queue is
+  -- external damage: reuse would report the route available while polling
+  -- fails, so reject it instead.
   if exists (
     select 1 from pgflow.steps as s
     where s.flow_slug = p_flow_slug and s.queue_name = p_queue_name
   ) then
+    if v_listed is null then
+      raise exception
+        'queue "%" owned by flow "%" is not listed in PGMQ',
+        p_queue_name, p_flow_slug
+        using detail = 'An owned route whose queue is missing may still hold outstanding task identities.',
+        hint = 'Recreate the queue, or drop and recompile the flow definition.';
+    end if;
+
     return false;
   end if;
 
