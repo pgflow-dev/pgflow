@@ -1,6 +1,7 @@
 // pgflow anonymous telemetry ingest. Accepts exactly one closed schema,
 // rejects everything else, writes one Analytics Engine data point per
-// contribution. No cookies, no body logging, IP only as transport.
+// contribution with the count bucket as an optional second blob. No
+// cookies, no body logging, IP only as transport.
 
 export interface Env {
   PGFLOW_TELEMETRY: AnalyticsEngineDataset;
@@ -70,10 +71,49 @@ function validBucket(kind: BucketKind, bucket: unknown): boolean {
   }
 }
 
-interface Contribution {
-  metric?: unknown;
-  bucket?: unknown;
-  count?: unknown;
+const hasOwn = (obj: object, key: string) =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Own keys must be a subset of `allowed`; every key in `required` must be
+// present. Prototype-named and unknown keys are rejected, never stripped.
+function hasOnlyKeys(
+  obj: Record<string, unknown>,
+  allowed: string[],
+  required: string[],
+): boolean {
+  for (const key of Object.keys(obj)) {
+    if (!allowed.includes(key)) return false;
+  }
+  for (const key of required) {
+    if (!hasOwn(obj, key)) return false;
+  }
+  return true;
+}
+
+// Streams the body, counting raw bytes and aborting as soon as the limit is
+// exceeded, so an oversized body is never fully read.
+async function readBody(request: Request, limit: number): Promise<string | null> {
+  const reader = request.body?.getReader();
+  if (!reader) return null;
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let bytes = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(decoder.decode(value, { stream: true }));
+  }
+  chunks.push(decoder.decode());
+  return chunks.join('');
 }
 
 const reject = (status: number) => new Response(null, {
@@ -86,41 +126,59 @@ export default {
     if (request.method !== 'POST') return reject(405);
 
     const contentType = request.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) return reject(415);
+    const mediaType = contentType.split(';')[0]?.trim().toLowerCase();
+    if (mediaType !== 'application/json') return reject(415);
 
-    const raw = await request.text();
-    if (raw.length > MAX_BODY_BYTES) return reject(413);
+    const raw = await readBody(request, MAX_BODY_BYTES);
+    if (raw === null) return reject(413);
 
-    let body: { schema?: unknown; contributions?: unknown };
+    let body: unknown;
     try {
       body = JSON.parse(raw);
     } catch {
       return reject(400);
     }
 
+    if (!isPlainObject(body)) return reject(400);
+    if (!hasOnlyKeys(body, ['schema', 'contributions'], ['schema', 'contributions'])) {
+      return reject(400);
+    }
     if (body.schema !== SCHEMA_VERSION) return reject(400);
     if (!Array.isArray(body.contributions)) return reject(400);
-    const contributions = body.contributions as Contribution[];
+    const contributions = body.contributions;
     if (contributions.length === 0 || contributions.length > MAX_CONTRIBUTIONS) {
       return reject(400);
     }
 
+    // Exact (metric, bucket) pairs must be unique: a repeat is rejected
+    // before any Analytics Engine write. The separator cannot occur in any
+    // allowlisted metric or bucket string, so keys cannot collide.
+    const seen = new Set<string>();
+
     for (const c of contributions) {
-      if (c === null || typeof c !== 'object') return reject(400);
-      const kind = METRICS[c.metric as string];
-      if (!kind) return reject(400);
-      if (!validBucket(kind, c.bucket)) return reject(400);
-      if (c.count !== undefined) {
+      if (!isPlainObject(c)) return reject(400);
+      if (!hasOnlyKeys(c, ['metric', 'bucket', 'count'], ['metric', 'bucket'])) {
+        return reject(400);
+      }
+      if (typeof c.metric !== 'string' || !hasOwn(METRICS, c.metric)) return reject(400);
+      if (!validBucket(METRICS[c.metric], c.bucket)) return reject(400);
+      if (hasOwn(c, 'count')) {
         if (typeof c.count !== 'string' || !COUNT_BUCKETS.has(c.count)) {
           return reject(400);
         }
       }
+      const key = `${c.metric}\u0000${c.bucket}`;
+      if (seen.has(key)) return reject(400);
+      seen.add(key);
     }
 
     for (const c of contributions) {
+      const contribution = c as { metric: string; bucket: string; count?: string };
       env.PGFLOW_TELEMETRY.writeDataPoint({
-        indexes: [c.metric as string],
-        blobs: [c.bucket as string],
+        indexes: [contribution.metric],
+        blobs: contribution.count === undefined
+          ? [contribution.bucket]
+          : [contribution.bucket, contribution.count],
         doubles: [1],
       });
     }

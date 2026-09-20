@@ -1,16 +1,57 @@
--- Builds the anonymous daily payload. Only metric names, closed bucket
--- strings, semver versions, and count buckets ever enter the jsonb.
--- Histograms group by the emitted bucket (never by raw values), and the
--- contribution list is bounded to the receiver's limits (64 entries,
--- 2048 UTF-8 bytes) by keeping a deterministic prefix: active_db_day
--- first, then metric/bucket order. A truncated report is an undercount.
-create or replace function pgflow_telemetry.build_payload(p_day date)
-returns jsonb
-language sql
-stable
-set search_path = ''
-as $$
-  with raw(metric, bucket, n) as (
+-- Add new schema named "pgflow_telemetry"
+CREATE SCHEMA "pgflow_telemetry";
+-- Create index "idx_runs_started_at" to table: "runs"
+CREATE INDEX "idx_runs_started_at" ON "pgflow"."runs" ("started_at");
+-- Modify "workers" table
+ALTER TABLE "pgflow"."workers" ADD COLUMN "pgflow_version" text NULL;
+-- Create index "idx_workers_started_at" to table: "workers"
+CREATE INDEX "idx_workers_started_at" ON "pgflow"."workers" ("started_at");
+-- Create index "idx_workers_stopped_at" to table: "workers"
+CREATE INDEX "idx_workers_stopped_at" ON "pgflow"."workers" ("stopped_at");
+-- Create "bucket_count" function
+CREATE FUNCTION "pgflow_telemetry"."bucket_count" ("p_count" bigint) RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE SET "search_path" = '' AS $$
+select case
+    when p_count <= 0 then '0'
+    when p_count = 1 then '1'
+    when p_count <= 3 then '2-3'
+    when p_count <= 7 then '4-7'
+    when p_count <= 15 then '8-15'
+    when p_count <= 31 then '16-31'
+    when p_count <= 63 then '32-63'
+    when p_count <= 127 then '64-127'
+    when p_count <= 255 then '128-255'
+    else '256+'
+  end
+$$;
+-- Create "bucket_duration" function
+CREATE FUNCTION "pgflow_telemetry"."bucket_duration" ("p_duration" interval) RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE SET "search_path" = '' AS $$
+select case
+    when p_duration < '100 milliseconds'::interval then '<100ms'
+    when p_duration < '1 second'::interval then '100-999ms'
+    when p_duration < '10 seconds'::interval then '1-9.9s'
+    when p_duration < '1 minute'::interval then '10-59s'
+    when p_duration < '5 minutes'::interval then '1-4.9m'
+    when p_duration < '30 minutes'::interval then '5-29m'
+    when p_duration < '2 hours'::interval then '30m-1.9h'
+    when p_duration < '1 day'::interval then '2-23h'
+    when p_duration < '7 days'::interval then '1-6d'
+    else '7d+'
+  end
+$$;
+-- Create "bucket_steps" function
+CREATE FUNCTION "pgflow_telemetry"."bucket_steps" ("p_steps" bigint) RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE SET "search_path" = '' AS $$
+select case
+    when p_steps <= 1 then '1'
+    when p_steps <= 3 then '2-3'
+    when p_steps <= 7 then '4-7'
+    when p_steps <= 15 then '8-15'
+    when p_steps <= 31 then '16-31'
+    else '32+'
+  end
+$$;
+-- Create "build_payload" function
+CREATE FUNCTION "pgflow_telemetry"."build_payload" ("p_day" date) RETURNS jsonb LANGUAGE sql STABLE SET "search_path" = '' AS $$
+with raw(metric, bucket, n) as (
     -- Adoption: was this database active during the completed day?
     select 'active_db_day'::text, 'yes'::text, null::text
     where exists (
@@ -362,3 +403,207 @@ as $$
     ), '[]'::jsonb)
   )
 $$;
+-- Create "job_is_scheduled" function
+CREATE FUNCTION "pgflow_telemetry"."job_is_scheduled" () RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET "search_path" = '' AS $$
+declare
+  v_capable boolean;
+  v_job_owner text;
+begin
+  select
+    (not c.relrowsecurity)
+    or r.rolsuper
+    or r.rolbypassrls
+    or (
+      not c.relforcerowsecurity
+      and pg_catalog.pg_has_role(current_user, c.relowner, 'member')
+    ),
+    pg_catalog.pg_get_userbyid(c.relowner)
+    into v_capable, v_job_owner
+  from pg_catalog.pg_class c
+  join pg_catalog.pg_namespace n
+    on n.oid = c.relnamespace
+  cross join pg_catalog.pg_roles r
+  where n.nspname = 'cron'
+    and c.relname = 'job'
+    and r.rolname = current_user;
+
+  if not coalesce(v_capable, false) then
+    -- Fail closed: absence cannot be proven from a visibility-limited
+    -- query, so telemetry must stay ENABLED until an operator makes the
+    -- helper's owner capable. Never grant privileges here dynamically.
+    raise exception using message = format(
+      'pgflow telemetry: cannot prove the telemetry job absent: pgflow_telemetry.job_is_scheduled() owner %L is subject to cron.job row security; fix: ALTER FUNCTION pgflow_telemetry.job_is_scheduled() OWNER TO a superuser or BYPASSRLS role or a member of the cron.job owner %L, then rerun pgflow_telemetry.disable()',
+      current_user,
+      v_job_owner
+    );
+  end if;
+
+  return exists (
+    select 1 from cron.job j
+    where j.jobname = 'pgflow_telemetry_report'
+  );
+end
+$$;
+-- Create "job_registry" table
+CREATE TABLE "pgflow_telemetry"."job_registry" (
+  "jobname" text NOT NULL,
+  "jobid" bigint NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY ("jobname")
+);
+-- Set comment to table: "job_registry"
+COMMENT ON TABLE "pgflow_telemetry"."job_registry" IS 'Record of telemetry cron jobs pgflow scheduled; reconciled by disable() while job_is_scheduled() proves existence';
+-- Create "disable" function
+CREATE FUNCTION "pgflow_telemetry"."disable" () RETURNS void LANGUAGE plpgsql SET "search_path" = '' AS $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtext('pgflow_telemetry_report')
+  );
+
+  begin
+    perform cron.unschedule('pgflow_telemetry_report');
+  exception when others then
+    if position('could not find valid entry for job' in sqlerrm) = 0 then
+      -- Permission and other cron failures stay visible: a broken opt-out
+      -- must never report success silently.
+      raise;
+    end if;
+    -- cron.unschedule found no job for the current role. That is either a
+    -- genuinely absent job (idempotent disable) or a job scheduled by
+    -- another role that row security hides from unschedule. Only the
+    -- privileged check separates the two.
+  end;
+
+  if pgflow_telemetry.job_is_scheduled() then
+    raise exception 'pgflow telemetry: cannot disable: job pgflow_telemetry_report is still scheduled by another role and stays ENABLED; run pgflow_telemetry.disable() as the role that installed pgflow';
+  end if;
+
+  -- Absence proven (after the caller's own unschedule above, other roles
+  -- can still hold the same jobname, which the check above caught):
+  -- reconcile any stale registry row and finish.
+  delete from pgflow_telemetry.job_registry
+  where jobname = 'pgflow_telemetry_report';
+end
+$$;
+-- Create "sent_reports" table
+CREATE TABLE "pgflow_telemetry"."sent_reports" (
+  "day" date NOT NULL,
+  "payload" jsonb NOT NULL,
+  "request_id" bigint NULL,
+  "sent_at" timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY ("day")
+);
+-- Set comment to table: "sent_reports"
+COMMENT ON TABLE "pgflow_telemetry"."sent_reports" IS 'Audit log of every telemetry payload sent; unique day is the dedup marker';
+-- Create "report" function
+CREATE FUNCTION "pgflow_telemetry"."report" () RETURNS text LANGUAGE plpgsql SET "search_path" = '' AS $$
+declare
+  v_day date := current_date - 1;
+  v_payload jsonb;
+  v_request_id bigint;
+begin
+  -- Every failure path, including the gates below, returns a status:
+  -- query cancellation (SQLSTATE 57014) or any gate failure must not
+  -- escape this function (regression-tested in report.test.sql).
+  begin
+    if not exists (
+      select 1 from pgflow.runs r
+      where r.started_at >= v_day and r.started_at < v_day + 1
+    ) then
+      return 'skipped: inactive day';
+    end if;
+
+    if exists (
+      select 1 from pgflow_telemetry.sent_reports s where s.day = v_day
+    ) then
+      return 'skipped: already reported';
+    end if;
+
+    -- Local CLI stack (developer machines, CI on supabase start) never sends.
+    if pgflow.is_local() then
+      return 'skipped: local';
+    end if;
+  exception
+    when query_canceled then
+      return 'error: canceled';
+    when others then
+      return 'error: gate failed';
+  end;
+
+  begin
+    v_payload := pgflow_telemetry.build_payload(v_day);
+    -- build_payload enforces the receiver's limits; this guard keeps a
+    -- future regression from queueing a body the receiver would reject.
+    if jsonb_array_length(v_payload->'contributions') > 64
+      or octet_length(v_payload::text) > 2048 then
+      return 'error: build failed';
+    end if;
+  exception
+    when query_canceled then
+      return 'error: canceled';
+    when others then
+      return 'error: build failed';
+  end;
+
+  -- pg_net queues transactionally: a failure in the audit insert or the
+  -- prune rolls the queued request back with everything else in this block.
+  begin
+    v_request_id := net.http_post(
+      url => 'https://pgflow-telemetry.workers.dev',
+      body => v_payload,
+      headers => jsonb_build_object('Content-Type', 'application/json'),
+      timeout_milliseconds => 5000
+    );
+    insert into pgflow_telemetry.sent_reports (day, payload, request_id)
+    values (v_day, v_payload, v_request_id);
+
+    delete from pgflow_telemetry.sent_reports
+    where day < current_date - 90;
+  exception
+    when query_canceled then
+      return 'error: canceled';
+    when others then
+      return 'error: send failed';
+  end;
+
+  return 'sent: ' || v_request_id;
+end
+$$;
+-- Create "enable" function
+CREATE FUNCTION "pgflow_telemetry"."enable" () RETURNS void LANGUAGE plpgsql SET "search_path" = '' AS $$
+declare
+  v_jobid bigint;
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtext('pgflow_telemetry_report')
+  );
+
+  perform pgflow_telemetry.disable();
+  v_jobid := cron.schedule(
+    'pgflow_telemetry_report',
+    '17 3 * * *',
+    $cron$begin; set local statement_timeout = '5 s'; select pgflow_telemetry.report(); commit;$cron$
+  );
+  insert into pgflow_telemetry.job_registry (jobname, jobid)
+  values ('pgflow_telemetry_report', v_jobid)
+  on conflict (jobname) do update
+    set jobid = excluded.jobid, created_at = now();
+end
+$$;
+-- Create "preview" function
+CREATE FUNCTION "pgflow_telemetry"."preview" ("p_day" date DEFAULT (CURRENT_DATE - 1)) RETURNS jsonb LANGUAGE sql STABLE SET "search_path" = '' AS $$ select pgflow_telemetry.build_payload(p_day) $$;
+
+-- Scheduled exactly once, here. Later migrations must NEVER re-schedule this
+-- job: a re-schedule would silently re-enable telemetry for opted-out users.
+-- The command carries the 5 s statement timeout at the cron boundary because
+-- PostgreSQL does not arm a statement_timeout changed inside a running
+-- function (verified against 17.6; see telemetry-evidence/correction-1).
+-- The schedule call registers its job id in pgflow_telemetry.job_registry:
+-- cron.job row security hides the job from other roles, and disable()
+-- reconciles the registry while job_is_scheduled() proves actual existence.
+insert into pgflow_telemetry.job_registry (jobname, jobid)
+select 'pgflow_telemetry_report', cron.schedule(
+  'pgflow_telemetry_report',
+  '17 3 * * *',
+  $cron$begin; set local statement_timeout = '5 s'; select pgflow_telemetry.report(); commit;$cron$
+);
