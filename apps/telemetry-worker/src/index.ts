@@ -29,6 +29,9 @@ type BucketKind =
   | 'yes' | 'semver';
 
 const METRICS: Record<string, BucketKind> = {
+  cli_install_fresh: 'semver',
+  cli_install_update: 'semver',
+  cli_install_noop: 'semver',
   active_db_day: 'yes',
   workers_by_version: 'semver',
   version_changed: 'yes',

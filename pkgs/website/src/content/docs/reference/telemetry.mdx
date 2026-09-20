@@ -3,17 +3,48 @@ title: Telemetry
 description: What anonymous usage data pgflow collects, how to inspect it, and how to disable it
 ---
 
-pgflow includes anonymous, opt-out telemetry. It answers one question for the maintainers: **is pgflow actually used, and which features matter?** Your data stays yours — nothing below can identify you, your project, or your users.
+pgflow includes anonymous, opt-out telemetry. It answers one question for the maintainers: **is pgflow actually used, and which features matter?**
+
+**pgflow never sends or stores information that can identify you, your project, or your users.** The only variable exact value from your installation that is stored as telemetry is a pgflow semantic version such as `0.18.0`. Everything else is a fixed label defined in the source code or a coarse bucket. No exact usage count, duration, source timestamp, migration filename, or other exact project value leaves your machine or database.
+
+Two narrowly scoped signals are sent:
+
+- After `pgflow install` completes successfully outside CI and tests, the CLI sends one installation-result event.
+- Once per active day, a non-local database sends one aggregate usage report. Nothing is sent per run, step, or task, so telemetry never touches the execution path.
 
 ## What is collected
 
-Once per day, your database aggregates yesterday's activity into coarse buckets and sends one small JSON document. Nothing is sent per run, per step, or per task — telemetry never touches the execution path.
+### Installation command
 
-The payload contains only:
+A successful `pgflow install` sends only:
+
+- The exact pgflow CLI version
+- A fixed result label: `fresh`, `update`, or `noop`
+- The number of copied pgflow migrations as a coarse bucket (`0`, `1`, `2-3`, `4-7`, and so on)
+
+`fresh` means that no recognized pgflow migration existed, `update` means that older pgflow migrations existed and new ones were copied, and `noop` means that all bundled pgflow migrations were already present. Raw migration timestamps, filenames, project migration counts, paths, and installation errors are never sent. The event looks like this:
+
+```json
+{
+  "schema": 1,
+  "contributions": [
+    {
+      "metric": "cli_install_update",
+      "bucket": "0.18.0",
+      "count": "4-7"
+    }
+  ]
+}
+```
+
+### Daily database report
+
+Once per day, your database aggregates yesterday's activity into coarse buckets and sends one small JSON document. The payload contains only:
 
 - Whether any runs happened that day
 - Which pgflow versions started workers, and whether a version changed
 - Coarse counts: runs started, run outcomes, workers started/stopped, registered worker functions
+- Registered worker start modes (`http` or `process`)
 - Flow shape in buckets: steps per flow, which features appear (map steps, conditions, retries, delays, graceful failure, step queues)
 - Coarse durations and task counts in fixed ranges
 
@@ -39,11 +70,13 @@ A payload never exceeds 64 contributions or 2 KB. On an unusually varied day the
 
 ## What is never collected
 
-No slugs, flow or step names, queue names, function names, run or task IDs, inputs, outputs, error messages, URLs, hostnames, environment names, IP addresses, or any free text. No cookies. No account. Nothing that could identify you, your project, or your users.
+pgflow collects no slugs, flow or step names, queue names, function names, migration names or timestamps, run or task IDs, inputs, outputs, error messages, URLs, file paths, hostnames, environment names, operating-system details, IP addresses, or free text. It creates no account, persistent installation ID, machine ID, project ID, or cookie.
+
+The telemetry application cannot connect two reports to the same installation. It cannot count unique users or reconstruct one project's history.
 
 ## Inspect exactly what is sent
 
-Every payload is stored before it leaves, so you can audit the real bytes:
+The installation event shape is shown above and is fixed in the open-source CLI. Every daily database payload is stored before it leaves, so you can audit its exact bytes:
 
 ```sql
 select jsonb_pretty(payload)
@@ -61,11 +94,21 @@ select pgflow_telemetry.preview('2026-09-10');   -- any past day
 
 ## Disable or re-enable
 
-Telemetry is opt-out and runs as a daily `pg_cron` job. The job's presence is the switch:
+Telemetry is opt-out. The CLI shows a disclosure before installation and does not ask for permission.
+
+Disable the installation event for one command:
+
+```bash frame="none"
+PGFLOW_TELEMETRY_DISABLED=1 npx pgflow@latest install
+```
+
+The CLI also honors the conventional `DO_NOT_TRACK=1` environment variable. It never sends installation telemetry in CI or tests. Set either variable in your shell profile to disable CLI telemetry permanently on that machine.
+
+Daily database telemetry uses a `pg_cron` job. The job's presence is the switch:
 
 ```sql
-select pgflow_telemetry.disable();  -- stop reporting
-select pgflow_telemetry.enable();   -- resume reporting
+select pgflow_telemetry.disable();  -- stop daily database reports
+select pgflow_telemetry.enable();   -- resume daily database reports
 ```
 
 `disable()` errors instead of reporting success when it cannot prove the job absent — for example when the job was scheduled by a different database role and `cron.job` row security hides it from yours. In that case run `disable()` as the role that installed pgflow (the migration or `enable()` caller). On a vanilla PostgreSQL install where pgflow's migration owner is neither superuser, `BYPASSRLS`, nor a role that inherits the privileges of the `cron.job` owner, the same row security also hides the job from the privileged check itself; the error then names the one-line fix, reassigning `pgflow_telemetry.job_is_scheduled()` to a capable owner (on Supabase the migration owner `postgres` already qualifies, so this never applies there). Calling `disable()` when no job exists is a safe no-op.
@@ -74,9 +117,9 @@ Local development databases (`supabase start`) never send telemetry, and days wi
 
 ## Privacy
 
-- Data goes to `https://pgflow-telemetry.workers.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
-- On the ingest side, stored data is retained for three months, then expires automatically.
+- Both signals go to `https://pgflow-telemetry.workers.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
+- Stored data expires automatically after three months.
 - The `sent_reports` audit table in your database is separate: its 90-day prune runs only as part of a successful daily report. Disabled databases and databases with inactive days keep their audit rows until you delete them yourself.
-- pgflow sends no identifiers and the ingest application stores no transport metadata (no IPs, no user agents). Cloudflare necessarily processes source IPs as network transport.
-- Counts are undercounts in practice: opt-outs, blocked egress, and failed sends are invisible. The maintainers treat every number as a lower bound and as directional product evidence only.
-- The sender is the open-source SQL in this repository; the receiver is the open-source Worker in `apps/telemetry-worker/`.
+- pgflow sends no identifiers and the telemetry application stores no transport metadata, including IP addresses or user agents. Cloudflare necessarily processes source IPs to carry the network request.
+- Counts are undercounts in practice: opt-outs, CI exclusion, blocked egress, and failed sends are invisible. The maintainers treat every number as a lower bound and as directional product evidence only.
+- Both senders and the receiver are open source: the CLI is in `pkgs/cli/`, the daily database sender is in `pkgs/core/schemas/`, and the receiver is in `apps/telemetry-worker/`.

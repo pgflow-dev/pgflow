@@ -6,6 +6,7 @@ import { updateConfigToml } from './update-config-toml.js';
 import { createFlowsDirectory } from './create-flows-directory.js';
 import { createExampleWorker } from './create-example-worker.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
+import { reportInstallTelemetry } from './report-install-telemetry.js';
 
 export default (program: Command) => {
   program
@@ -38,6 +39,10 @@ export default (program: Command) => {
         `  • Create ${chalk.cyan('supabase/functions/greet-user-worker/')} ${chalk.dim('(example worker)')}`,
         '',
         `  ${chalk.green('✓ Safe to re-run - completed steps will be skipped')}`,
+        '',
+        chalk.dim(
+          'Anonymous telemetry (no identifiers or project values). Opt out: PGFLOW_TELEMETRY_DISABLED=1 · pgflow.dev/reference/telemetry'
+        ),
       ].join('\n');
 
       log.info(summaryMsg);
@@ -85,8 +90,10 @@ export default (program: Command) => {
 
       // Step 4: Show completion message
       const outroMessages: string[] = [];
+      const migrationsChanged =
+        migrations?.kind === 'fresh' || migrations?.kind === 'update';
 
-      if (migrations || configUpdate || flowsDirectory || exampleWorker) {
+      if (migrationsChanged || configUpdate || flowsDirectory || exampleWorker) {
         outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(
@@ -107,7 +114,7 @@ export default (program: Command) => {
         stepNumber++;
       }
 
-      if (migrations) {
+      if (migrationsChanged) {
         outroMessages.push(
           `  ${stepNumber}. Apply migrations: ${chalk.cyan('supabase migrations up')}`
         );
@@ -119,5 +126,9 @@ export default (program: Command) => {
       );
 
       outro(outroMessages.join('\n'));
+
+      if (migrations) {
+        await reportInstallTelemetry(migrations);
+      }
     });
 };
