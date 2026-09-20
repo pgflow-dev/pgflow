@@ -415,7 +415,7 @@ begin
     or r.rolbypassrls
     or (
       not c.relforcerowsecurity
-      and pg_catalog.pg_has_role(current_user, c.relowner, 'member')
+      and pg_catalog.pg_has_role(current_user, c.relowner, 'usage')
     ),
     pg_catalog.pg_get_userbyid(c.relowner)
     into v_capable, v_job_owner
@@ -431,8 +431,8 @@ begin
     -- Fail closed: absence cannot be proven from a visibility-limited
     -- query, so telemetry must stay ENABLED until an operator makes the
     -- helper's owner capable. Never grant privileges here dynamically.
-    raise exception using message = format(
-      'pgflow telemetry: cannot prove the telemetry job absent: pgflow_telemetry.job_is_scheduled() owner %L is subject to cron.job row security; fix: ALTER FUNCTION pgflow_telemetry.job_is_scheduled() OWNER TO a superuser or BYPASSRLS role or a member of the cron.job owner %L, then rerun pgflow_telemetry.disable()',
+    raise exception using message = pg_catalog.format(
+      'pgflow telemetry: cannot prove the telemetry job absent: pgflow_telemetry.job_is_scheduled() owner %L is subject to cron.job row security; fix: ALTER FUNCTION pgflow_telemetry.job_is_scheduled() OWNER TO a superuser or BYPASSRLS role or a role that inherits the cron.job owner %L privileges, then rerun pgflow_telemetry.disable()',
       current_user,
       v_job_owner
     );
