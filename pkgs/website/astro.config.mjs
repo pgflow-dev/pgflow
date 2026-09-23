@@ -429,6 +429,7 @@ export default defineConfig({
                     { label: 'Permissions', link: '/reference/permissions/' },
                   ],
                 },
+                { label: 'Telemetry', link: '/reference/telemetry/' },
                 {
                   label: 'Configuration',
                   autogenerate: { directory: 'reference/configuration/' },

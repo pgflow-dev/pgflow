@@ -1,7 +1,7 @@
 ---
-title: 'pgflow 0.17.0: Private Step Queues'
-description: 'Tasks store their physical queue route, and flows can use one private queue per step. start_tasks() requires the canonical route - a breaking low-level change with a stop-the-world maintenance upgrade.'
-date: 2026-09-13
+title: 'pgflow 0.17.1: Private Step Queues and Anonymous Telemetry'
+description: 'Queue identity is now persisted per step and task, flows can use private step queues, and pgflow reports anonymous opt-out usage data.'
+date: 2026-09-18
 authors:
   - jumski
 tags:
@@ -11,6 +11,8 @@ featured: false
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+
+0.17.0 shipped the queue identity work below; 0.17.1 adds anonymous telemetry to the same feature set. If you are upgrading from 0.16.x, this article covers the whole 0.17.x line.
 
 pgflow now persists the physical queue identity of every step and task. `pgflow.steps` and `pgflow.step_tasks` gain a `queue_name` column that stores the canonical route, snapshotted when the task is created and never rewritten. A queued task's message identity is `(queue_name, message_id)` instead of `message_id` alone - PGMQ message ids are queue-scoped, so the same id in two different queues can no longer be mistaken for the same message. Existing flows use `queue_mode = 'flow'` and retain `lower(flow_slug)`. Wrap a new flow with `withStepQueues()` to use `queue_mode = 'step'`: each step receives a generated private queue.
 
@@ -36,3 +38,15 @@ Read the [data model](/concepts/data-model/) for what is stored, and the [update
 The ordered procedure with the exact SQL lives in the [update guide](/deploy/update-pgflow/#queue-identity-and-private-step-queues-0170). In short: update packages and copy migrations in advance, pause new producers, gracefully drain in-flight work while the old schema is present (waiting for running handlers to finish - not for queues to empty; queued tasks and messages are retained), stop every worker including HTTP re-invocation and long-running processes, quiesce maintenance/recovery/definition writers, apply the transactional migration through Supabase's migration runner (against the production database - `--linked` or `--db-url`, not the local default), replace the pruning helper if installed, deploy the matching package set, then resume maintenance, workers, and producers in that order - restoring the exact worker `enabled` states recorded before the window.
 
 The migration backfills existing steps and tasks with `lower(flow_slug)` and `queue_mode = 'flow'` - including tasks whose `message_id` is NULL - and fails atomically on conflicting data (flows differing only by slug case, case-only duplicate step slugs, invalid leading or trailing underscore or `__` slugs, duplicate `(queue_name, message_id)` pairs, queue names beyond PGMQ's 47-character limit). A failed migration leaves the database unchanged; resolve conflicts manually and re-run it. After a successful migration, old workers cannot simply restart. No queues or messages are migrated or recreated, and flow slug casing is untouched.
+
+## Anonymous telemetry
+
+pgflow now includes anonymous, opt-out usage telemetry so development can be guided by real usage instead of guesses. Once per day your database summarizes yesterday's activity into coarse buckets - active or not, versions running, run and worker counts, flow shapes, feature adoption - and sends one small JSON document. Nothing identifying ever leaves your database: no slugs, names, IDs, inputs, outputs, errors, or addresses.
+
+You can inspect the exact bytes of every past report with `select * from pgflow_telemetry.sent_reports`, preview any day with `pgflow_telemetry.preview()`, and disable it permanently with one line:
+
+```sql
+select pgflow_telemetry.disable();
+```
+
+Read the full details - what is collected, what is never collected, where data lives and for how long - in the [telemetry reference](/reference/telemetry/).

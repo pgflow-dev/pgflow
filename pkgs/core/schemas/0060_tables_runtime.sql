@@ -19,6 +19,7 @@ create table pgflow.runs (
 
 create index if not exists idx_runs_flow_slug on pgflow.runs (flow_slug);
 create index if not exists idx_runs_status on pgflow.runs (status);
+create index if not exists idx_runs_started_at on pgflow.runs (started_at);
 
 -- Step states table - tracks the state of individual steps within a run
 create table pgflow.step_states (

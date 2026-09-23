@@ -1,0 +1,82 @@
+---
+title: Telemetry
+description: What anonymous usage data pgflow collects, how to inspect it, and how to disable it
+---
+
+pgflow includes anonymous, opt-out telemetry. It answers one question for the maintainers: **is pgflow actually used, and which features matter?** Your data stays yours — nothing below can identify you, your project, or your users.
+
+## What is collected
+
+Once per day, your database aggregates yesterday's activity into coarse buckets and sends one small JSON document. Nothing is sent per run, per step, or per task — telemetry never touches the execution path.
+
+The payload contains only:
+
+- Whether any runs happened that day
+- Which pgflow versions started workers, and whether a version changed
+- Coarse counts: runs started, run outcomes, workers started/stopped, registered worker functions
+- Flow shape in buckets: steps per flow, which features appear (map steps, conditions, retries, delays, graceful failure, step queues)
+- Coarse durations and task counts in fixed ranges
+
+An example of the exact shape:
+
+```json
+{
+  "schema": 1,
+  "contributions": [
+    { "metric": "active_db_day", "bucket": "yes" },
+    { "metric": "runs_started_day", "bucket": "16-31" },
+    { "metric": "run_outcomes", "bucket": "completed", "count": "8-15" },
+    { "metric": "workers_by_version", "bucket": "0.17.0", "count": "2-3" },
+    { "metric": "steps_per_flow", "bucket": "2-3", "count": "1" },
+    { "metric": "uses_map", "bucket": "yes" }
+  ]
+}
+```
+
+Counts use fixed ranges (`0`, `1`, `2-3`, `4-7`, … `256+`), durations use fixed ranges (`<100ms` … `7d+`). Exact values never leave your database.
+
+A payload never exceeds 64 contributions or 2 KB. On an unusually varied day the sender keeps a deterministic subset (`active_db_day` first, then metric/bucket order), so a reported histogram can be an undercount — never an overcount. `pgflow_telemetry.preview()` shows exactly the bounded payload that would be sent.
+
+## What is never collected
+
+No slugs, flow or step names, queue names, function names, run or task IDs, inputs, outputs, error messages, URLs, hostnames, environment names, IP addresses, or any free text. No cookies. No account. Nothing that could identify you, your project, or your users.
+
+## Inspect exactly what is sent
+
+Every payload is stored before it leaves, so you can audit the real bytes:
+
+```sql
+select jsonb_pretty(payload)
+from pgflow_telemetry.sent_reports
+order by day desc
+limit 1;
+```
+
+Preview any day without sending:
+
+```sql
+select pgflow_telemetry.preview();                -- yesterday
+select pgflow_telemetry.preview('2026-09-10');   -- any past day
+```
+
+## Disable or re-enable
+
+Telemetry is opt-out and runs as a daily `pg_cron` job. The job's presence is the switch:
+
+```sql
+select pgflow_telemetry.disable();  -- stop reporting
+select pgflow_telemetry.enable();   -- resume reporting
+```
+
+`disable()` errors instead of reporting success when it cannot prove the job absent — for example when the job was scheduled by a different database role and `cron.job` row security hides it from yours. In that case run `disable()` as the role that installed pgflow (the migration or `enable()` caller). On a vanilla PostgreSQL install where pgflow's migration owner is neither superuser, `BYPASSRLS`, nor a role that inherits the privileges of the `cron.job` owner, the same row security also hides the job from the privileged check itself; the error then names the one-line fix, reassigning `pgflow_telemetry.job_is_scheduled()` to a capable owner (on Supabase the migration owner `postgres` already qualifies, so this never applies there). Calling `disable()` when no job exists is a safe no-op.
+
+Local development databases (`supabase start`) never send telemetry, and days without runs send nothing. The scheduled job bounds itself with a 5-second statement timeout. If you call `pgflow_telemetry.report()` manually, set your own `statement_timeout` first: PostgreSQL cannot arm a timeout that changes inside a running function.
+
+## Privacy
+
+- Data goes to `https://pgflow-telemetry.workers.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
+- On the ingest side, stored data is retained for three months, then expires automatically.
+- The `sent_reports` audit table in your database is separate: its 90-day prune runs only as part of a successful daily report. Disabled databases and databases with inactive days keep their audit rows until you delete them yourself.
+- pgflow sends no identifiers and the ingest application stores no transport metadata (no IPs, no user agents). Cloudflare necessarily processes source IPs as network transport.
+- Counts are undercounts in practice: opt-outs, blocked egress, and failed sends are invisible. The maintainers treat every number as a lower bound and as directional product evidence only.
+- The sender is the open-source SQL in this repository; the receiver is the open-source Worker in `apps/telemetry-worker/`.
