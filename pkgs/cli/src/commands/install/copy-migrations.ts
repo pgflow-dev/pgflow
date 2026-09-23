@@ -155,13 +155,18 @@ function generateNewTimestamp(
 // Find the migrations directory
 const sourcePath = findMigrationsDirectory();
 
+export type MigrationInstallResult = {
+  kind: 'fresh' | 'update' | 'noop';
+  copied: number;
+};
+
 export async function copyMigrations({
   supabasePath,
   autoConfirm = false,
 }: {
   supabasePath: string;
   autoConfirm?: boolean;
-}): Promise<boolean> {
+}): Promise<MigrationInstallResult | null> {
   const migrationsPath = path.join(supabasePath, 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
@@ -180,7 +185,7 @@ export async function copyMigrations({
     log.info(
       'If running in development mode, try building the core package first with: nx build core'
     );
-    return false;
+    return null;
   }
 
   // Get all existing migrations in user's directory
@@ -231,10 +236,10 @@ export async function copyMigrations({
     }
   }
 
-  // If no files to copy, show message and return false (no changes made)
+  // If no files need copying, this is a successful no-op install.
   if (filesToCopy.length === 0) {
     log.success('Migrations already up to date');
-    return false;
+    return { kind: 'noop', copied: 0 };
   }
 
   // Generate new timestamps for migrations to install
@@ -267,7 +272,7 @@ export async function copyMigrations({
 
     if (confirmResult !== true) {
       log.warn('Migration installation skipped');
-      return false;
+      return null;
     }
   }
 
@@ -281,5 +286,8 @@ export async function copyMigrations({
 
   log.success(`Installed ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}`);
 
-  return true; // Return true to indicate migrations were copied
+  return {
+    kind: skippedFiles.length === 0 ? 'fresh' : 'update',
+    copied: filesToCopy.length,
+  };
 }

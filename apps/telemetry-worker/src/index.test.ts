@@ -50,6 +50,24 @@ describe('telemetry ingest', () => {
     expect(points).toHaveLength(3);
   });
 
+  it.each([
+    'cli_install_fresh',
+    'cli_install_update',
+    'cli_install_noop',
+  ])('accepts the %s event with version and migration-count bucket', async (metric) => {
+    const { env, points } = makeEnv();
+    const res = await post({
+      schema: 1,
+      contributions: [{ metric, bucket: '0.18.0', count: '4-7' }],
+    }, env);
+    expect(res.status).toBe(204);
+    expect(points).toEqual([{
+      indexes: [metric],
+      blobs: ['0.18.0', '4-7'],
+      doubles: [1],
+    }]);
+  });
+
   it('stores the count bucket as a second blob', async () => {
     const { env, points } = makeEnv();
     await post(valid, env);

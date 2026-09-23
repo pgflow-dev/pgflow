@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+export PGFLOW_TELEMETRY_DISABLED=1
 
 # Script to test pgflow CLI install duplicate prevention
 # Uses a temp directory to avoid conflicts with other tests
