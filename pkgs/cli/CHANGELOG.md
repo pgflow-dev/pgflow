@@ -1,5 +1,14 @@
 # pgflow
 
+## 0.17.1
+
+### Patch Changes
+
+- e3262ad: Report anonymous fresh, update, or no-op install completion telemetry with the pgflow version and a bucketed migration count. CI, tests, `DO_NOT_TRACK`, and `PGFLOW_TELEMETRY_DISABLED` disable the event.
+- Updated dependencies [4f7f279]
+- Updated dependencies [7cb6808]
+  - @pgflow/core@0.17.1
+
 ## 0.17.0
 
 ### Minor Changes
