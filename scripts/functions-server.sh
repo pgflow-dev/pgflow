@@ -256,6 +256,10 @@ run_with_functions_server() { # run_with_functions_server <command...>
     [[ "$server_status" == 0 ]] && return 1
     return "$server_status"
   fi
+  if [[ "$command_status" != 0 ]]; then
+    echo "Monitored command exited with status $command_status. Function server log:" >&2
+    cat "$FUNCTIONS_SERVER_LOG" >&2 || true
+  fi
   return "$command_status"
 }
 
@@ -355,8 +359,15 @@ self_test() {
 
   begin_server bash -c 'echo "Serving functions on http://127.0.0.1:9999/functions/v1/x"; exec sleep 30'
   expect_status "suite failure status survives" 0 wait_for_functions_server
+  echo 'worker failure diagnostic' >>"$FUNCTIONS_SERVER_LOG"
   expect_status "suite failure returns its status" 11 \
-    run_with_functions_server bash -c 'exit 11'
+    run_with_functions_server bash -c 'exit 11' 2>"$tmp/suite-stderr"
+  expect_status "suite failure includes the function server log" 0 \
+    grep -qx 'worker failure diagnostic' "$tmp/suite-stderr"
+  expect_status "successful suite returns zero" 0 \
+    run_with_functions_server bash -c 'exit 0' 2>"$tmp/success-stderr"
+  expect_status "successful suite does not dump the function server log" 0 \
+    test ! -s "$tmp/success-stderr"
   stop_functions_server
 
   : >"$tmp/docker-calls"
