@@ -18,7 +18,7 @@ describe('reportInstallTelemetry', () => {
 
     expect(send).toHaveBeenCalledOnce();
     const [url, request] = send.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://pgflow-telemetry.workers.dev/');
+    expect(url).toBe('https://telemetry.pgflow.dev/');
     expect(request.method).toBe('POST');
     expect(JSON.parse(request.body as string)).toEqual({
       schema: 1,
