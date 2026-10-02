@@ -89,13 +89,25 @@ describe('telemetry ingest', () => {
     expect(points[2].blobs).toEqual(['yes']);
   });
 
-  it('rejects GET with 405', async () => {
-    const { env } = makeEnv();
+  it('redirects GET to the telemetry docs with 302 without writing points', async () => {
+    const { env, points } = makeEnv();
     const res = await worker.fetch(
       new Request('https://telemetry.pgflow.dev/', { method: 'GET' }),
       env,
     );
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('https://pgflow.dev/reference/telemetry/');
+    expect(points).toHaveLength(0);
+  });
+
+  it.each(['HEAD', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])('rejects %s with 405 without writing points', async (method) => {
+    const { env, points } = makeEnv();
+    const res = await worker.fetch(
+      new Request('https://telemetry.pgflow.dev/', { method }),
+      env,
+    );
     expect(res.status).toBe(405);
+    expect(points).toHaveLength(0);
   });
 
   it('rejects malformed JSON with 400', async () => {

@@ -2,6 +2,10 @@ name = "pgflow-telemetry"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
+[[routes]]
+pattern = "telemetry.pgflow.dev"
+custom_domain = true
+
 [[analytics_engine_datasets]]
 binding = "PGFLOW_TELEMETRY"
 dataset = "pgflow_telemetry"
