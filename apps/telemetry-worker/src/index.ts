@@ -126,6 +126,9 @@ const reject = (status: number) => new Response(null, {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method === 'GET') {
+      return Response.redirect('https://pgflow.dev/reference/telemetry/', 302);
+    }
     if (request.method !== 'POST') return reject(405);
 
     const contentType = request.headers.get('content-type') ?? '';
