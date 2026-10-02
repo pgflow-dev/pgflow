@@ -24,7 +24,7 @@ function post(
   contentType = 'application/json',
 ): Promise<Response> {
   return worker.fetch(
-    new Request('https://pgflow-telemetry.workers.dev/', {
+    new Request('https://telemetry.pgflow.dev/', {
       method: 'POST',
       headers: { 'content-type': contentType },
       body: raw ? (body as string) : JSON.stringify(body),
@@ -92,7 +92,7 @@ describe('telemetry ingest', () => {
   it('rejects GET with 405', async () => {
     const { env } = makeEnv();
     const res = await worker.fetch(
-      new Request('https://pgflow-telemetry.workers.dev/', { method: 'GET' }),
+      new Request('https://telemetry.pgflow.dev/', { method: 'GET' }),
       env,
     );
     expect(res.status).toBe(405);

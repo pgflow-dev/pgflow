@@ -78,7 +78,7 @@ select is(
 select is(
   (
     select count(*) from net.http_request_queue q
-    where q.url like 'https://pgflow-telemetry.workers.dev%'
+    where q.url like 'https://telemetry.pgflow.dev%'
       and convert_from(q.body, 'UTF8')::jsonb = pgflow_telemetry.preview(current_date - 1)
   ),
   1::bigint,
@@ -117,7 +117,7 @@ select is(
 select is(
   (
     select count(*) from net.http_request_queue
-    where url like 'https://pgflow-telemetry.workers.dev%'
+    where url like 'https://telemetry.pgflow.dev%'
   ),
   0::bigint,
   'failed send rolls the pg_net queue insert back'
@@ -266,7 +266,7 @@ select is(
 select is(
   (
     select count(*) from net.http_request_queue
-    where url like 'https://pgflow-telemetry.workers.dev%'
+    where url like 'https://telemetry.pgflow.dev%'
   ),
   0::bigint,
   'ordinary gate failure queues no HTTP request'

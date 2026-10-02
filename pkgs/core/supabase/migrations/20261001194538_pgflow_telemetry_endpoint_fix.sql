@@ -1,19 +1,5 @@
--- Daily collector. One pg_net attempt, no retries, no response inspection:
--- telemetry must be invisible to the host database, so every failure path
--- (including query cancellation) returns an 'error: ' status silently, and
--- the queue insert, audit row, and prune roll back together.
---
--- statement_timeout is deliberately NOT set inside this function: PostgreSQL
--- does not arm a statement timer that changes mid-call (verified against
--- 17.6; see telemetry-evidence/correction-1). The cron command scheduled by
--- the telemetry migration and enable() wraps this call with
--- `set local statement_timeout = '5 s'`. Callers running report() manually
--- should set their own statement_timeout first.
-create or replace function pgflow_telemetry.report()
-returns text
-language plpgsql
-set search_path = ''
-as $$
+-- Modify "report" function
+CREATE OR REPLACE FUNCTION "pgflow_telemetry"."report" () RETURNS text LANGUAGE plpgsql SET "search_path" = '' AS $$
 declare
   v_day date := current_date - 1;
   v_payload jsonb;

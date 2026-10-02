@@ -1,7 +1,7 @@
 import { getVersion } from '../../utils/get-version.js';
 import type { MigrationInstallResult } from './copy-migrations.js';
 
-const ENDPOINT = 'https://pgflow-telemetry.workers.dev/';
+const ENDPOINT = 'https://telemetry.pgflow.dev/';
 const SEMVER_RE = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 
 type Environment = Record<string, string | undefined>;

@@ -115,9 +115,17 @@ select pgflow_telemetry.enable();   -- resume daily database reports
 
 Local development databases (`supabase start`) never send telemetry, and days without runs send nothing. The scheduled job bounds itself with a 5-second statement timeout. If you call `pgflow_telemetry.report()` manually, set your own `statement_timeout` first: PostgreSQL cannot arm a timeout that changes inside a running function.
 
+## Upgrading from 0.17.1
+
+pgflow 0.17.1 pointed both senders at `https://pgflow-telemetry.workers.dev`, a hostname that does not resolve. The corrected endpoint is `https://telemetry.pgflow.dev`.
+
+- Databases get the corrected daily sender through a new pgflow migration that replaces `pgflow_telemetry.report()`. Update pgflow, rerun `pgflow install` to copy the migration, and apply it with your normal Supabase migration workflow. Databases that disabled telemetry stay disabled: the migration replaces only the function and never reschedules the reporting job.
+- The corrected installation sender ships in the pgflow CLI patch release; update the CLI you invoke (`npx pgflow@latest`).
+- Deploying the collector endpoint alone does not repair 0.17.1: its senders keep using the unresolvable hostname until you upgrade.
+
 ## Privacy
 
-- Both signals go to `https://pgflow-telemetry.workers.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
+- Both signals go to `https://telemetry.pgflow.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
 - Stored data expires automatically after three months.
 - The `sent_reports` audit table in your database is separate: its 90-day prune runs only as part of a successful daily report. Disabled databases and databases with inactive days keep their audit rows until you delete them yourself.
 - pgflow sends no identifiers and the telemetry application stores no transport metadata, including IP addresses or user agents. Cloudflare necessarily processes source IPs to carry the network request.
