@@ -123,8 +123,6 @@ pgflow 0.17.1 pointed both senders at `https://pgflow-telemetry.workers.dev`, a 
 - The corrected installation sender ships in the pgflow CLI patch release; update the CLI you invoke (`npx pgflow@latest`).
 - Deploying the collector endpoint alone does not repair 0.17.1: its senders keep using the unresolvable hostname until you upgrade.
 
-Until the upgrade lands, daily reports from 0.17.1 databases fail silently, exactly like any other send failure: no error surfaces in your database, and the day is not retried.
-
 ## Privacy
 
 - Both signals go to `https://telemetry.pgflow.dev`, a [Cloudflare Worker](https://workers.cloudflare.com/) backed by [Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/).
