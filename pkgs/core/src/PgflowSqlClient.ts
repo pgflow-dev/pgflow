@@ -56,12 +56,13 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
   }
 
   async completeTask(stepTask: StepTaskKey, output?: Json): Promise<void> {
+    // postgres.js binds sql.json(null) as SQL NULL; coalesce to JSON null.
     await this.sql`
       SELECT pgflow.complete_task(
         run_id => ${stepTask.run_id}::uuid,
         step_slug => ${stepTask.step_slug}::text,
         task_index => ${stepTask.task_index}::int,
-        output => ${this.sql.json(output || null)}::jsonb
+        output => coalesce(${this.sql.json(output ?? null)}::jsonb, 'null'::jsonb)
       );
     `;
   }
