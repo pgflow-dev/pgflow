@@ -25,7 +25,7 @@
 -- message is touched.
 create or replace function pgflow.start_tasks(
   flow_slug text,
-  msg_ids bigint [],
+  msg_ids bigint[],
   worker_id uuid,
   queue_name text,
   step_slug text default null
