@@ -1,16 +1,9 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { StepTaskRecord } from '@pgflow/core';
+import type { Json, StepTaskRecord } from '@pgflow/core';
 import type { IPgflowClient } from '@pgflow/core';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, TaskLogContext } from '../platform/types.js';
 import type { StepTaskHandlerContext } from '../core/context.js';
-
-class AbortError extends Error {
-  constructor() {
-    super('Operation aborted');
-    this.name = 'AbortError';
-  }
-}
 
 /**
  * Configuration for worker identity in logging
@@ -81,20 +74,22 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
   }
 
   async execute(): Promise<void> {
+    if (this.signal.aborted) {
+      this.logger.debug(`Aborted execution for step task ${this.msgId}`);
+      return;
+    }
+
     const logContext = this.buildLogContext();
+    // Telemetry before execution is not a handler failure.
+    this.logger.taskStarted(logContext);
+    const startTime = Date.now();
+    let result: Json;
 
     try {
-      if (this.signal.aborted) {
-        throw new AbortError();
-      }
-
-      // Check if already aborted before starting
+      // Logging may have triggered shutdown before the handler starts.
       this.signal.throwIfAborted();
 
       const stepSlug = this.stepTask.step_slug;
-
-      // Log task started at debug level
-      this.logger.taskStarted(logContext);
 
       // Get the step handler from the flow with proper typing
       const stepDef = this.flow.getStepDefinition(stepSlug);
@@ -102,9 +97,6 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
       if (!stepDef) {
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
-
-      // Measure handler execution duration
-      const startTime = Date.now();
 
       // Route input based on step type and dependencies
       let handlerInput: unknown;
@@ -120,37 +112,64 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
       }
 
       // !!! HANDLER EXECUTION !!!
-      const result = await stepDef.handler(handlerInput, this.context);
+      result = await stepDef.handler(handlerInput, this.context);
       // !!! HANDLER EXECUTION !!!
-
-      const durationMs = Date.now() - startTime;
-
-      // Log task completed at verbose level
-      this.logger.taskCompleted(logContext, durationMs);
-      await this.adapter.completeTask(this.stepTask, result);
     } catch (error) {
       await this.handleExecutionError(error, logContext);
+      return;
+    }
+
+    // A successful handler still gets one completion attempt during shutdown.
+    // v1 has no claim-replay contract: acknowledgement errors escape to the
+    // worker error boundary without retry (the RPC may already have committed).
+    // In-memory results cannot be recovered after process death.
+    const durationMs = Date.now() - startTime;
+    await this.reportResult(
+      () => this.logger.taskCompleted(logContext, durationMs),
+      () => this.adapter.completeTask(this.stepTask, result)
+    );
+  }
+
+  /** Report once even if telemetry throws, then surface both errors if needed. */
+  private async reportResult(log: () => void, report: () => Promise<void>) {
+    const errors: unknown[] = [];
+    try {
+      log();
+    } catch (error) {
+      errors.push(error);
+    }
+    try {
+      await report();
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length === 1) {
+      throw errors[0];
+    }
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'Task result logging and reporting failed');
     }
   }
 
   /**
    * Handles the error that occurred during execution.
    *
-   * If the error is an AbortError, it means that the worker was aborted and stopping,
-   * the task will be picked up by another worker later.
-   *
-   * Otherwise, it marks the task as failed.
+   * Only the worker shutdown signal classifies an execution as interrupted.
+   * An unrelated AbortError from a handler is still a handler failure.
    */
   private async handleExecutionError(error: unknown, logContext: TaskLogContext) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (this.signal.aborted) {
       this.logger.debug(`Aborted execution for step task ${this.msgId}`);
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
-      // Log task failed at verbose level using structured method
-      const errorObj = error instanceof Error ? error : new Error(String(error));
-      this.logger.taskFailed(logContext, errorObj);
-      await this.adapter.failTask(this.stepTask, error);
+      await this.reportResult(
+        () => {
+          const errorObj = error instanceof Error ? error : new Error(String(error));
+          this.logger.taskFailed(logContext, errorObj);
+        },
+        () => this.adapter.failTask(this.stepTask, error)
+      );
     }
   }
 }
