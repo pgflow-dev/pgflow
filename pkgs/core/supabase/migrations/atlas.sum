@@ -1,4 +1,4 @@
-h1:sOlj3XB6+Tss5pInYvuwe/yxDhipAVGK/ZF49e+gLAo=
+h1:mY/dlzJLq3/OBDZj5QD3exFFZ1ba5tO9ScipRaJcr5E=
 20250429164909_pgflow_initial.sql h1:I3n/tQIg5Q5nLg7RDoU3BzqHvFVjmumQxVNbXTPG15s=
 20250517072017_pgflow_fix_poll_for_tasks_to_use_separate_statement_for_polling.sql h1:wTuXuwMxVniCr3ONCpodpVWJcHktoQZIbqMZ3sUHKMY=
 20250609105135_pgflow_add_start_tasks_and_started_status.sql h1:ggGanW4Wyt8Kv6TWjnZ00/qVb3sm+/eFVDjGfT8qyPg=
@@ -26,3 +26,4 @@ h1:sOlj3XB6+Tss5pInYvuwe/yxDhipAVGK/ZF49e+gLAo=
 20260919152659_pgflow_fix_force_skip_multi_queue.sql h1:DC7uQRwjpOm3A4NtDYb3SjbSSqQix4MlQ4+BnhGQ/Q8=
 20260920093533_pgflow_telemetry.sql h1:dp3gNRSUpTNoPH9w4n9P7CBhXFoJspQ+hP9MfQ1u3Fg=
 20261001194538_pgflow_telemetry_endpoint_fix.sql h1:/ROJiUnHzOt6xsw9f877wY6KlrVOFxpjGBuFuweX6Is=
+20261102104928_pgflow_worker_startup_handshake.sql h1:TnfsZkNyx4CItISg+jQWsIbteVeHBfLIyvaOWlDWEE0=

@@ -27,7 +27,49 @@ curl http://localhost:54321/functions/v1/my-worker
 SELECT pgflow.track_worker_function('my-worker');
 ```
 
-Once registered, pgflow tracks the worker in the `worker_functions` table and keeps it alive automatically.
+Once registered, pgflow tracks the function in `worker_functions` and starts it when no healthy worker or current pending invocation exists.
+
+### Startup handshake
+
+Before sending an HTTP request, `pgflow.ensure_workers()` reserves a unique `invocation_id` on the function's registration. Reservation and HTTP enqueue share one transaction. Concurrent cron calls cannot reserve another current pending invocation for that function.
+
+The HTTP handler authenticates the request before checking the ID. The ID correlates a request; it is not a credential. Receipt alone leaves the invocation pending. After initialization, SQL atomically accepts the still-current, unexpired ID and registers the ready worker before processing starts. Duplicate deliveries to independent runtimes can accept only one new worker. A healthy existing runtime acknowledges the specific request without another processing loop.
+
+Pending startup expires after **60 seconds**, measured by the database clock. This allows slow initialization beyond the default six-second debounce without another request. Lost delivery or hung startup therefore delays retry for up to the pending timeout, plus the cron interval and any remaining debounce. Initialization that exceeds the deadline cannot start processing; it needs a new invocation. An explicit initialization failure records a reason and permits retry after debounce.
+
+Old IDs cannot dismiss a newer pending invocation. A lost readiness response can recover the same committed worker registration.
+
+A separate 60-second runtime watchdog aborts a hung start and releases the local startup guard, so a later valid request can use the surviving runtime. SQL still decides whether a token can authorize readiness; the watchdog cannot extend or replace its database-clock expiry. Initialization SQL uses transaction-local 60-second statement and idle-transaction timeouts, so a blocked start cannot occupy the only database connection forever. These timeouts do not change task-handler SQL or process-worker startup.
+
+`debounce` remains a retry throttle and the heartbeat freshness threshold; it is not the pending-start correctness mechanism. Function names remain independent: `my-worker` and `my-worker-b` can intentionally serve the same queue. Node/Bun registrations with `start_mode = 'process'` never enter HTTP scheduling.
+
+<Aside type="caution" title="Not lifetime ownership">
+This handshake prevents redundant pending starts, not all runtime overlap. A previously ready worker can lose heartbeats, trigger replacement, and later resume. pgflow cannot evict a hosted runtime or force the next request onto another runtime. Strict lifetime ownership and task fencing are separate work in [#697](https://github.com/pgflow-dev/pgflow/issues/697). Keep application side effects idempotent under the existing retry rules.
+</Aside>
+
+### Direct requests and local development
+
+Authenticated production requests may omit `invocation_id`, including an empty-body `curl` request. The handler registers an unknown function without overwriting an existing registration, then reserves through the same SQL protocol. It cannot enable a disabled function, convert a process registration, or bypass a pending startup. A healthy worker in the same runtime returns `running` without another loop. Otherwise, unavailable startup returns HTTP **409** (`startup_unavailable`); retry only after the current attempt or retry throttle permits it.
+
+Requests with an ID must supply a JSON object containing a UUID `invocation_id`. Expired, dismissed, superseded, or differently accepted IDs return HTTP **409** (`invocation_rejected`), even when a runtime survives. Malformed bodies or IDs return **400**. Production authentication remains `Authorization: Bearer <PGFLOW_AUTH_SECRET>` with the existing service-role-key fallback. Missing or invalid credentials return **401**; an invocation ID never bypasses this check.
+
+Local requests keep the existing local authentication exemption, but use the same reservation, expiry, and readiness checks. Local cron no longer pings every enabled function unconditionally. After a code reload, it waits for the old worker to stop or its heartbeat to become stale. A lost request can add up to 60 seconds before retry. The initial local `curl` above still works; a 409 during startup does not mean another worker should start.
+
+Internal low-level worker/lifecycle bootstrap without an invocation ID remains a legacy, unprotected path. Use `EdgeWorker.start()` on Supabase for the HTTP handshake; process workers self-start separately.
+
+### Upgrade existing SQL and workers
+
+Apply the SQL migration **before deploying the new worker package**. New HTTP workers fail closed against old SQL; there is no tokenless fallback. Old workers can run against the added SQL fields, but ignore invocation IDs and never acknowledge them. Mixed old/new deployments do not provide the pending-start guarantee for old runtimes.
+
+For a controlled rollout:
+
+1. Record each HTTP function's current `enabled` value. Preserve intentionally disabled functions.
+2. Disable restarts and drain existing workers using [Update Deployed Flows](/deploy/supabase/update-deployed-flows/). Pause external/manual pings too: older workers can ignore `enabled` on direct requests. Disabling does not evict a hosted runtime.
+3. Install and apply the engine migration through your normal database migration process. Keep restarts disabled.
+4. Deploy matching new worker packages to every HTTP function. Do not rely on handshake protection while old runtimes still serve requests.
+5. Restore each function's exact recorded `enabled` value. Check pending state, the accepted worker ID, package version, and fresh heartbeats before treating the rollout as complete.
+
+The handshake adds no stronger drain or eviction guarantee. A completed handshake does not mean the worker stopped.
 
 ## Per-step queue workers
 
@@ -106,7 +148,7 @@ trigger: "1. Trigger" {
   deprecate: "You deprecate\nworkers by function"
   deprecate.class: neutral
 
-  heartbeat: "Worker sends\nheartbeat (every 6s)"
+  heartbeat: "Worker sends\nheartbeat (every 5s)"
   heartbeat.class: info
 
   response: "DB returns\nis_deprecated: true"
@@ -128,7 +170,7 @@ shutdown: "2. Graceful Shutdown" {
   exit: "Worker\nexits"
   exit.class: step_completed
 
-  skip: "Cron skips\n(not restarted)"
+  skip: "Cron restarts\nif enabled"
   skip.class: step_failed
 
   stop -> finish
@@ -144,7 +186,7 @@ trigger.response -> shutdown.stop: "isRunning = false"
 3. **Worker stops polling** - Worker stops accepting new tasks
 4. **Finish in-flight work** - Worker completes any currently running task
 5. **Graceful shutdown** - Worker exits cleanly
-6. **No restart** - Cron skips deprecated workers when checking for restarts
+6. **Restart if enabled** - Cron can invoke the function again unless its registration is disabled
 
 ## Tracking Workers
 
@@ -154,7 +196,36 @@ Query the `worker_functions` table to see registered workers:
 SELECT * FROM pgflow.worker_functions;
 ```
 
-Query the `workers` table to see active worker instances:
+Check startup state separately from worker lifetime:
+
+```sql
+SELECT
+  wf.function_name,
+  wf.invocation_id,
+  wf.invocation_status,
+  wf.invocation_expires_at,
+  wf.invocation_worker_id,
+  wf.invocation_error,
+  CASE
+    WHEN NOT wf.enabled THEN 'disabled'
+    WHEN wf.start_mode = 'process' THEN 'process'
+    WHEN EXISTS (
+      SELECT 1 FROM pgflow.workers AS w
+      WHERE w.function_name = wf.function_name
+        AND w.stopped_at IS NULL AND w.deprecated_at IS NULL
+        AND w.last_heartbeat_at > clock_timestamp() - wf.debounce
+    ) THEN 'ready'
+    WHEN wf.invocation_status = 'pending'
+      AND wf.invocation_expires_at > clock_timestamp() THEN 'pending'
+    ELSE 'retryable'
+  END AS startup_state
+FROM pgflow.worker_functions AS wf
+ORDER BY wf.function_name;
+```
+
+`invocation_status = 'ready'` records a completed handshake, not current liveness. An expired `pending` invocation is retryable. Retry still obeys debounce. The query reports readiness only when a healthy worker exists.
+
+Query the `workers` table to see non-stopped worker instances; also check heartbeat freshness and deprecation before treating one as healthy:
 
 ```sql
 SELECT
@@ -168,6 +239,16 @@ FROM pgflow.workers
 WHERE stopped_at IS NULL
 ORDER BY started_at DESC;
 ```
+
+## Troubleshooting worker startup
+
+Run the `worker_functions` query above first. `startup_state` and `invocation_error` explain most startup situations.
+
+- `startup_state = 'pending'` with a future `invocation_expires_at` means a start is in flight. Do not send another request; retry happens automatically after the 60-second expiry plus the cron interval and any remaining debounce.
+- `startup_state = 'retryable'` with `invocation_error` set means initialization failed and pgflow recorded the reason. Fix the underlying cause in the function logs; the invocation clears on the next successful reservation and needs no manual cleanup.
+- HTTP **409** `invocation_rejected` on a manual request means its `invocation_id` expired, was superseded, or was already accepted. Repeat the request without the ID; the handler reserves through the same protocol.
+- HTTP **409** `startup_unavailable` means the runtime could not start a worker. Retry after the current attempt finishes or debounce passes.
+- Two live workers for one function: the handshake prevents duplicate pending starts, not runtime overlap. A worker accepted earlier can stay live while a replacement starts. Deprecate the stale worker instead of disabling the function.
 
 ## Prerequisites
 

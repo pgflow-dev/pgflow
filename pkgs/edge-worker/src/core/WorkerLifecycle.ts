@@ -32,10 +32,15 @@ export class WorkerLifecycle<IMessage extends Json> implements InternalLifecycle
 
     // Register this edge function for monitoring by ensure_workers() cron.
     const startMode = workerBootstrap.startMode ?? 'http';
-    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
+    if (!workerBootstrap.invocationId) {
+      if (startMode === 'http') {
+        this.logger.warn('Tokenless low-level bootstrap bypasses the HTTP startup handshake; use EdgeWorker.start() on Supabase');
+      }
+      await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
+    }
 
     this.logger.debug(`Ensuring queue '${this.queue.queueName}' exists...`);
-    await this.queue.safeCreate();
+    await this.queue.safeCreate(workerBootstrap.invocationId);
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,

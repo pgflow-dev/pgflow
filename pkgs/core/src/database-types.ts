@@ -359,6 +359,11 @@ export type Database = {
           debounce: unknown
           enabled: boolean
           function_name: string
+          invocation_error: string | null
+          invocation_expires_at: string | null
+          invocation_id: string | null
+          invocation_status: string | null
+          invocation_worker_id: string | null
           last_invoked_at: string | null
           start_mode: string
           updated_at: string
@@ -368,6 +373,11 @@ export type Database = {
           debounce?: unknown
           enabled?: boolean
           function_name: string
+          invocation_error?: string | null
+          invocation_expires_at?: string | null
+          invocation_id?: string | null
+          invocation_status?: string | null
+          invocation_worker_id?: string | null
           last_invoked_at?: string | null
           start_mode?: string
           updated_at?: string
@@ -377,6 +387,11 @@ export type Database = {
           debounce?: unknown
           enabled?: boolean
           function_name?: string
+          invocation_error?: string | null
+          invocation_expires_at?: string | null
+          invocation_id?: string | null
+          invocation_status?: string | null
+          invocation_worker_id?: string | null
           last_invoked_at?: string | null
           start_mode?: string
           updated_at?: string
@@ -450,6 +465,31 @@ export type Database = {
       _resolve_step_queue_name: {
         Args: { p_flow_slug: string; p_step_index: number; p_step_slug: string }
         Returns: string
+      }
+      accept_worker_invocation: {
+        Args: {
+          function_name: string
+          invocation_id: string
+          pgflow_version: string
+          queue_name: string
+          worker_id: string
+        }
+        Returns: {
+          deprecated_at: string | null
+          function_name: string
+          last_heartbeat_at: string
+          pgflow_version: string | null
+          queue_name: string
+          started_at: string
+          stopped_at: string | null
+          worker_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "workers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       add_step: {
         Args: {
@@ -565,6 +605,10 @@ export type Database = {
         Args: { p_flow_slug: string }
         Returns: undefined
       }
+      dismiss_worker_invocation: {
+        Args: { function_name: string; invocation_id: string; reason: string }
+        Returns: boolean
+      }
       ensure_flow_compiled: {
         Args: {
           flow_slug: string
@@ -638,7 +682,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      reconcile_worker_invocation: {
+        Args: {
+          function_name: string
+          invocation_id: string
+          worker_id?: string
+        }
+        Returns: string
+      }
       requeue_stalled_tasks: { Args: never; Returns: number }
+      reserve_worker_invocation: {
+        Args: { function_name: string }
+        Returns: string
+      }
       set_vt_batch: {
         Args: { msg_ids: number[]; queue_name: string; vt_offsets: number[] }
         Returns: {
