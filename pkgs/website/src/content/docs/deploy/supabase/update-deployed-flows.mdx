@@ -100,13 +100,15 @@ Throughout, replace `your-worker-name` with your Edge Function name.
 
 6. ### Restore the recorded enabled state
 
-   ```sql "true"
+   Replace the placeholder with the boolean value you recorded in step 1:
+
+   ```sql
    UPDATE pgflow.worker_functions
-   SET enabled = true
+   SET enabled = <recorded-enabled-from-step-1>
    WHERE function_name = 'your-worker-name';
    ```
 
-   Set the value you recorded in step 1. The example restores `true`. If you recorded `false`, restore `false`: pgflow then keeps the worker stopped, which preserves an intentionally disabled function.
+   Restore `true` only if you recorded `true`. If you recorded `false`, restore `false` to keep the function disabled.
 
 7. ### Confirm the new worker runs
 
@@ -222,15 +224,15 @@ Use an in-place update when the function names stay the same. Fence the complete
 
 5. ### Restore the recorded states and check coverage
 
-   Restore each function's exact recorded value in one statement:
+   Replace each placeholder with that function's recorded boolean value. Restore those values in one statement:
 
    ```sql
    UPDATE pgflow.worker_functions AS worker_function
    SET enabled = recorded.enabled
    FROM (
      VALUES
-       ('flow-step-a', true),
-       ('flow-step-b', true)
+       ('flow-step-a', <recorded-enabled-for-flow-step-a>),
+       ('flow-step-b', <recorded-enabled-for-flow-step-b>)
    ) AS recorded(function_name, enabled)
    WHERE worker_function.function_name = recorded.function_name;
    ```
@@ -283,7 +285,7 @@ WHERE status = 'started'
   );
 ```
 
-The stalled-task cron requeues such tasks after the step timeout plus 30 seconds, up to 3 attempts, then marks them with `permanently_stalled_at`. Requeued tasks return to `queued` and the next worker picks them up. Check the step handler logs for the root cause. See [Troubleshooting Stalled Tasks](/deploy/troubleshooting-stalled-tasks/).
+The stalled-task cron requeues such tasks after the step timeout plus 30 seconds, up to 3 attempts, then marks them with `permanently_stalled_at` and terminalizes them through the step's `whenExhausted` policy. Requeued tasks return to `queued` and the next worker picks them up. Check the step handler logs for the root cause. See [Troubleshooting Stalled Tasks](/deploy/troubleshooting-stalled-tasks/).
 
 ### No new worker after re-enabling
 

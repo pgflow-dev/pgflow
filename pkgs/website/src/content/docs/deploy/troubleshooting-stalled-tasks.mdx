@@ -21,14 +21,15 @@ pgflow automatically recovers stalled tasks via a cron job that runs every 15 se
 2. **Requeue** - Resets task status to `queued` and clears `started_at`
 3. **Tracking** - Increments `requeued_count` and sets `last_requeued_at` for observability
 4. **Limit** - After 3 requeue attempts, archives the message and marks the task with `permanently_stalled_at` timestamp
+5. **Escalation** - A separate cron job applies the step's `whenExhausted` policy (`fail`, `skip`, or `skip-cascade`) to the stamped task, terminalizing the task and its step
 
 <Aside type="note" title="Why limit requeues?">
   The 3-attempt limit prevents infinite recovery loops. If a task keeps stalling
   after 3 requeues, it likely has a deeper issue (e.g., input data that crashes
-  the handler, external service permanently down). The task's status remains
-  `'started'` but is excluded from reprocessing by the `permanently_stalled_at`
-  timestamp so you can investigate the root cause rather than endlessly
-  retrying.
+  the handler, external service permanently down). The task is then
+  terminalized through `whenExhausted` — the same policy that governs
+  handler-error exhaustion — and the `permanently_stalled_at` timestamp stays
+  on the task so you can investigate the root cause.
 </Aside>
 
 ## Find Currently Stalled Tasks
@@ -53,7 +54,7 @@ ORDER BY st.started_at;
 
 ## Find Tasks That Exceeded Max Requeues
 
-Tasks that have been requeued 3 or more times need manual investigation:
+Tasks that exceeded the requeue cap were terminalized through their step's `whenExhausted` policy. Their `permanently_stalled_at` timestamp identifies the incident:
 
 ```sql
 SELECT
@@ -71,16 +72,87 @@ ORDER BY st.permanently_stalled_at DESC;
 
 These tasks have a persistent issue causing repeated stalls. Check your step handler logs and input data to determine the root cause.
 
+## Upgrade With Existing Stamped Tasks
+
+Deployments upgraded from earlier pgflow versions may hold stamped tasks that never escalated. Review the backlog before upgrading:
+
+```sql
+SELECT r.flow_slug, r.run_id, st.step_slug, st.task_index, st.status,
+       st.requeued_count, st.permanently_stalled_at
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON r.run_id = st.run_id
+WHERE st.permanently_stalled_at IS NOT NULL
+  AND st.status IN ('started', 'queued')
+  AND r.status = 'started'
+ORDER BY st.permanently_stalled_at;
+```
+
+<Aside type="caution">
+  On upgrade, the escalation cron job terminalizes this backlog through each
+  step's `whenExhausted` policy. For steps using `skip` or `skip-cascade`, that
+  can start or enqueue **dependent business work** which the stalled runs
+  previously blocked. If downstream execution must not start, record the current
+  settings for workers and external callbacks before you pause them. Restore
+  those settings only after review.
+
+  To pause scheduled recovery before upgrading, save the JSON result below
+  outside your SQL session. Then pause both jobs. Keep this saved result until
+  you restore the jobs after the upgrade; do not take another snapshot while
+  they are paused.
+
+  ```sql
+  -- 1. Save the result before pausing either job
+  SELECT coalesce(jsonb_object_agg(job.jobname, job.active), '{}'::jsonb) AS saved_job_states
+  FROM cron.job AS job
+  WHERE job.jobname IN ('pgflow_requeue_stalled_tasks', 'pgflow_escalate_permanently_stalled');
+
+  -- 2. Pause both jobs
+  SELECT cron.alter_job(job_id => job.jobid, active => false)
+  FROM cron.job AS job
+  WHERE job.jobname IN ('pgflow_requeue_stalled_tasks', 'pgflow_escalate_permanently_stalled');
+
+  -- 3. After the upgrade and review, replace the placeholder with the saved JSON
+  WITH saved_state AS (
+    SELECT 'PASTE_SAVED_JOB_STATES_HERE'::jsonb AS jobs
+  ), restore_state AS (
+    SELECT job.jobid,
+      CASE
+        WHEN saved_state.jobs ? job.jobname
+          THEN (saved_state.jobs -> job.jobname)::boolean
+        -- A new escalation job inherits the recovery job's saved state
+        WHEN job.jobname = 'pgflow_escalate_permanently_stalled'
+          THEN (saved_state.jobs -> 'pgflow_requeue_stalled_tasks')::boolean
+      END AS active
+    FROM cron.job AS job
+    CROSS JOIN saved_state
+    WHERE job.jobname IN ('pgflow_requeue_stalled_tasks', 'pgflow_escalate_permanently_stalled')
+  )
+  SELECT cron.alter_job(job_id => restore_state.jobid, active => restore_state.active)
+  FROM restore_state
+  WHERE restore_state.active IS NOT NULL;
+  ```
+
+  Jobs that were already paused stay paused. The queries do not change their
+  schedules or recreate absent jobs. If the upgrade creates the escalation job,
+  it inherits the recovery job's saved state. Saved values must be JSON booleans
+  (`true` or `false`), not strings or numbers. If you lose the saved JSON, do not
+  enable jobs until you check their intended state.
+</Aside>
+
+The escalation job is scheduled automatically only where the recovery job is
+already present: an absent recovery job stays absent, and a paused recovery
+job stays paused for escalation.
+
 ## Customize Cron Interval
 
-The stalled task recovery cron runs every 15 seconds by default. To change the interval:
+The stalled task recovery cron jobs run every 15 seconds by default. To change the interval:
 
 ```sql
 SELECT pgflow.setup_requeue_stalled_tasks_cron('30 seconds');
 ```
 
 <Aside type="tip">
-  The function is idempotent - calling it replaces any existing job with the new
+  The function is idempotent - calling it replaces both jobs with the new
   interval.
 </Aside>
 
