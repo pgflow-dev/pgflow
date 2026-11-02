@@ -1,5 +1,4 @@
 -- Test: ensure_workers() respects debounce window in production mode
--- Note: Debounce only applies in production mode; local mode bypasses debounce
 begin;
 select plan(4);
 select pgflow_tests.reset_db();
@@ -42,6 +41,10 @@ select is(
   'Function with last_invoked_at beyond timeout IS returned'
 );
 
+-- End the previous attempt before checking another retry-throttle scenario.
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test retry')
+from pgflow.worker_functions;
+
 -- TEST: Function with NULL last_invoked_at IS returned
 update pgflow.worker_functions
 set last_invoked_at = null
@@ -52,6 +55,9 @@ select is(
   1::bigint,
   'Function with NULL last_invoked_at IS returned'
 );
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test retry')
+from pgflow.worker_functions;
 
 -- TEST: Debounce uses debounce interval from function config
 update pgflow.worker_functions

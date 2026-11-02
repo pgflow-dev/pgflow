@@ -10,9 +10,13 @@ banner:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-When updating flows that are already deployed to production, follow this sequence to prevent old and new worker versions from processing tasks simultaneously. The order matters: the `ensure_workers()` cron restarts any function whose `worker_functions` row is `enabled`, so you must disable the row before you deprecate workers.
+When updating flows that are already deployed to production, disable restarts and drain old workers before deploying the new version. The order matters: the `ensure_workers()` cron restarts any function whose `worker_functions` row is `enabled`, so you must disable the row before you deprecate workers.
 
 See [Worker Management](/deploy/worker-management/) for how worker registration, deprecation, and heartbeats work.
+
+<Aside type="caution" title="Startup acknowledgement is not lifetime fencing">
+The [startup handshake](/deploy/worker-management/#startup-handshake) prevents redundant pending starts, not every overlap after heartbeat loss. Disabling a function rejects new readiness acknowledgements but does not evict already-ready hosted runtimes. Older worker versions can also ignore `enabled` on direct requests; pause external pings during an update. This procedure adds no stronger drain or ownership guarantee.
+</Aside>
 
 <Aside type="note" title="First Time Deployment?">
 If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/) for initial setup instructions.
@@ -42,7 +46,7 @@ Throughout, replace `your-worker-name` with your Edge Function name.
    WHERE function_name = 'your-worker-name';
    ```
 
-   While `enabled` is `false`, the cron stops pinging this function. Disable the row before deprecating workers, otherwise the cron restarts the old worker within a second of the deprecation.
+   While `enabled` is `false`, the cron stops pinging this function. Disable the row before deprecating workers, otherwise the cron can request another worker with the old code once no healthy worker or unexpired pending invocation remains.
 
 3. ### Deprecate live workers
 
@@ -96,7 +100,7 @@ Throughout, replace `your-worker-name` with your Edge Function name.
    npx supabase functions deploy your-worker-name
    ```
 
-   The function row stays disabled during deployment, so nothing restarts the worker while the new code deploys.
+   The function row stays disabled during deployment, so automatic restarts remain paused while the new code deploys.
 
 6. ### Restore the recorded enabled state
 
@@ -118,7 +122,7 @@ Throughout, replace `your-worker-name` with your Edge Function name.
      AND last_heartbeat_at > now() - interval '6 seconds';
    ```
 
-   Expect a row with a current heartbeat and a `started_at` after your deploy. The cron pings the re-enabled function within seconds and the new worker starts.
+   Expect a row with a current heartbeat and a `started_at` after your deploy. The cron can reserve startup when no healthy worker or unexpired pending invocation remains. A lost pending request can delay retry for up to 60 seconds, plus the cron interval and any remaining debounce.
 
 </Steps>
 
@@ -171,7 +175,7 @@ Deploy the per-step-queue definition as a new flow version: keep the old slug ru
 
 ### Replace the worker set without changing routing
 
-Use an in-place update when the function names stay the same. Fence the complete function set before the first deploy so one flow cannot run a mixture of handler versions.
+Use an in-place update when the function names stay the same. Disable the complete function set before the first deploy and drain the old workers before replacing code.
 
 <Steps>
 
@@ -196,7 +200,7 @@ Use an in-place update when the function names stay the same. Fence the complete
    WHERE function_name IN ('flow-step-a', 'flow-step-b');
    ```
 
-   This stops `ensure_workers()` from restarting the old code. Pause every system that invokes these functions directly before continuing; disabling the rows does not block direct HTTP requests.
+   This stops `ensure_workers()` from restarting the old code. Pause every system that invokes these functions directly before continuing. New HTTP workers reject startup while disabled; older workers can ignore the setting on direct requests.
 
 3. ### Deprecate and drain every old worker
 
@@ -248,9 +252,9 @@ Use new function names only when the old and new handlers are safe to run side b
 Two mechanisms overlap during an update:
 
 - **Worker lifetime.** An Edge Function keeps running for up to 150s (free tier) or 400s (paid) after deployment. Without deprecation, the old worker keeps processing tasks while the new version starts, so both versions run simultaneously.
-- **Automatic restart.** The `ensure_workers()` cron runs every second and pings every function whose `worker_functions` row is `enabled` and has no alive worker. Deprecated workers do not count as alive. If you deprecate workers while the row stays enabled, the cron pings the function within a second and starts another worker with the old, still-deployed code. The deprecation undoes itself.
+- **Automatic restart.** The `ensure_workers()` cron checks every second. An enabled HTTP function can receive a new startup request when no healthy worker or unexpired pending invocation exists and debounce permits it. Deprecated workers do not count as healthy. Deprecation alone therefore allows another startup with the old, still-deployed code.
 
-This is why the sequence disables the function row first: deprecation then drains the workers, deployment swaps the code, and re-enabling starts exactly one worker with the new code.
+This is why the sequence disables the function row first: deprecation then drains the workers, deployment swaps the code, and re-enabling permits startup under the pending-invocation protocol. It does not create a lifetime ownership lease.
 
 ## When the Drain or Restart Does Not Complete
 
@@ -265,7 +269,7 @@ WHERE function_name = 'your-worker-name'
 ORDER BY started_at DESC;
 ```
 
-A row with `deprecated_at IS NULL` and a `started_at` after your deprecation means something started the function again. Two sources do this: the cron (the function row was re-enabled) and any direct HTTP request to the function (this starts a worker even while the row is disabled, because the function is still deployed). Confirm `enabled = false`, find the source of the restart, then repeat step 3 to deprecate the new worker.
+A row with `deprecated_at IS NULL` and a `started_at` after your deprecation means something started the function again. Two sources do this: the cron (the function row was re-enabled) and direct HTTP requests handled by older worker versions, which can start while the row is disabled. New HTTP workers respect the disabled registration, but disabling does not stop an already-ready worker. Confirm `enabled = false`, find the source of the restart, then repeat step 3 to deprecate the new worker.
 
 ### Tasks stay in started
 
@@ -290,13 +294,15 @@ The stalled-task cron requeues such tasks after the step timeout plus 30 seconds
 Check whether the cron is pinging the function:
 
 ```sql
-SELECT function_name, enabled, last_invoked_at
+SELECT function_name, enabled, last_invoked_at, invocation_id,
+       invocation_status, invocation_expires_at, invocation_worker_id, invocation_error
 FROM pgflow.worker_functions
 WHERE function_name = 'your-worker-name';
 ```
 
 - `enabled` is `false`: step 6 did not restore the row. Restore it.
-- `last_invoked_at` does not advance: the cron is not invoking the function. Check the cron job exists and the vault secrets are set, because the cron builds the function URL and authorizes the ping from them:
+- `invocation_status` is `pending` with a future `invocation_expires_at`: wait for readiness or expiry; cron deliberately suppresses another request.
+- `last_invoked_at` does not advance and no healthy worker or unexpired pending invocation exists: check the retry throttle, then check the cron job exists and the vault secrets are set, because the cron builds the function URL and authorizes the ping from them:
 
   ```sql
   SELECT jobname, schedule, command
@@ -306,7 +312,7 @@ WHERE function_name = 'your-worker-name';
 
   See [Configure Secrets](/deploy/supabase/configure-secrets/).
 
-- `last_invoked_at` advances but no worker row appears: the ping reaches Supabase but the function fails to start. Check the Edge Function logs in the Supabase dashboard. See [Monitor workers health](/deploy/monitor-workers-health/).
+- `last_invoked_at` advances but no worker row appears: SQL reserved and enqueued a request, not proof of delivery or readiness. Check `invocation_status`, `invocation_error`, expiry, pg_net responses, and the Edge Function logs. See [Monitor workers health](/deploy/monitor-workers-health/).
 
 ## Monitoring Workers
 

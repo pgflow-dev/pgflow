@@ -47,6 +47,9 @@ select results_eq(
 -- Clear the request queue from the local test
 delete from net._http_response;
 
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next environment')
+from pgflow.worker_functions;
+
 -- Reset debounce timestamps
 update pgflow.worker_functions set last_invoked_at = now() - interval '10 seconds';
 

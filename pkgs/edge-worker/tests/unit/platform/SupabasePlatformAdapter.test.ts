@@ -34,6 +34,19 @@ function createMockDeps(overrides?: Partial<SupabasePlatformDeps>): SupabasePlat
   };
 }
 
+const invocationId = '69600000-0000-0000-0000-000000000001';
+
+// SQL is a transport boundary here. Protocol arbitration uses real SQL in
+// integration/workerInvocation.test.ts; these tests keep adapter lifecycle seams.
+function startupResult(strings: TemplateStringsArray, values: unknown[]) {
+  const query = strings.join('');
+  return [{
+    id: invocationId,
+    healthy: true,
+    status: query.includes('reconcile_worker_invocation') && values[2] ? 'ready' : 'pending',
+  }];
+}
+
 // ============================================================
 // Environment Validation Tests
 // ============================================================
@@ -360,7 +373,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -382,6 +395,7 @@ Deno.test({
       edgeFunctionName: 'functions/v1/my-worker',
       workerId: 'test-exec-id',
       startMode: 'http',
+      invocationId,
     });
   },
 });
@@ -399,7 +413,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -414,6 +428,7 @@ Deno.test({
           })
           : Promise.resolve(),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -433,7 +448,7 @@ Deno.test({
     responsePromise.then(() => {
       responseSettled = true;
     });
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     assertEquals(responseSettled, false, 'Response must wait for worker readiness');
 
@@ -476,6 +491,7 @@ Deno.test({
           requestShutdown?.();
           return Promise.resolve();
         },
+        get isRunning() { return false; },
         get isDeprecated() {
           return true;
         },
@@ -488,6 +504,7 @@ Deno.test({
           workerIds.push(workerBootstrap.workerId);
         },
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -502,7 +519,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -554,6 +571,7 @@ Deno.test({
           releaseStop = release;
         });
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -567,6 +585,7 @@ Deno.test({
         workerIds.push(workerBootstrap.workerId);
       },
       stop: () => Promise.resolve(),
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -580,7 +599,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -712,7 +731,7 @@ Deno.test({
     });
 
     const events: string[] = [];
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -739,6 +758,7 @@ Deno.test({
         events.push('worker.stop');
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -795,7 +815,7 @@ Deno.test({
     });
 
     const events: string[] = [];
-    const sql = (() => Promise.resolve([])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -821,6 +841,7 @@ Deno.test({
         workerStopCalls++;
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -985,6 +1006,7 @@ Deno.test({
           releaseOldStop = release;
         });
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -1009,6 +1031,7 @@ Deno.test({
         events.push('replacement.stop');
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -1022,7 +1045,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -1196,6 +1219,7 @@ Deno.test({
         events.push('old.stop');
         return Promise.resolve();
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -1209,6 +1233,7 @@ Deno.test({
         events.push('new.startOnlyOnce');
       },
       stop: () => Promise.resolve(),
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -1229,7 +1254,7 @@ Deno.test({
         events.push('markWorkerStopped');
         workerIds.push(values[0] as string);
       }
-      return Promise.resolve([{ has_active: true }]);
+      return Promise.resolve(startupResult(strings, values));
     }) as unknown as { end: () => Promise<void> };
     sql.end = () => Promise.resolve();
 
@@ -1285,7 +1310,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -1301,6 +1326,7 @@ Deno.test({
             resolveStartup = resolve;
           }),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -1350,7 +1376,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -1366,6 +1392,7 @@ Deno.test({
             rejectStartup = reject;
           }),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -1415,7 +1442,7 @@ Deno.test({
 
     let releaseSqlEnd = () => {};
     let sqlEndCalls = 0;
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -1569,7 +1596,7 @@ Deno.test({
       });
 
       const endCalls: unknown[] = [];
-      const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
         end: (options?: unknown) => Promise<void>;
       };
       sql.end = (options) => {
@@ -1589,6 +1616,7 @@ Deno.test({
       const worker = {
         startOnlyOnce: () => new Promise<void>(() => undefined),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },

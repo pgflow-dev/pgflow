@@ -1,93 +1,25 @@
--- Test: ensure_workers() queues HTTP request via pg_net
+-- Inspect the same enqueued batch; later cron calls must not replace pending requests.
 begin;
-select plan(5);
+select plan(6);
 select pgflow_tests.reset_db();
-
--- Clear any existing HTTP requests
-delete from net._http_response;
-
--- Setup: Register a worker function
 select pgflow.track_worker_function('my-function');
-
--- Set last_invoked_at to past (beyond debounce window)
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
--- Simulate local mode (will use local fallback credentials)
+select pgflow.track_worker_function('my-function-b');
 set local app.settings.jwt_secret = 'super-secret-jwt-token-with-at-least-32-characters-long';
-
--- Execute ensure_workers() and capture request_id
-with result as (
-  select * from pgflow.ensure_workers()
-)
-select is(
-  (select count(*) from result),
-  1::bigint,
-  'One function was invoked'
+create temporary table invocation as select * from pgflow.ensure_workers();
+select is((select count(*) from invocation), 2::bigint, 'queues distinct function replicas');
+select ok((select bool_and(request_id is not null) from invocation), 'returns queued request IDs');
+select is((select count(distinct request_id) from invocation), 2::bigint, 'each replica has a unique request ID');
+select results_eq(
+  $$select url from net.http_request_queue where id in (select request_id from invocation) order by url$$,
+  $$values ('http://kong:8000/functions/v1/my-function'::text), ('http://kong:8000/functions/v1/my-function-b'::text)$$,
+  'addresses each distinct function name'
 );
-
--- Check that an HTTP request was queued
--- Note: pg_net queues requests but doesn't execute until transaction commits
--- We check the internal request table to verify the request was created
-
--- TEST: Request was queued in net._http_response
--- Note: The request may be in a pending state in net's internal tables
--- For now, we verify the request_id returned is valid
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
-with result as (
-  select * from pgflow.ensure_workers()
-)
-select ok(
-  (select request_id is not null from result limit 1),
-  'HTTP request was queued (request_id returned)'
-);
-
--- TEST: HTTP request URL format is correct (base_url/function_name)
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
--- Store result in temp table to ensure ensure_workers() executes before we query the queue
-select * into temporary test_url_result from pgflow.ensure_workers();
-
-select ok(
-  (select url LIKE '%/functions/v1/my-function'
-   from net.http_request_queue
-   where id = (select request_id from test_url_result limit 1)),
-  'HTTP request URL ends with /functions/v1/{function_name}'
-);
-
-drop table test_url_result;
-
--- TEST: Multiple functions each get their own request
-select pgflow.track_worker_function('function-two');
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
-with result as (
-  select * from pgflow.ensure_workers()
-)
-select is(
-  (select count(distinct request_id) from result),
-  2::bigint,
-  'Each function gets its own request_id'
-);
-
--- TEST: request_ids are unique
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
-with result as (
-  select * from pgflow.ensure_workers()
-),
-ids as (
-  select request_id from result
-)
-select ok(
-  (select count(*) = count(distinct request_id) from ids),
-  'All request_ids are unique'
-);
-
+select ok((
+  select bool_and(convert_from(q.body, 'UTF8')::jsonb->>'invocation_id' = wf.invocation_id::text)
+  from invocation as i
+  join net.http_request_queue as q on q.id = i.request_id
+  join pgflow.worker_functions as wf on wf.function_name = i.function_name
+), 'HTTP body carries the matching reserved invocation ID');
+select is((select count(*) from pgflow.ensure_workers()), 0::bigint, 'another cron call cannot replace pending requests');
 select finish();
 rollback;

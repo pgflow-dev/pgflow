@@ -16,6 +16,10 @@ This guide explains how to update pgflow to the latest version, including packag
 All pgflow packages (npm and jsr) are versioned together. When you update one pgflow package, all others should be updated to the same version to maintain compatibility.
 </Aside>
 
+<Aside type="caution" title="HTTP startup handshake rollout">
+For the startup-invocation handshake, apply the engine SQL migration before deploying the new Edge Worker. Updating local imports alone does not deploy them. New HTTP workers fail closed against older SQL, while old workers ignore the new IDs. Follow the [SQL-first rollout](/deploy/worker-management/#upgrade-existing-sql-and-workers): record enabled states before disabling, drain, migrate, deploy every HTTP function, and restore each prior value exactly. Do not claim pending-start protection while older runtimes still serve requests.
+</Aside>
+
 ## What needs to be updated?
 
 When updating pgflow, you need to update:

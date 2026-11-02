@@ -56,11 +56,16 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     this._edgeFunctionName = workerBootstrap.edgeFunctionName;
 
     // Compile/verify the flow before any registration write
-    const compilationStatus = await this.ensureFlowCompiled();
+    const compilationStatus = await this.ensureFlowCompiled(workerBootstrap.invocationId);
 
     // Register this edge function for monitoring by ensure_workers() cron.
     const startMode = workerBootstrap.startMode ?? 'http';
-    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
+    if (!workerBootstrap.invocationId) {
+      if (startMode === 'http') {
+        this.logger.warn('Tokenless low-level bootstrap bypasses the HTTP startup handshake; use EdgeWorker.start() on Supabase');
+      }
+      await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName, startMode);
+    }
 
     // Log startup banner with compilation status
     this.logStartupBanner(compilationStatus);
@@ -74,7 +79,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
     this.workerState.transitionTo(States.Running);
   }
 
-  private async ensureFlowCompiled(): Promise<CompilationStatus> {
+  private async ensureFlowCompiled(invocationId?: string): Promise<CompilationStatus> {
     const shape = extractFlowShape(this.flow);
 
     // Queue mode and the complete ordered route map travel with the shape as
@@ -84,7 +89,8 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements InternalLifec
       this.flow.slug,
       shape,
       this.routing.queueMode,
-      this.routing.routes
+      this.routing.routes,
+      invocationId
     );
 
     if (result.status === 'mismatch') {

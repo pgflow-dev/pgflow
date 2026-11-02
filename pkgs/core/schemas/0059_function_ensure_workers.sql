@@ -1,116 +1,61 @@
--- Ensure Workers
--- Returns which worker functions should be invoked, makes HTTP requests, and updates last_invoked_at
--- Called by cron job to keep workers running
-
+-- Reserve and enqueue in the same transaction: delivery cannot precede the
+-- committed pending state, and enqueue failure rolls the reservation back.
+-- Startup eligibility (debounce, pending state, healthy workers) lives in
+-- pgflow.reserve_worker_invocation, shared with manual startup.
 create or replace function pgflow.ensure_workers()
 returns table (function_name text, invoked boolean, request_id bigint)
 language sql
 as $$
   with
-    -- Detect environment
-    env as (
+    -- Local development targets Kong directly without auth; production
+    -- resolves the project URL and service credentials from Vault.
+    env as materialized (
       select pgflow.is_local() as is_local
     ),
-
-    -- Get credentials: Local mode uses hardcoded URL, production uses vault secrets
-    -- Empty strings are treated as NULL using nullif()
-    -- pgflow_auth_secret takes priority over supabase_service_role_key for production auth
-    credentials as (
+    credentials as materialized (
       select
-        case
-          when (select is_local from env) then null
-          else coalesce(
-            nullif((select decrypted_secret from vault.decrypted_secrets where name = 'pgflow_auth_secret'), ''),
-            nullif((select decrypted_secret from vault.decrypted_secrets where name = 'supabase_service_role_key'), '')
-          )
-        end as service_role_key,
-        case
-          when (select is_local from env) then 'http://kong:8000/functions/v1'
-          else (select 'https://' || nullif(decrypted_secret, '') || '.supabase.co/functions/v1' from vault.decrypted_secrets where name = 'supabase_project_id')
-        end as base_url
+        case when e.is_local then null else coalesce(
+          nullif((select decrypted_secret from vault.decrypted_secrets where name = 'pgflow_auth_secret'), ''),
+          nullif((select decrypted_secret from vault.decrypted_secrets where name = 'supabase_service_role_key'), '')
+        ) end as service_role_key,
+        case when e.is_local then 'http://kong:8000/functions/v1' else (
+          select 'https://' || nullif(decrypted_secret, '') || '.supabase.co/functions/v1'
+          from vault.decrypted_secrets where name = 'supabase_project_id'
+        ) end as base_url,
+        e.is_local
+      from env as e
     ),
-
-    -- Only HTTP-started worker functions are supervised via HTTP pings.
-    http_worker_functions as (
-      select wf.function_name, wf.debounce, wf.last_invoked_at
+    -- One reservation per eligible function; unreserved functions send nothing.
+    reservations as materialized (
+      select wf.function_name, c.base_url, c.service_role_key, c.is_local,
+             pgflow.reserve_worker_invocation(wf.function_name) as invocation_id
       from pgflow.worker_functions as wf
-      where wf.enabled = true
-        and wf.start_mode = 'http'
-    ),
-
-    -- Find functions that pass the debounce check
-    debounce_passed as (
-      select wf.function_name, wf.debounce
-      from http_worker_functions as wf
-      where wf.last_invoked_at is null
-        or wf.last_invoked_at < now() - wf.debounce
-    ),
-
-    -- Find functions that have at least one alive worker
-    functions_with_alive_workers as (
-      select distinct w.function_name
-      from pgflow.workers as w
-      inner join debounce_passed as dp on w.function_name = dp.function_name
-      where w.stopped_at is null
-        and w.deprecated_at is null
-        and w.last_heartbeat_at > now() - dp.debounce
-    ),
-
-    -- Determine which functions should be invoked
-    -- Local mode: all enabled functions (bypass debounce AND alive workers check)
-    -- Production mode: only functions that pass debounce AND have no alive workers
-    functions_to_invoke as (
-      select wf.function_name
-      from http_worker_functions as wf
-      where pgflow.is_local() = true  -- Local: all enabled HTTP functions
-        or (
-          -- Production: debounce + no alive workers
-          wf.function_name in (select dp.function_name from debounce_passed as dp)
-          and wf.function_name not in (select faw.function_name from functions_with_alive_workers as faw)
-        )
-    ),
-
-    -- Make HTTP requests and capture request_ids
-    http_requests as (
-      select
-        fti.function_name,
-        net.http_post(
-          url => c.base_url || '/' || fti.function_name,
-          headers => case
-            when e.is_local then '{}'::jsonb
-            else jsonb_build_object(
-              'Content-Type', 'application/json',
-              'Authorization', 'Bearer ' || c.service_role_key
-            )
-          end,
-          body => '{}'::jsonb
-        ) as request_id
-      from functions_to_invoke as fti
       cross join credentials as c
-      cross join env as e
-      where c.base_url is not null
-        and (e.is_local or c.service_role_key is not null)
-    ),
-
-    -- Update last_invoked_at for invoked functions
-    updated as (
-      update pgflow.worker_functions as wf
-      set last_invoked_at = clock_timestamp()
-      from http_requests as hr
-      where wf.function_name = hr.function_name
-      returning wf.function_name
+      where wf.enabled and wf.start_mode = 'http'
+        and c.base_url is not null
+        and (c.is_local or c.service_role_key is not null)
+      -- Concurrent cron transactions acquire registration locks in one order.
+      order by wf.function_name
     )
-
-  select u.function_name, true as invoked, hr.request_id
-  from updated as u
-  inner join http_requests as hr on u.function_name = hr.function_name
+  -- pg_net delivers asynchronously after this transaction commits.
+  select r.function_name, true,
+    net.http_post(
+      url => r.base_url || '/' || r.function_name,
+      headers => case when r.is_local then '{"Content-Type":"application/json"}'::jsonb
+        else jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || r.service_role_key
+        ) end,
+      body => jsonb_build_object('invocation_id', r.invocation_id),
+      timeout_milliseconds => 60000
+    )
+  from reservations as r
+  where r.invocation_id is not null;
 $$;
 
 comment on function pgflow.ensure_workers() is
-'Ensures worker functions are running by pinging them via HTTP when needed.
-In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
-In production mode: only pings functions that pass debounce AND have no alive workers.
-Debounce: skips functions pinged within their debounce interval (production only).
-Credentials: Uses Vault secrets (pgflow_auth_secret with fallback to supabase_service_role_key, supabase_project_id) or local fallbacks.
-URL is built from project_id: https://{project_id}.supabase.co/functions/v1
-Returns request_id from pg_net for each HTTP request made.';
+'Enqueues HTTP startup only when no healthy worker or unexpired pending invocation exists.
+Reservations last 60 seconds; debounce throttles retries. Local development uses the same handshake
+with local URL/auth fallbacks. Credentials: Vault pgflow_auth_secret, falling back to
+supabase_service_role_key, and supabase_project_id. Returns the pg_net request_id;
+handshake state is in worker_functions.';

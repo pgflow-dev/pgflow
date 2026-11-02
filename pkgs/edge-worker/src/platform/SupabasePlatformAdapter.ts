@@ -15,7 +15,7 @@ import {
   resolveConnectionString,
   resolveSqlConnection,
 } from './resolveConnection.js';
-import { Queries } from '../core/Queries.js';
+import { Queries, WorkerInvocationRejectedError } from '../core/Queries.js';
 import { getPlatformDeps, type SupabasePlatformDeps } from './deps.js';
 
 /**
@@ -36,6 +36,10 @@ interface SupabaseEnv extends Record<string, string | undefined> {
  * settlement, worker drain, marking, and SQL close must all fit inside it.
  */
 const SUPABASE_SHUTDOWN_DEADLINE_MS = 5_000;
+
+// A local watchdog releases a hung runtime's startup guard. SQL's 60-second
+// database-clock expiry still authorizes readiness; this timer never does.
+const SUPABASE_STARTUP_TIMEOUT_MS = 60_000;
 
 /**
  * Supabase platform adapter for Deno runtime environment.
@@ -334,27 +338,59 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         return createUnauthorizedResponse();
       }
 
-      this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
+      const functionName = this.extractFunctionName(req);
+      let invocationId: string | undefined;
+      try {
+        const text = await req.text();
+        const body: unknown = text ? JSON.parse(text) : {};
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
+        const id = (body as { invocation_id?: unknown }).invocation_id;
+        if (id !== undefined) {
+          if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+            throw new Error('Invalid invocation_id');
+          }
+          invocationId = id;
+        }
+      } catch {
+        return Response.json({ error: 'Expected a JSON object with an optional UUID invocation_id' }, { status: 400 });
+      }
 
       try {
-        const wasStarted = await this.ensureWorkerStarted(req, createWorkerFn);
+        if (this.stopPromise) throw new Error('Worker startup rejected: shutdown in progress');
+        // Authenticated manual calls (and local development) reserve through
+        // the same SQL protocol. They never bypass a pending startup.
+        if (!invocationId) {
+          if (!this.workerReplacementPromise && this.worker?.isRunning && this.workerId
+            && await this.queries.isWorkerHealthy(functionName, this.workerId)) {
+            if (this.stopPromise) throw new Error('Worker startup rejected: shutdown in progress');
+            return Response.json({ status: 'running', workerId: this.workerId, functionName });
+          }
+          await this.queries.registerHttpWorkerFunction(functionName);
+          invocationId = await this.queries.reserveWorkerInvocation(functionName) ?? undefined;
+          if (!invocationId) {
+            return Response.json({ status: 'startup_unavailable', functionName }, { status: 409 });
+          }
+        }
+        const wasStarted = await this.ensureWorkerStarted(functionName, invocationId, createWorkerFn);
 
-        return new Response(JSON.stringify({
+        return Response.json({
           status: wasStarted ? 'started' : 'running',
           workerId: this.workerId,
-          functionName: this.edgeFunctionName,
-        }), {
-          headers: { 'Content-Type': 'application/json' },
+          functionName,
+          invocationId,
         });
       } catch (error) {
+        if (invocationId && !(error instanceof WorkerInvocationRejectedError)) {
+          await this.queries.dismissWorkerInvocation(functionName, invocationId, String(error))
+            .catch((dismissError) => this.logger.error('Could not dismiss failed startup', dismissError));
+        }
+        if (error instanceof WorkerInvocationRejectedError) {
+          return Response.json({ status: 'invocation_rejected', invocationId }, { status: 409 });
+        }
         this.logger.error('Worker startup failed', error);
         return createServerErrorResponse();
       }
     });
-  }
-
-  private needsWorkerReplacement(): boolean {
-    return !this.worker || this.worker.isDeprecated || this.worker.isStopped;
   }
 
   /**
@@ -363,7 +399,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
    * replacement, and once `stopPromise` exists no request can admit a new
    * replacement or report readiness after shutdown began.
    */
-  private async ensureWorkerStarted(req: Request, createWorkerFn: CreateWorkerFn): Promise<boolean> {
+  private async ensureWorkerStarted(
+    functionName: string, invocationId: string, createWorkerFn: CreateWorkerFn
+  ): Promise<boolean> {
     for (;;) {
       if (this.stopPromise) {
         throw new Error('Worker startup rejected: shutdown in progress');
@@ -377,13 +415,26 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         continue;
       }
 
-      if (!this.needsWorkerReplacement()) {
-        return false;
-      }
+      // Reconcile each request after any in-flight startup settles. Receipt
+      // alone cannot consume the token, and a ready runtime must acknowledge
+      // the specific invocation without another processing loop.
+      const reconciledWorker = this.worker;
+      const status = await this.queries.reconcileWorkerInvocation(
+        functionName, invocationId, reconciledWorker?.isRunning ? this.workerId : null
+      );
+      // A completed replacement can clear its promise before SQL responds.
+      // Its new identity makes this reconciliation stale, even without a guard.
+      if (this.worker !== reconciledWorker) continue;
+      if (status === 'rejected') throw new WorkerInvocationRejectedError();
+      if (this.stopPromise) throw new Error('Worker startup rejected: shutdown in progress');
+      // SQL awaits can admit another request in this runtime. Re-check before
+      // owning startup; a different runtime still arbitrates in SQL at readiness.
+      if (this.workerReplacementPromise) continue;
+      if (status === 'ready') return false;
 
       // Assign and own the replacement in one synchronous section so
       // shutdown always observes an admitted replacement.
-      const owned = this.replaceWorker(req, createWorkerFn);
+      const owned = this.replaceWorker(functionName, invocationId, createWorkerFn);
       this.workerReplacementPromise = owned;
       try {
         await owned;
@@ -403,7 +454,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     }
   }
 
-  private async replaceWorker(req: Request, createWorkerFn: CreateWorkerFn): Promise<void> {
+  private async replaceWorker(
+    functionName: string, invocationId: string, createWorkerFn: CreateWorkerFn
+  ): Promise<void> {
     const previousWorkerId = this.workerId;
 
     if (this.worker) {
@@ -411,14 +464,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       if (previousWorkerId) {
         await this.queries.markWorkerStopped(previousWorkerId);
       }
-      // Once adapter stop started the signal must stay aborted; the
-      // replacement worker then captures the aborted platform signal.
-      if (!this.stopPromise) {
-        this.abortController = new AbortController();
-      }
     }
 
-    this.edgeFunctionName = this.extractFunctionName(req);
+    this.edgeFunctionName = functionName;
 
     const workerId = previousWorkerId === null
       ? this.validatedEnv.SB_EXECUTION_ID
@@ -428,21 +476,43 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     this.loggingFactory.setWorkerId(workerId);
     this.loggingFactory.setWorkerName(this.edgeFunctionName);
 
+    // Reset even when a timed-out startup cleared the previous worker.
+    // Once adapter shutdown starts, the platform signal must stay aborted.
+    if (!this.stopPromise) this.abortController = new AbortController();
+
     // Create the worker using the factory function and the logger
     const worker = createWorkerFn(this.loggingFactory.createLogger);
     this.worker = worker;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
     try {
-      await worker.startOnlyOnce({
-        edgeFunctionName: this.edgeFunctionName,
-        workerId,
-        startMode: 'http',
-      });
+      await Promise.race([
+        worker.startOnlyOnce({
+          edgeFunctionName: this.edgeFunctionName,
+          workerId,
+          startMode: 'http',
+          invocationId,
+        }),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            timedOut = true;
+            reject(new Error(`Worker startup timed out after ${SUPABASE_STARTUP_TIMEOUT_MS}ms`));
+          }, SUPABASE_STARTUP_TIMEOUT_MS);
+        }),
+      ]);
     } catch (error) {
+      if (timedOut) {
+        // stop() aborts before it awaits initialization. Do not await a hung
+        // startup here: if it resumes, the aborted worker cannot process.
+        void worker.stop().catch((stopError) => this.logger.error('Timed-out startup cleanup failed', stopError));
+      }
       if (this.worker === worker) {
         this.worker = null;
       }
       throw error;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
