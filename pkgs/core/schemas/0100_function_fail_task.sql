@@ -87,23 +87,37 @@ WITH flow_info AS (
 fail_or_retry_task as (
   UPDATE pgflow.step_tasks as task
   SET
+    -- Exhaustion: attempts_count reached max_attempts, or stalled-task
+    -- recovery gave up on the task (permanently_stalled_at set). A marked
+    -- task exhausts regardless of its remaining attempts: its message was
+    -- archived, so a retry could never be delivered. attempts_count stays
+    -- untouched; it records committed claims (#689).
     status = CASE
-      WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
+      WHEN task.permanently_stalled_at IS NULL
+        AND task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
       ELSE 'failed'
     END,
     failed_at = CASE
-      WHEN task.attempts_count >= (SELECT opt_max_attempts FROM config) THEN now()
-      ELSE NULL
+      WHEN task.permanently_stalled_at IS NULL
+        AND task.attempts_count < (SELECT opt_max_attempts FROM config) THEN NULL
+      ELSE now()
     END,
     started_at = CASE
-      WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN NULL
+      WHEN task.permanently_stalled_at IS NULL
+        AND task.attempts_count < (SELECT opt_max_attempts FROM config) THEN NULL
       ELSE task.started_at
     END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
     AND task.task_index = fail_task.task_index
-    AND task.status = 'started'
+    AND (
+      task.status = 'started'
+      -- Marked queued leftovers from older callbacks: terminalize them too.
+      -- Ordinary unmarked queued tasks stay unchanged (a recovery requeue
+      -- owns their next attempt).
+      OR (task.status = 'queued' AND task.permanently_stalled_at IS NOT NULL)
+    )
   RETURNING *
 ),
  -- Determine if task exhausted retries and get when_exhausted mode

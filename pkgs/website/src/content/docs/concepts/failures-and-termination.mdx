@@ -36,7 +36,7 @@ A failed task does not always produce a failed step. After the task exhausts its
 | `failed` | The task or step encountered a real failure. |
 | `skipped` | Orchestration decided that the work should not run or continue. |
 | `cancelled` | A failed run invalidated unfinished task work. |
-| `permanently_stalled_at` | Recovery stopped after repeated worker-loss requeues. The task status remains `started`. |
+| `permanently_stalled_at` | Recovery stopped after repeated worker-loss requeues. The timestamp stays on the terminalized task for investigation. |
 
 <Aside type="note">
   `cancelled` is an internal task state. It does not represent a user-facing
@@ -51,7 +51,7 @@ A failed task does not always produce a failed step. After the task exhausts its
 | A handler exhausts `maxAttempts` | Applies `whenExhausted`: `fail`, `skip`, or `skip-cascade`. |
 | A condition is unmet with `whenUnmet: 'fail'` | Fails the step and run without executing that step's handler. |
 | A producer returns the wrong type for a map step | Fails the producing task, step, and run regardless of `whenExhausted`. |
-| A worker disappears during a handler | Leaves the task `started`; stalled-task recovery handles it separately. |
+| A worker disappears during a handler | Requeues the task up to three times, then applies `whenExhausted` through stalled-task recovery. |
 
 ## Handler errors: retry or stop
 
@@ -195,12 +195,20 @@ attempt.class: task_started
 permanent: "Message archived\npermanently_stalled_at set"
 permanent.class: warning
 
+escalated: "Escalation cron applies\nwhenExhausted"
+escalated.class: info
+
+terminal: "Task failed\nstep fails or skips"
+terminal.class: task_failed
+
 started -> worker_gone
 worker_gone -> wait
 wait -> cron
 cron -> queued: "fewer than 3 requeues"
 queued -> attempt
 cron -> permanent: "already requeued 3 times"
+permanent -> escalated
+escalated -> terminal
 ```
 
 Handler-error retries and stalled-task recovery are independent:
@@ -210,7 +218,7 @@ Handler-error retries and stalled-task recovery are independent:
 | Handler-error retry | `attempts_count` | The effective `maxAttempts` setting |
 | Worker-loss recovery | `requeued_count` | Three requeues |
 
-A permanently stalled task is not automatically marked `failed`. Its task, step, and run can remain `started` so you can investigate the worker or handler failure.
+After the third requeue, recovery archives the message and stamps `permanently_stalled_at`. A separate escalation pass then applies the step's `whenExhausted` policy to the stamped task, so the task and step reach a terminal state and the run either fails or continues with its remaining steps instead of staying `started`. The timestamp stays on the task so you can investigate the worker or handler failure.
 
 ## Design handlers for repeated execution
 

@@ -43,8 +43,12 @@ start_container() {
   CONTAINER="$1"
   echo "upgrade fixture: starting postgres container $CONTAINER"
   docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+  # The image initializes PGDATA on every start: the initdb temp server and
+  # then the final server each log "ready to accept connections", so waiting
+  # for the second occurrence skips the temp-server window that fools
+  # pg_isready (socket vanishes between temp server stop and final server start).
   local waited=0
-  until docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; do
+  until [ "$(docker logs "$CONTAINER" 2>&1 | grep -c 'database system is ready to accept connections')" -ge 2 ]; do
     ((waited+=1))
     if ((waited > 30)); then
       echo "upgrade fixture: $CONTAINER never became ready" >&2
@@ -218,3 +222,62 @@ SQL
 done
 
 echo "upgrade fixture: PASS (0.16.0 slug conflict rollbacks)"
+
+# =====================================================================
+# Fixture 5: escalation cron scheduling across upgrade states (#689)
+# =====================================================================
+# The escalation migration schedules pgflow_escalate_permanently_stalled
+# only where scheduled recovery already exists, copies the installed
+# recovery interval, and mirrors the recovery job's paused state. Proves:
+#   1. active recovery at a custom interval gains an active escalation job
+#      at that interval, while the recovery job itself is untouched,
+#   2. paused (active = false) recovery gains a paused escalation job,
+#   3. an intentionally absent recovery job gains no escalation job.
+ESCALATION_BASELINE='20261001194538_pgflow_telemetry_endpoint_fix.sql'
+escalation_migration=$(ls supabase/migrations/*_pgflow_escalate_permanently_stalled.sql)
+
+for cron_case in active paused absent; do
+  start_container "pgflow-upgrade-fixture-escalation-${cron_case}"
+
+  echo "upgrade fixture escalation ${cron_case}: applying supabase baseline schema"
+  psql_in < atlas/supabase-baseline-schema.sql
+
+  echo "upgrade fixture escalation ${cron_case}: applying pgflow migrations up to ($ESCALATION_BASELINE)"
+  apply_migrations_up_to "$ESCALATION_BASELINE"
+
+  case "$cron_case" in
+    active)
+      psql_in <<'SQL'
+SELECT cron.alter_job(
+  job_id => job.jobid,
+  schedule => '45 seconds'
+)
+FROM cron.job job
+WHERE job.jobname = 'pgflow_requeue_stalled_tasks';
+SQL
+      ;;
+    paused)
+      psql_in <<'SQL'
+SELECT cron.alter_job(
+  job_id => job.jobid,
+  schedule => '45 seconds',
+  active => false
+)
+FROM cron.job job
+WHERE job.jobname = 'pgflow_requeue_stalled_tasks';
+SQL
+      ;;
+    absent)
+      psql_in <<'SQL'
+SELECT cron.unschedule('pgflow_requeue_stalled_tasks');
+SQL
+      ;;
+  esac
+
+  echo "upgrade fixture escalation ${cron_case}: applying migration $(basename "$escalation_migration")"
+  psql_in < "$escalation_migration"
+
+  sed "s/__CASE__/${cron_case}/g" supabase/upgrade_fixture/assertions_escalation_cron.sql | psql_in
+done
+
+echo "upgrade fixture: PASS (escalation cron scheduling states)"
