@@ -18,10 +18,10 @@ async function cpuIntensiveTask(payload: { debug?: boolean }) {
     console.timeEnd(timeId);
     console.log(
       '[cpu_intensive] last_val = ',
-      await sql`SELECT nextval('test_seq')`
+      await sql`SELECT nextval('cpu_intensive_test_seq')`
     );
   } else {
-    await sql`SELECT nextval('test_seq')`;
+    await sql`SELECT nextval('cpu_intensive_test_seq')`;
   }
 }
 
