@@ -1,7 +1,7 @@
 create or replace function pgflow.add_step(
   flow_slug text,
   step_slug text,
-  deps_slugs text [] default '{}',
+  deps_slugs text[] default '{}',
   max_attempts int default null,
   base_delay int default null,
   timeout int default null,

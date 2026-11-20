@@ -4,7 +4,7 @@ create or replace function pgflow._compare_flow_shapes(
   p_local jsonb,
   p_db jsonb
 )
-returns text []
+returns text[]
 language plpgsql
 stable
 set search_path to ''

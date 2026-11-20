@@ -12,8 +12,8 @@
 
 create or replace function pgflow.set_vt_batch(
   queue_name TEXT,
-  msg_ids BIGINT [],
-  vt_offsets INTEGER []
+  msg_ids BIGINT[],
+  vt_offsets INTEGER[]
 )
 returns table (
   msg_id BIGINT,
