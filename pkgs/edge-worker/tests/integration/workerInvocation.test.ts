@@ -222,6 +222,47 @@ Deno.test('initialization beyond debounce keeps one pending enqueue across concu
   })
 );
 
+Deno.test('cron sees a ready worker that commits while cron waits for the registration lock',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db()`;
+    await sql`select pgflow.track_worker_function(${functionName})`;
+    const [{ id }] = await sql`select pgflow.reserve_worker_invocation(${functionName}) as id`;
+    const workerId = crypto.randomUUID();
+    await sql`update pgflow.worker_functions set invocation_expires_at = clock_timestamp(),
+      last_invoked_at = clock_timestamp() - interval '1 minute', debounce = interval '1 minute'
+      where function_name = ${functionName}`;
+    let cron: ReturnType<typeof ensure> | undefined;
+    try {
+      await sql.begin(async (tx) => {
+        // Give the checker an expired snapshot without waiting for a real clock boundary.
+        await tx`update pgflow.worker_functions set invocation_expires_at = clock_timestamp() + interval '1 minute'
+          where function_name = ${functionName}`;
+        const workers = await tx`select * from pgflow.accept_worker_invocation(
+          ${functionName}, ${id}, ${workerId}, ${flow.slug}, 'test')`;
+        assertEquals(workers.length, 1);
+        const [{ pid }] = await tx`select pg_backend_pid() as pid`;
+        cron = ensure(sql);
+        void cron.catch(() => {});
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const [{ waiting }] = await sql`select exists (
+            select 1 from pg_stat_activity as a
+            where a.wait_event_type = 'Lock' and a.query = 'select * from pgflow.ensure_workers()'
+              and ${pid} = any(pg_blocking_pids(a.pid))
+          ) as waiting`;
+          if (waiting) return;
+          await delay(10);
+        }
+        throw new Error('Cron did not wait for the registration lock');
+      });
+      assertEquals((await cron)?.length, 0, 'a committed ready worker suppresses another reservation');
+    } finally {
+      await cron?.catch(() => {});
+      await sql`delete from pgflow.workers where worker_id = ${workerId}`;
+      await sql`select pgflow_tests.reset_db()`;
+    }
+  })
+);
+
 Deno.test('concurrent cron transactions reserve one request per distinct replica',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db()`;
@@ -365,6 +406,21 @@ Deno.test('hung initialization releases the runtime for a later invocation witho
         await new Promise((resolve) => realSetTimeout(resolve, 10));
       }
       assert(held, 'initialization must reach the transport barrier');
+      // Reserve the successor while the old runtime startup still owns its guard.
+      const expiry = sql`update pgflow.worker_functions set invocation_expires_at = clock_timestamp(),
+        last_invoked_at = clock_timestamp() - interval '10 seconds' where function_name = ${functionName}`;
+      const reserve = Promise.resolve(expiry).then(() => sql`select pgflow.reserve_worker_invocation(${functionName}) as id`);
+      let reserved = false;
+      reserve.then(() => { reserved = true; });
+      for (let i = 0; i < 100 && !reserved; i++) {
+        await time.tickAsync(1);
+        await new Promise((resolve) => realSetTimeout(resolve, 10));
+      }
+      assert(reserved, 'the database must reserve a successor while the first request is held');
+      const [{ id }] = await reserve;
+      assert(id);
+      const next = r.request(id);
+      await time.tickAsync(1);
       await time.tickAsync(60_000);
       time.restore();
       restored = true;
@@ -372,12 +428,7 @@ Deno.test('hung initialization releases the runtime for a later invocation witho
       for (let i = 0; i < 100 && !settled; i++) await delay(10);
       assert(settled, 'a hung startup must not own the runtime startup guard forever');
       assertEquals((await first).status, 500);
-      // Database clock, not the local watchdog, authorizes the new reservation.
-      await sql`update pgflow.worker_functions set last_invoked_at = clock_timestamp() - interval '10 seconds' where function_name = ${functionName}`;
-      const [{ id }] = await sql`select pgflow.reserve_worker_invocation(${functionName}) as id`;
-      assert(id);
-      const next = await r.request(id);
-      assertEquals(next.status, 200, 'the surviving runtime accepts a later invocation before the old initialization settles');
+      assertEquals((await next).status, 200, 'a waiting successor survives the earlier startup failure');
       r.releaseCompilation();
       const [{ run_id }] = await sql`select run_id from pgflow.start_flow(${flow.slug}, '{}'::jsonb)`;
       const completed = await waitForRunCompletion(sql, run_id, { timeoutMs: 5_000, pollIntervalMs: 20 });

@@ -1,7 +1,7 @@
 -- Reserve and enqueue in the same transaction: delivery cannot precede the
 -- committed pending state, and enqueue failure rolls the reservation back.
 -- Startup eligibility (debounce, pending state, healthy workers) lives in
--- pgflow.reserve_worker_invocation, shared with manual startup.
+-- pgflow.reserve_worker_invocations, shared with manual startup.
 create or replace function pgflow.ensure_workers()
 returns table (function_name text, invoked boolean, request_id bigint)
 language sql
@@ -25,17 +25,18 @@ as $$
         e.is_local
       from env as e
     ),
-    -- One reservation per eligible function; unreserved functions send nothing.
+    targets as materialized (
+      select c.*, array(
+        select wf.function_name from pgflow.worker_functions as wf
+        where wf.enabled and wf.start_mode = 'http'
+      ) as function_names
+      from credentials as c
+      where c.base_url is not null and (c.is_local or c.service_role_key is not null)
+    ),
     reservations as materialized (
-      select wf.function_name, c.base_url, c.service_role_key, c.is_local,
-             pgflow.reserve_worker_invocation(wf.function_name) as invocation_id
-      from pgflow.worker_functions as wf
-      cross join credentials as c
-      where wf.enabled and wf.start_mode = 'http'
-        and c.base_url is not null
-        and (c.is_local or c.service_role_key is not null)
-      -- Concurrent cron transactions acquire registration locks in one order.
-      order by wf.function_name
+      select r.function_name, r.invocation_id, t.base_url, t.service_role_key, t.is_local
+      from targets as t
+      cross join lateral pgflow.reserve_worker_invocations(function_names => t.function_names) as r
     )
   -- pg_net delivers asynchronously after this transaction commits.
   select r.function_name, true,
@@ -49,8 +50,7 @@ as $$
       body => jsonb_build_object('invocation_id', r.invocation_id),
       timeout_milliseconds => 60000
     )
-  from reservations as r
-  where r.invocation_id is not null;
+  from reservations as r;
 $$;
 
 comment on function pgflow.ensure_workers() is

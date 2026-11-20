@@ -695,6 +695,13 @@ export type Database = {
         Args: { function_name: string }
         Returns: string
       }
+      reserve_worker_invocations: {
+        Args: { function_names: string[] }
+        Returns: {
+          function_name: string
+          invocation_id: string
+        }[]
+      }
       set_vt_batch: {
         Args: { msg_ids: number[]; queue_name: string; vt_offsets: number[] }
         Returns: {

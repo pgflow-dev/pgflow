@@ -189,9 +189,9 @@ export class Queries {
    * Marks a worker as stopped for graceful shutdown signaling.
    * Called by workers on beforeunload to allow ensure_workers() to detect death immediately.
    */
-  async markWorkerStopped(workerId: string): Promise<void> {
-    await this.sql`
+  async markWorkerStopped(workerId: string, invocationId?: string): Promise<void> {
+    await withStartupTimeout(this.sql, (sql) => sql`
       SELECT pgflow.mark_worker_stopped(${workerId}::uuid)
-    `;
+    `, invocationId);
   }
 }

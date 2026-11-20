@@ -521,8 +521,10 @@ Deno.test({
     });
     const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
+      begin: (callback: (tx: unknown) => unknown) => unknown;
     };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     requestShutdown = () => adapter.requestShutdown();
@@ -601,8 +603,10 @@ Deno.test({
     });
     const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
+      begin: (callback: (tx: unknown) => unknown) => unknown;
     };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     let createCount = 0;
@@ -1205,6 +1209,51 @@ Deno.test({
   },
 });
 
+Deno.test('a blocked stop marker does not keep the replacement guard forever', async () => {
+  let handle!: (req: Request) => Response | Promise<Response>;
+  let releaseMarker!: () => void;
+  const marker = new Promise<void>((resolve) => { releaseMarker = resolve; });
+  let reachedMarker = false;
+  let starts = 0;
+  const sql = Object.assign((strings: TemplateStringsArray, ...values: unknown[]) => {
+    if (strings.join('').includes('pgflow.mark_worker_stopped')) {
+      reachedMarker = true;
+      return marker;
+    }
+    return Promise.resolve(startupResult(strings, values));
+  }, { end: () => Promise.resolve(), begin: (callback: (tx: unknown) => unknown) => callback(sql) });
+  const adapter = new SupabasePlatformAdapter({ sql: sql as never }, createMockDeps({
+    serve: (handler) => { handle = handler; },
+  }));
+  await adapter.startWorker(() => ({
+    startOnlyOnce: () => { starts++; },
+    stop: () => Promise.resolve(),
+    get isRunning() { return false; },
+  }) as unknown as Worker);
+  const request = () => handle(new Request('http://localhost/my-worker', {
+    headers: { authorization: 'Bearer test-service-key' },
+  }));
+  assertEquals((await request()).status, 200);
+  const time = new FakeTime();
+  let status: number | undefined;
+  const blocked = Promise.resolve(request()).then((response) => { status = response.status; });
+  try {
+    await time.tickAsync(60_001);
+    await time.tickAsync(0);
+    assertEquals(reachedMarker, true);
+    assertEquals(status, 500);
+    assertEquals(starts, 1, 'a timed-out replacement must not start a worker');
+    assertEquals((await request()).status, 200);
+    assertEquals(starts, 2);
+  } finally {
+    releaseMarker();
+    await blocked;
+    time.restore();
+    await adapter.stopWorker();
+  }
+  assertEquals(starts, 2, 'a late stop marker must not resume the expired startup');
+});
+
 Deno.test({
   name: 'replacement marks old worker stopped before starting replacement',
   sanitizeResources: false,
@@ -1255,8 +1304,9 @@ Deno.test({
         workerIds.push(values[0] as string);
       }
       return Promise.resolve(startupResult(strings, values));
-    }) as unknown as { end: () => Promise<void> };
+    }) as unknown as { end: () => Promise<void>; begin: (callback: (tx: unknown) => unknown) => unknown };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     let createCount = 0;

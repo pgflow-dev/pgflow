@@ -12,54 +12,50 @@ COMMENT ON COLUMN "pgflow"."worker_functions"."invocation_status" IS 'pending: a
 COMMENT ON COLUMN "pgflow"."worker_functions"."invocation_worker_id" IS 'Worker that completed the current startup handshake';
 -- Set comment to column: "invocation_error" on table: "worker_functions"
 COMMENT ON COLUMN "pgflow"."worker_functions"."invocation_error" IS 'Reason the current startup handshake failed, if explicitly dismissed';
--- Create "reserve_worker_invocation" function
-CREATE FUNCTION "pgflow"."reserve_worker_invocation" ("function_name" text) RETURNS uuid LANGUAGE sql AS $$
-with
-    -- Lock the registration row only when it is eligible: enabled, HTTP-started,
-    -- past debounce, with no unexpired pending invocation and no healthy worker.
-    -- Concurrent reservations re-check eligibility under the row lock, so at most
-    -- one current pending invocation can exist per function.
-    eligible as (
-      select wf.function_name
-      from pgflow.worker_functions as wf
-      where wf.function_name = reserve_worker_invocation.function_name
-        and wf.enabled
-        and wf.start_mode = 'http'
-        and (
-          wf.invocation_status is distinct from 'pending'
-          or wf.invocation_expires_at is null
-          or wf.invocation_expires_at <= clock_timestamp()
-        )
-        and (
-          wf.last_invoked_at is null
-          or wf.last_invoked_at <= clock_timestamp() - wf.debounce
-        )
-        and not exists (
-          select 1 from pgflow.workers as w
-          where w.function_name = wf.function_name
-            and w.stopped_at is null
-            and w.deprecated_at is null
-            and w.last_heartbeat_at > clock_timestamp() - wf.debounce
-        )
-      for update
-    ),
-    reserved as (
-      update pgflow.worker_functions as wf
-      set invocation_id = gen_random_uuid(),
-          invocation_expires_at = clock_timestamp() + interval '60 seconds',
-          invocation_status = 'pending',
-          invocation_worker_id = null,
-          invocation_error = null,
-          last_invoked_at = clock_timestamp()
-      from eligible as e
-      where wf.function_name = e.function_name
-      returning wf.invocation_id
+-- Create "reserve_worker_invocations" function
+CREATE FUNCTION "pgflow"."reserve_worker_invocations" ("function_names" text[]) RETURNS TABLE ("function_name" text, "invocation_id" uuid) LANGUAGE plpgsql AS $$
+declare
+  locked_names text[];
+begin
+  select array_agg(candidate.function_name) into locked_names
+  from (
+    select wf.function_name
+    from pgflow.worker_functions as wf
+    where wf.function_name = any(reserve_worker_invocations.function_names)
+      and wf.enabled
+      and wf.start_mode = 'http'
+      and (
+        wf.invocation_status is distinct from 'pending'
+        or wf.invocation_expires_at is null
+        or wf.invocation_expires_at <= clock_timestamp()
+      )
+      and (
+        wf.last_invoked_at is null
+        or wf.last_invoked_at <= clock_timestamp() - wf.debounce
+      )
+    order by wf.function_name
+    for update of wf
+  ) as candidate;
+
+  return query
+  update pgflow.worker_functions as wf
+  set invocation_id = gen_random_uuid(),
+      invocation_expires_at = clock_timestamp() + interval '60 seconds',
+      invocation_status = 'pending',
+      invocation_worker_id = null,
+      invocation_error = null,
+      last_invoked_at = clock_timestamp()
+  where wf.function_name = any(locked_names)
+    and not exists (
+      select 1 from pgflow.workers as w
+      where w.function_name = wf.function_name
+        and w.stopped_at is null
+        and w.deprecated_at is null
+        and w.last_heartbeat_at > clock_timestamp() - wf.debounce
     )
-  select invocation_id from reserved;
+  returning wf.function_name, wf.invocation_id;
+end;
 $$;
--- Set comment to function: "reserve_worker_invocation"
-COMMENT ON FUNCTION "pgflow"."reserve_worker_invocation" IS 'Reserves one pending HTTP startup for 60 seconds under a per-function row lock.
-Shared by cron and manual startup; returns NULL while healthy, pending, disabled, process-started or debounced.';
 -- Modify "ensure_workers" function
 CREATE OR REPLACE FUNCTION "pgflow"."ensure_workers" () RETURNS TABLE ("function_name" text, "invoked" boolean, "request_id" bigint) LANGUAGE sql AS $$
 with
@@ -81,17 +77,18 @@ with
         e.is_local
       from env as e
     ),
-    -- One reservation per eligible function; unreserved functions send nothing.
+    targets as materialized (
+      select c.*, array(
+        select wf.function_name from pgflow.worker_functions as wf
+        where wf.enabled and wf.start_mode = 'http'
+      ) as function_names
+      from credentials as c
+      where c.base_url is not null and (c.is_local or c.service_role_key is not null)
+    ),
     reservations as materialized (
-      select wf.function_name, c.base_url, c.service_role_key, c.is_local,
-             pgflow.reserve_worker_invocation(wf.function_name) as invocation_id
-      from pgflow.worker_functions as wf
-      cross join credentials as c
-      where wf.enabled and wf.start_mode = 'http'
-        and c.base_url is not null
-        and (c.is_local or c.service_role_key is not null)
-      -- Concurrent cron transactions acquire registration locks in one order.
-      order by wf.function_name
+      select r.function_name, r.invocation_id, t.base_url, t.service_role_key, t.is_local
+      from targets as t
+      cross join lateral pgflow.reserve_worker_invocations(function_names => t.function_names) as r
     )
   -- pg_net delivers asynchronously after this transaction commits.
   select r.function_name, true,
@@ -105,8 +102,7 @@ with
       body => jsonb_build_object('invocation_id', r.invocation_id),
       timeout_milliseconds => 60000
     )
-  from reservations as r
-  where r.invocation_id is not null;
+  from reservations as r;
 $$;
 -- Set comment to function: "ensure_workers"
 COMMENT ON FUNCTION "pgflow"."ensure_workers" IS 'Enqueues HTTP startup only when no healthy worker or unexpired pending invocation exists.
@@ -149,13 +145,13 @@ begin
   end if;
 
   return query
-  insert into pgflow.workers (
+  insert into pgflow.workers as w (
     worker_id, function_name, queue_name, pgflow_version, started_at, last_heartbeat_at
   )
   values (accept_worker_invocation.worker_id, registration.function_name,
           accept_worker_invocation.queue_name, accept_worker_invocation.pgflow_version,
           clock_timestamp(), clock_timestamp())
-  returning *;
+  returning w.*;
 
   update pgflow.worker_functions as wf
   set invocation_status = 'ready', invocation_worker_id = accept_worker_invocation.worker_id
@@ -184,6 +180,8 @@ cannot undo readiness or dismiss a newer invocation.';
 CREATE FUNCTION "pgflow"."reconcile_worker_invocation" ("function_name" text, "invocation_id" uuid, "worker_id" uuid DEFAULT NULL::uuid) RETURNS text LANGUAGE plpgsql AS $$
 declare
   registration pgflow.worker_functions%rowtype;
+  pending boolean;
+  healthy boolean;
 begin
   select wf.* into registration from pgflow.worker_functions as wf
   where wf.function_name = reconcile_worker_invocation.function_name
@@ -195,33 +193,28 @@ begin
     return 'rejected';
   end if;
 
-  if registration.invocation_status = 'pending'
-    and registration.invocation_expires_at > clock_timestamp() then
-    if reconcile_worker_invocation.worker_id is null then
+  pending := registration.invocation_status = 'pending'
+    and registration.invocation_expires_at > clock_timestamp();
+
+  select exists (
+    select 1 from pgflow.workers as w
+    where w.worker_id = reconcile_worker_invocation.worker_id
+      and w.function_name = registration.function_name
+      and w.stopped_at is null and w.deprecated_at is null
+      and w.last_heartbeat_at > clock_timestamp() - registration.debounce
+  ) into healthy;
+
+  if pending then
+    if not healthy then
       return 'pending';
     end if;
-    if exists (
-      select 1 from pgflow.workers as w
-      where w.worker_id = reconcile_worker_invocation.worker_id
-        and w.function_name = registration.function_name
-        and w.stopped_at is null and w.deprecated_at is null
-        and w.last_heartbeat_at > clock_timestamp() - registration.debounce
-    ) then
-      update pgflow.worker_functions as wf
-      set invocation_status = 'ready', invocation_worker_id = reconcile_worker_invocation.worker_id
-      where wf.function_name = registration.function_name;
-      return 'ready';
-    end if;
-    return 'pending';
+    update pgflow.worker_functions as wf
+    set invocation_status = 'ready', invocation_worker_id = reconcile_worker_invocation.worker_id
+    where wf.function_name = registration.function_name;
+    return 'ready';
   elsif registration.invocation_status = 'ready'
     and registration.invocation_worker_id = reconcile_worker_invocation.worker_id
-    and exists (
-      select 1 from pgflow.workers as w
-      where w.worker_id = reconcile_worker_invocation.worker_id
-        and w.function_name = registration.function_name
-        and w.stopped_at is null and w.deprecated_at is null
-        and w.last_heartbeat_at > clock_timestamp() - registration.debounce
-    ) then
+    and healthy then
     return 'ready';
   end if;
 
@@ -231,3 +224,11 @@ $$;
 -- Set comment to function: "reconcile_worker_invocation"
 COMMENT ON FUNCTION "pgflow"."reconcile_worker_invocation" IS 'Validates a startup delivery. Receipt returns pending without consuming it; a healthy existing worker
 can acknowledge readiness. Old, expired, failed or superseded IDs are rejected.';
+-- Create "reserve_worker_invocation" function
+CREATE FUNCTION "pgflow"."reserve_worker_invocation" ("function_name" text) RETURNS uuid LANGUAGE sql AS $$
+select r.invocation_id
+  from pgflow.reserve_worker_invocations(function_names => array[reserve_worker_invocation.function_name]) as r;
+$$;
+-- Set comment to function: "reserve_worker_invocation"
+COMMENT ON FUNCTION "pgflow"."reserve_worker_invocation" IS 'Reserves one pending HTTP startup for 60 seconds under a per-function row lock.
+Shared by cron and manual startup; returns NULL while healthy, pending, disabled, process-started or debounced.';

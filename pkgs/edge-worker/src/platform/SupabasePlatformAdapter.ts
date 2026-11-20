@@ -50,10 +50,9 @@ const SUPABASE_STARTUP_TIMEOUT_MS = 60_000;
  * The TypeScript compilation in Node.js is only used for type checking and distribution.
  */
 export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResources> {
-  private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
   private workerId: string | null = null;
-  private workerReplacementPromise: Promise<void> | null = null;
+  private workerReplacement: { invocationId: string; done: Promise<void> } | null = null;
   private stopPromise: Promise<void> | null = null;
   private logger: Logger;
   private abortController: AbortController;
@@ -201,7 +200,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private async drainAndMark(): Promise<{ error: unknown } | null> {
     // Capture the promise before awaiting: its owner clears the field in a
     // finally block, but shutdown must await the replacement it observed.
-    const replacement = this.workerReplacementPromise;
+    const replacement = this.workerReplacement?.done;
     if (replacement) {
       // Startup/replacement rejection is already handled by the HTTP
       // startup path; shutdown continues with cleanup.
@@ -360,7 +359,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         // Authenticated manual calls (and local development) reserve through
         // the same SQL protocol. They never bypass a pending startup.
         if (!invocationId) {
-          if (!this.workerReplacementPromise && this.worker?.isRunning && this.workerId
+          if (!this.workerReplacement && this.worker?.isRunning && this.workerId
             && await this.queries.isWorkerHealthy(functionName, this.workerId)) {
             if (this.stopPromise) throw new Error('Worker startup rejected: shutdown in progress');
             return Response.json({ status: 'running', workerId: this.workerId, functionName });
@@ -409,9 +408,12 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
       // Wait for an in-flight replacement before deciding anything: the
       // worker reference exists while its startup is still pending.
-      const inFlight = this.workerReplacementPromise;
+      const inFlight = this.workerReplacement;
       if (inFlight) {
-        await inFlight;
+        // Share failures only with duplicate deliveries, never with a successor.
+        await inFlight.done.catch((error) => {
+          if (inFlight.invocationId === invocationId) throw error;
+        });
         continue;
       }
 
@@ -429,19 +431,17 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       if (this.stopPromise) throw new Error('Worker startup rejected: shutdown in progress');
       // SQL awaits can admit another request in this runtime. Re-check before
       // owning startup; a different runtime still arbitrates in SQL at readiness.
-      if (this.workerReplacementPromise) continue;
+      if (this.workerReplacement) continue;
       if (status === 'ready') return false;
 
       // Assign and own the replacement in one synchronous section so
       // shutdown always observes an admitted replacement.
-      const owned = this.replaceWorker(functionName, invocationId, createWorkerFn);
-      this.workerReplacementPromise = owned;
+      const owned = { invocationId, done: this.replaceWorker(functionName, invocationId, createWorkerFn) };
+      this.workerReplacement = owned;
       try {
-        await owned;
+        await owned.done;
       } finally {
-        if (this.workerReplacementPromise === owned) {
-          this.workerReplacementPromise = null;
-        }
+        if (this.workerReplacement === owned) this.workerReplacement = null;
       }
 
       // Re-check shutdown after the awaited replacement instead of reporting
@@ -458,58 +458,49 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     functionName: string, invocationId: string, createWorkerFn: CreateWorkerFn
   ): Promise<void> {
     const previousWorkerId = this.workerId;
-
-    if (this.worker) {
-      await this.worker.stop();
-      if (previousWorkerId) {
-        await this.queries.markWorkerStopped(previousWorkerId);
-      }
+    const previousWorker = this.worker;
+    if (previousWorker) {
+      // Draining stays outside the startup deadline. Never start over a live worker.
+      await previousWorker.stop();
+      this.worker = null;
     }
-
-    this.edgeFunctionName = functionName;
-
-    const workerId = previousWorkerId === null
-      ? this.validatedEnv.SB_EXECUTION_ID
-      : globalThis.crypto.randomUUID();
-    this.workerId = workerId;
-
-    this.loggingFactory.setWorkerId(workerId);
-    this.loggingFactory.setWorkerName(this.edgeFunctionName);
-
-    // Reset even when a timed-out startup cleared the previous worker.
-    // Once adapter shutdown starts, the platform signal must stay aborted.
-    if (!this.stopPromise) this.abortController = new AbortController();
-
-    // Create the worker using the factory function and the logger
-    const worker = createWorkerFn(this.loggingFactory.createLogger);
-    this.worker = worker;
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let timedOut = false;
+    let worker: Worker | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        reject(new Error(`Worker startup timed out after ${SUPABASE_STARTUP_TIMEOUT_MS}ms`));
+      }, SUPABASE_STARTUP_TIMEOUT_MS);
+    });
     try {
+      if (previousWorker && previousWorkerId) {
+        await Promise.race([this.queries.markWorkerStopped(previousWorkerId, invocationId), deadline]);
+      }
+
+      const workerId = previousWorkerId === null
+        ? this.validatedEnv.SB_EXECUTION_ID
+        : globalThis.crypto.randomUUID();
+      this.workerId = workerId;
+      this.loggingFactory.setWorkerId(workerId);
+      this.loggingFactory.setWorkerName(functionName);
+
+      // Once adapter shutdown starts, the platform signal must stay aborted.
+      if (!this.stopPromise) this.abortController = new AbortController();
+      worker = createWorkerFn(this.loggingFactory.createLogger);
+      this.worker = worker;
       await Promise.race([
-        worker.startOnlyOnce({
-          edgeFunctionName: this.edgeFunctionName,
-          workerId,
-          startMode: 'http',
-          invocationId,
-        }),
-        new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => {
-            timedOut = true;
-            reject(new Error(`Worker startup timed out after ${SUPABASE_STARTUP_TIMEOUT_MS}ms`));
-          }, SUPABASE_STARTUP_TIMEOUT_MS);
-        }),
+        worker.startOnlyOnce({ edgeFunctionName: functionName, workerId, startMode: 'http', invocationId }),
+        deadline,
       ]);
     } catch (error) {
-      if (timedOut) {
+      if (timedOut && worker) {
         // stop() aborts before it awaits initialization. Do not await a hung
         // startup here: if it resumes, the aborted worker cannot process.
         void worker.stop().catch((stopError) => this.logger.error('Timed-out startup cleanup failed', stopError));
       }
-      if (this.worker === worker) {
-        this.worker = null;
-      }
+      if (this.worker === worker) this.worker = null;
       throw error;
     } finally {
       clearTimeout(timer);

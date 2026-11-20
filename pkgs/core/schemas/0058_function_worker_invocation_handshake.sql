@@ -10,6 +10,8 @@ language plpgsql
 as $$
 declare
   registration pgflow.worker_functions%rowtype;
+  pending boolean;
+  healthy boolean;
 begin
   select wf.* into registration from pgflow.worker_functions as wf
   where wf.function_name = reconcile_worker_invocation.function_name
@@ -21,33 +23,28 @@ begin
     return 'rejected';
   end if;
 
-  if registration.invocation_status = 'pending'
-    and registration.invocation_expires_at > clock_timestamp() then
-    if reconcile_worker_invocation.worker_id is null then
+  pending := registration.invocation_status = 'pending'
+    and registration.invocation_expires_at > clock_timestamp();
+
+  select exists (
+    select 1 from pgflow.workers as w
+    where w.worker_id = reconcile_worker_invocation.worker_id
+      and w.function_name = registration.function_name
+      and w.stopped_at is null and w.deprecated_at is null
+      and w.last_heartbeat_at > clock_timestamp() - registration.debounce
+  ) into healthy;
+
+  if pending then
+    if not healthy then
       return 'pending';
     end if;
-    if exists (
-      select 1 from pgflow.workers as w
-      where w.worker_id = reconcile_worker_invocation.worker_id
-        and w.function_name = registration.function_name
-        and w.stopped_at is null and w.deprecated_at is null
-        and w.last_heartbeat_at > clock_timestamp() - registration.debounce
-    ) then
-      update pgflow.worker_functions as wf
-      set invocation_status = 'ready', invocation_worker_id = reconcile_worker_invocation.worker_id
-      where wf.function_name = registration.function_name;
-      return 'ready';
-    end if;
-    return 'pending';
+    update pgflow.worker_functions as wf
+    set invocation_status = 'ready', invocation_worker_id = reconcile_worker_invocation.worker_id
+    where wf.function_name = registration.function_name;
+    return 'ready';
   elsif registration.invocation_status = 'ready'
     and registration.invocation_worker_id = reconcile_worker_invocation.worker_id
-    and exists (
-      select 1 from pgflow.workers as w
-      where w.worker_id = reconcile_worker_invocation.worker_id
-        and w.function_name = registration.function_name
-        and w.stopped_at is null and w.deprecated_at is null
-        and w.last_heartbeat_at > clock_timestamp() - registration.debounce
-    ) then
+    and healthy then
     return 'ready';
   end if;
 
@@ -98,13 +95,13 @@ begin
   end if;
 
   return query
-  insert into pgflow.workers (
+  insert into pgflow.workers as w (
     worker_id, function_name, queue_name, pgflow_version, started_at, last_heartbeat_at
   )
   values (accept_worker_invocation.worker_id, registration.function_name,
           accept_worker_invocation.queue_name, accept_worker_invocation.pgflow_version,
           clock_timestamp(), clock_timestamp())
-  returning *;
+  returning w.*;
 
   update pgflow.worker_functions as wf
   set invocation_status = 'ready', invocation_worker_id = accept_worker_invocation.worker_id
