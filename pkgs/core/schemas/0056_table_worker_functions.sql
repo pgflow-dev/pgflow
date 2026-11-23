@@ -9,6 +9,11 @@ create table if not exists pgflow.worker_functions (
   debounce interval not null default '6 seconds'
   check (debounce >= '1 second'),
   last_invoked_at timestamptz,
+  invocation_id uuid,
+  invocation_expires_at timestamptz,
+  invocation_status text check (invocation_status in ('pending', 'ready', 'failed')),
+  invocation_worker_id uuid,
+  invocation_error text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -29,4 +34,19 @@ comment on column pgflow.worker_functions.debounce is
 'Minimum interval between invocation attempts for this function';
 
 comment on column pgflow.worker_functions.last_invoked_at is
-'When ensure_workers() last pinged this function (used for debouncing)';
+'When startup was last reserved (retry throttle, not a readiness signal)';
+
+comment on column pgflow.worker_functions.invocation_id is
+'Current startup handshake ID; retained after readiness or failure for idempotent reconciliation';
+
+comment on column pgflow.worker_functions.invocation_expires_at is
+'Database-clock deadline for pending startup. An expired pending invocation is retryable';
+
+comment on column pgflow.worker_functions.invocation_status is
+'pending: awaiting readiness; ready: handshake completed, not worker lifetime; failed: retryable after debounce';
+
+comment on column pgflow.worker_functions.invocation_worker_id is
+'Worker that completed the current startup handshake';
+
+comment on column pgflow.worker_functions.invocation_error is
+'Reason the current startup handshake failed, if explicitly dismissed';

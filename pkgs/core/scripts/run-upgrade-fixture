@@ -43,8 +43,12 @@ start_container() {
   CONTAINER="$1"
   echo "upgrade fixture: starting postgres container $CONTAINER"
   docker run -d --name "$CONTAINER" "$IMAGE" >/dev/null
+  # The image initializes PGDATA on every start: the initdb temp server and
+  # then the final server each log "ready to accept connections", so waiting
+  # for the second occurrence skips the temp-server window that fools
+  # pg_isready (socket vanishes between temp server stop and final server start).
   local waited=0
-  until docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; do
+  until [ "$(docker logs "$CONTAINER" 2>&1 | grep -c 'database system is ready to accept connections')" -ge 2 ]; do
     ((waited+=1))
     if ((waited > 30)); then
       echo "upgrade fixture: $CONTAINER never became ready" >&2

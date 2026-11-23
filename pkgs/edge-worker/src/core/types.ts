@@ -63,4 +63,6 @@ export interface WorkerBootstrap {
   edgeFunctionName: string;
   workerId: string;
   startMode?: WorkerStartMode;
+  /** Current SQL startup reservation, required by the Supabase HTTP handler. */
+  invocationId?: string;
 }

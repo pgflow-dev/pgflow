@@ -41,6 +41,9 @@ select is(
   'Function with stopped worker IS returned'
 );
 
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next worker state')
+from pgflow.worker_functions;
+
 -- Reset stopped_at, set deprecated_at instead
 update pgflow.workers
 set stopped_at = null, deprecated_at = now()
@@ -56,6 +59,9 @@ select is(
   1::bigint,
   'Function with deprecated worker IS returned'
 );
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next worker state')
+from pgflow.worker_functions;
 
 -- Reset deprecated_at, make heartbeat stale
 update pgflow.workers
@@ -73,6 +79,9 @@ select is(
   1::bigint,
   'Function with stale heartbeat worker IS returned'
 );
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next worker state')
+from pgflow.worker_functions;
 
 -- TEST: Mix of alive and dead workers - function with at least one alive is NOT returned
 -- Reset first worker to dead

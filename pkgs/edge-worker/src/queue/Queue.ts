@@ -1,4 +1,5 @@
 import type postgres from 'postgres';
+import { withStartupTimeout } from '../core/withStartupTimeout.js';
 import type { PgmqMessageRecord } from './types.js';
 import type { Json } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
@@ -18,14 +19,14 @@ export class Queue<TPayload extends Json> {
    * Creates a queue if it doesn't exist.
    * If the queue already exists, this method does nothing.
    */
-  async safeCreate() {
+  async safeCreate(invocationId?: string) {
     this.logger.debug(`Creating queue '${this.queueName}' if it doesn't exist`);
-    return await this.sql`
+    return await withStartupTimeout(this.sql, (sql) => sql`
         select * from pgmq.create(${this.queueName})
         where not exists (
           select 1 from pgmq.list_queues() where queue_name = ${this.queueName}
         );
-    `;
+    `, invocationId);
   }
 
   /**

@@ -1,15 +1,17 @@
 import { withSql } from '../sql.ts';
-import { assertGreater, assertGreaterOrEqual } from 'jsr:@std/assert';
+import { assertGreater } from 'jsr:@std/assert';
 import {
   fetchWorkers,
   sendBatch,
   seqLastValue,
   startWorker,
   startWorkersMonitor,
-  waitForSeqToIncrementBy,
+  waitFor,
 } from './_helpers.ts';
 
+// ponytail: run before load tests can leave unrelated startup requests in pg_net.
 const WORKER_NAME = 'cpu_intensive';
+const SEQ_NAME = 'cpu_intensive_test_seq';
 
 // TODO: document relation between CPU clock limit, amount of time to process
 //       single message and amount of messages to send
@@ -23,8 +25,8 @@ Deno.test(
   },
   async () => {
   await withSql(async (sql) => {
-    await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
-    await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+    await sql`CREATE SEQUENCE IF NOT EXISTS ${sql(SEQ_NAME)}`;
+    await sql`ALTER SEQUENCE ${sql(SEQ_NAME)} RESTART WITH 1`;
     await sql`
       SELECT * FROM pgmq.drop_queue(${WORKER_NAME})
       WHERE EXISTS (
@@ -44,16 +46,11 @@ Deno.test(
       await startWorker(WORKER_NAME);
 
       await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
-      await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
+      await waitFor(async () => await seqLastValue(SEQ_NAME) >= MESSAGES_TO_SEND, {
         timeoutMs: 35000,
         pollIntervalMs: 300,
+        description: `${SEQ_NAME} to reach ${MESSAGES_TO_SEND}`,
       });
-
-      assertGreaterOrEqual(
-        await seqLastValue(),
-        MESSAGES_TO_SEND,
-        'Sequence value should be greater than or equal to the number of messages sent'
-      );
 
       const workers = await fetchWorkers(WORKER_NAME);
       assertGreater(

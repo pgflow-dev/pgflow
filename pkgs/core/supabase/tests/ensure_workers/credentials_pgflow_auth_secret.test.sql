@@ -32,6 +32,9 @@ select ok(
 
 drop table test1_result;
 
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next credentials')
+from pgflow.worker_functions;
+
 -- Cleanup secrets for next test
 delete from vault.secrets where name in ('pgflow_auth_secret', 'supabase_service_role_key');
 
@@ -53,6 +56,9 @@ select ok(
 );
 
 drop table test2_result;
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next credentials')
+from pgflow.worker_functions;
 
 -- Cleanup secrets for next test
 delete from vault.secrets where name = 'supabase_service_role_key';
