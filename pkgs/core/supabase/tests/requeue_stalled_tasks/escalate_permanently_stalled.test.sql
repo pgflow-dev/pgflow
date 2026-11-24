@@ -128,8 +128,9 @@ set
   requeued_count = 3
 where flow_slug = 'skip_flow';
 
+select pgflow.requeue_stalled_tasks();
 select is(
-  (select pgflow.requeue_stalled_tasks() + pgflow.escalate_permanently_stalled()),
+  pgflow.escalate_permanently_stalled(),
   1,
   'skip flow escalates one stalled task'
 );
@@ -176,8 +177,9 @@ set
   requeued_count = 3
 where flow_slug = 'cascade_flow';
 
+select pgflow.requeue_stalled_tasks();
 select is(
-  (select pgflow.requeue_stalled_tasks() + pgflow.escalate_permanently_stalled()),
+  pgflow.escalate_permanently_stalled(),
   1,
   'cascade flow escalates one stalled task'
 );
@@ -211,8 +213,9 @@ set
   requeued_count = 3
 where flow_slug = 'map_flow' and task_index = 0;
 
+select pgflow.requeue_stalled_tasks();
 select is(
-  (select pgflow.requeue_stalled_tasks() + pgflow.escalate_permanently_stalled()),
+  pgflow.escalate_permanently_stalled(),
   1,
   'map flow escalates one stalled task'
 );
