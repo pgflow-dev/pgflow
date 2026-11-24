@@ -1,79 +1,17 @@
--- Test: ensure_workers() retrieves credentials from Vault
+-- Production credentials remain independent of the startup handshake.
 begin;
 select plan(4);
 select pgflow_tests.reset_db();
-
--- Setup: Create Vault secrets
-select vault.create_secret(
-  'test-service-role-key-from-vault',
-  'supabase_service_role_key'
-);
-select vault.create_secret(
-  'vaultproject123',
-  'supabase_project_id'
-);
-
--- Setup: Register a worker function
+select vault.create_secret('test-service-role-key-from-vault', 'supabase_service_role_key');
+select vault.create_secret('vaultproject123', 'supabase_project_id');
 select pgflow.track_worker_function('my-function');
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
--- Simulate production mode (non-local jwt_secret)
-set local app.settings.jwt_secret = 'production-secret-different-from-local';
-
--- TEST: In production mode WITH Vault secrets, function IS invoked
-with result as (
-  select * from pgflow.ensure_workers()
-)
-select is(
-  (select count(*) from result),
-  1::bigint,
-  'Production mode with Vault secrets invokes functions'
-);
-
--- TEST: request_id is returned (proves Vault credentials were used for HTTP call)
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
-with result as (
-  select * from pgflow.ensure_workers()
-)
-select ok(
-  (select request_id is not null from result limit 1),
-  'Vault credentials allow HTTP invocation in production mode'
-);
-
--- TEST: HTTP request URL uses base URL from Vault
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
--- Store result in temp table to ensure ensure_workers() executes before we query the queue
-select * into temporary test3_result from pgflow.ensure_workers();
-
-select ok(
-  (select url = 'https://vaultproject123.supabase.co/functions/v1/my-function'
-   from net.http_request_queue
-   where id = (select request_id from test3_result limit 1)),
-  'HTTP request URL is constructed from Vault supabase_project_id'
-);
-
-drop table test3_result;
-
--- TEST: HTTP request Authorization header uses service role key from Vault
-update pgflow.worker_functions
-set last_invoked_at = now() - interval '10 seconds';
-
--- Store result in temp table to ensure ensure_workers() executes before we query the queue
-select * into temporary test4_result from pgflow.ensure_workers();
-
-select ok(
-  (select headers->>'Authorization' = 'Bearer test-service-role-key-from-vault'
-   from net.http_request_queue
-   where id = (select request_id from test4_result limit 1)),
-  'HTTP request Authorization header contains Vault service role key'
-);
-
-drop table test4_result;
-
+set local app.settings.jwt_secret = 'production-secret';
+create temporary table invocation as select * from pgflow.ensure_workers();
+select is((select count(*) from invocation), 1::bigint, 'production Vault credentials enqueue startup');
+select ok((select request_id is not null from invocation), 'returns the queued request ID');
+select is((select url from net.http_request_queue where id = (select request_id from invocation)),
+  'https://vaultproject123.supabase.co/functions/v1/my-function', 'uses the project ID from Vault');
+select is((select headers->>'Authorization' from net.http_request_queue where id = (select request_id from invocation)),
+  'Bearer test-service-role-key-from-vault', 'preserves service-role authentication');
 select finish();
 rollback;

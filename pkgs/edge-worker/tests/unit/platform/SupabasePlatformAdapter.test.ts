@@ -34,6 +34,19 @@ function createMockDeps(overrides?: Partial<SupabasePlatformDeps>): SupabasePlat
   };
 }
 
+const invocationId = '69600000-0000-0000-0000-000000000001';
+
+// SQL is a transport boundary here. Protocol arbitration uses real SQL in
+// integration/workerInvocation.test.ts; these tests keep adapter lifecycle seams.
+function startupResult(strings: TemplateStringsArray, values: unknown[]) {
+  const query = strings.join('');
+  return [{
+    id: invocationId,
+    healthy: true,
+    status: query.includes('reconcile_worker_invocation') && values[2] ? 'ready' : 'pending',
+  }];
+}
+
 // ============================================================
 // Environment Validation Tests
 // ============================================================
@@ -360,7 +373,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -382,6 +395,7 @@ Deno.test({
       edgeFunctionName: 'functions/v1/my-worker',
       workerId: 'test-exec-id',
       startMode: 'http',
+      invocationId,
     });
   },
 });
@@ -399,7 +413,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -414,6 +428,7 @@ Deno.test({
           })
           : Promise.resolve(),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -433,7 +448,7 @@ Deno.test({
     responsePromise.then(() => {
       responseSettled = true;
     });
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     assertEquals(responseSettled, false, 'Response must wait for worker readiness');
 
@@ -476,6 +491,7 @@ Deno.test({
           requestShutdown?.();
           return Promise.resolve();
         },
+        get isRunning() { return false; },
         get isDeprecated() {
           return true;
         },
@@ -488,6 +504,7 @@ Deno.test({
           workerIds.push(workerBootstrap.workerId);
         },
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -502,10 +519,12 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
+      begin: (callback: (tx: unknown) => unknown) => unknown;
     };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     requestShutdown = () => adapter.requestShutdown();
@@ -554,6 +573,7 @@ Deno.test({
           releaseStop = release;
         });
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -567,6 +587,7 @@ Deno.test({
         workerIds.push(workerBootstrap.workerId);
       },
       stop: () => Promise.resolve(),
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -580,10 +601,12 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
+      begin: (callback: (tx: unknown) => unknown) => unknown;
     };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     let createCount = 0;
@@ -712,7 +735,7 @@ Deno.test({
     });
 
     const events: string[] = [];
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -739,6 +762,7 @@ Deno.test({
         events.push('worker.stop');
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -795,7 +819,7 @@ Deno.test({
     });
 
     const events: string[] = [];
-    const sql = (() => Promise.resolve([])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -821,6 +845,7 @@ Deno.test({
         workerStopCalls++;
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -985,6 +1010,7 @@ Deno.test({
           releaseOldStop = release;
         });
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -1009,6 +1035,7 @@ Deno.test({
         events.push('replacement.stop');
         return Promise.resolve();
       },
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -1022,7 +1049,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -1182,6 +1209,51 @@ Deno.test({
   },
 });
 
+Deno.test('a blocked stop marker does not keep the replacement guard forever', async () => {
+  let handle!: (req: Request) => Response | Promise<Response>;
+  let releaseMarker!: () => void;
+  const marker = new Promise<void>((resolve) => { releaseMarker = resolve; });
+  let reachedMarker = false;
+  let starts = 0;
+  const sql = Object.assign((strings: TemplateStringsArray, ...values: unknown[]) => {
+    if (strings.join('').includes('pgflow.mark_worker_stopped')) {
+      reachedMarker = true;
+      return marker;
+    }
+    return Promise.resolve(startupResult(strings, values));
+  }, { end: () => Promise.resolve(), begin: (callback: (tx: unknown) => unknown) => callback(sql) });
+  const adapter = new SupabasePlatformAdapter({ sql: sql as never }, createMockDeps({
+    serve: (handler) => { handle = handler; },
+  }));
+  await adapter.startWorker(() => ({
+    startOnlyOnce: () => { starts++; },
+    stop: () => Promise.resolve(),
+    get isRunning() { return false; },
+  }) as unknown as Worker);
+  const request = () => handle(new Request('http://localhost/my-worker', {
+    headers: { authorization: 'Bearer test-service-key' },
+  }));
+  assertEquals((await request()).status, 200);
+  const time = new FakeTime();
+  let status: number | undefined;
+  const blocked = Promise.resolve(request()).then((response) => { status = response.status; });
+  try {
+    await time.tickAsync(60_001);
+    await time.tickAsync(0);
+    assertEquals(reachedMarker, true);
+    assertEquals(status, 500);
+    assertEquals(starts, 1, 'a timed-out replacement must not start a worker');
+    assertEquals((await request()).status, 200);
+    assertEquals(starts, 2);
+  } finally {
+    releaseMarker();
+    await blocked;
+    time.restore();
+    await adapter.stopWorker();
+  }
+  assertEquals(starts, 2, 'a late stop marker must not resume the expired startup');
+});
+
 Deno.test({
   name: 'replacement marks old worker stopped before starting replacement',
   sanitizeResources: false,
@@ -1196,6 +1268,7 @@ Deno.test({
         events.push('old.stop');
         return Promise.resolve();
       },
+      get isRunning() { return false; },
       get isDeprecated() {
         return true;
       },
@@ -1209,6 +1282,7 @@ Deno.test({
         events.push('new.startOnlyOnce');
       },
       stop: () => Promise.resolve(),
+      get isRunning() { return true; },
       get isDeprecated() {
         return false;
       },
@@ -1229,9 +1303,10 @@ Deno.test({
         events.push('markWorkerStopped');
         workerIds.push(values[0] as string);
       }
-      return Promise.resolve([{ has_active: true }]);
-    }) as unknown as { end: () => Promise<void> };
+      return Promise.resolve(startupResult(strings, values));
+    }) as unknown as { end: () => Promise<void>; begin: (callback: (tx: unknown) => unknown) => unknown };
     sql.end = () => Promise.resolve();
+    sql.begin = (callback) => callback(sql);
 
     const adapter = new SupabasePlatformAdapter({ sql: sql as never }, deps);
     let createCount = 0;
@@ -1285,7 +1360,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -1301,6 +1376,7 @@ Deno.test({
             resolveStartup = resolve;
           }),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -1350,7 +1426,7 @@ Deno.test({
         serveHandler = h;
       },
     });
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => Promise.resolve();
@@ -1366,6 +1442,7 @@ Deno.test({
             rejectStartup = reject;
           }),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },
@@ -1415,7 +1492,7 @@ Deno.test({
 
     let releaseSqlEnd = () => {};
     let sqlEndCalls = 0;
-    const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+    const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
       end: () => Promise<void>;
     };
     sql.end = () => {
@@ -1569,7 +1646,7 @@ Deno.test({
       });
 
       const endCalls: unknown[] = [];
-      const sql = (() => Promise.resolve([{ has_active: true }])) as unknown as {
+      const sql = ((strings: TemplateStringsArray, ...values: unknown[]) => Promise.resolve(startupResult(strings, values))) as unknown as {
         end: (options?: unknown) => Promise<void>;
       };
       sql.end = (options) => {
@@ -1589,6 +1666,7 @@ Deno.test({
       const worker = {
         startOnlyOnce: () => new Promise<void>(() => undefined),
         stop: () => Promise.resolve(),
+        get isRunning() { return true; },
         get isDeprecated() {
           return false;
         },

@@ -9,7 +9,7 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 ## Filtering Console Noise
 
-The Supabase Edge Runtime can produce verbose output during local development. This is especially noticeable because pgflow sends HTTP requests every 1 second to respawn workers quickly. To get cleaner logs that focus on your worker output, pipe through grep:
+The Supabase Edge Runtime can produce verbose output during local development. The cron checks worker health every second, but sends HTTP only when no healthy worker or current pending startup exists. To get cleaner logs that focus on your worker output, pipe through grep:
 
 ```bash frame="none"
 npx supabase functions serve --no-verify-jwt 2>&1 | \
@@ -33,9 +33,9 @@ Then just run: `supabase-serve`
 ## Auto-Restart Behavior
 
 During local development, pgflow automatically:
-- Restarts workers when you change flow code
+- Starts workers after a code reload once the previous worker stops or its heartbeat becomes stale
 - Recompiles flows when the shape changes
-- Keeps workers running via cron (every 1 second)
+- Checks worker health via cron every second, with one pending startup per function
 
 See [Worker Lifecycle](/concepts/worker-lifecycle/) for details on how this works.
 
@@ -47,7 +47,7 @@ The first time you start a worker, you need to trigger it once:
 curl http://localhost:54321/functions/v1/my-worker
 ```
 
-After this initial registration, pgflow's cron keeps the worker running automatically.
+After this initial registration, pgflow's cron keeps the worker running automatically. Local startup uses the same [pending invocation handshake](/deploy/worker-management/#startup-handshake) as production. A lost request can delay retry for up to 60 seconds, plus the cron interval and any remaining debounce. An HTTP 409 while another startup is pending does not authorize another worker.
 
 ## Related
 

@@ -22,7 +22,7 @@ startup.class: step_started
 polling: "Worker polls\nfor tasks"
 polling.class: step_completed
 
-heartbeat: "Sends heartbeat\nto DB (every 6s)"
+heartbeat: "Sends heartbeat\nto DB (every 5s)"
 heartbeat.class: step_completed
 
 timeout: "Edge Function\ntime limit hit"
@@ -34,23 +34,23 @@ shutdown.class: warning
 cron_check: "Cron detects\nmissing heartbeat"
 cron_check.class: info
 
-restart: "Cron sends\nHTTP request"
+restart: "Cron reserves ID\nand sends HTTP"
 restart.class: info
 
 startup -> polling: "begins\npolling"
-polling -> heartbeat: "pings DB\nevery 6s"
+polling -> heartbeat: "pings DB\nevery 5s"
 heartbeat -> polling: "continues" {style.stroke-dash: 3}
 polling -> timeout: "after\n150-400s"
 timeout -> shutdown: "graceful\nshutdown"
 shutdown -> cron_check: "worker\ngone"
 cron_check -> restart: "needs\nrestart"
-restart -> startup: "starts new\nworker"
+restart -> startup: "validates ID\nat readiness"
 ```
 
-1. **Startup** - Worker begins polling for tasks
-2. **Heartbeats** - Every 6 seconds, worker pings the database
+1. **Startup** - The handler validates its invocation ID, finishes initialization, and atomically accepts readiness before polling
+2. **Heartbeats** - Every 5 seconds, worker pings the database
 3. **Graceful shutdown** - `stopped_at` timestamp recorded when worker stops
-4. **Auto-restart** - Cron detects missing heartbeat, starts new instance
+4. **Auto-restart** - Cron reserves one pending invocation when no healthy worker or unexpired pending startup exists
 
 ## Why Workers Stop
 
@@ -81,7 +81,7 @@ auto_compile: "Worker compiles\nnew flow & polls"
 auto_compile.class: step_completed
 
 code_change -> fn_restart: "file watch\ndetects change"
-fn_restart -> cron_trigger: "cron runs\nevery 1s"
+fn_restart -> cron_trigger: "old worker stops\nor heartbeat expires"
 cron_trigger -> auto_compile: "starts\nworker"
 auto_compile -> code_change: "ready for\nnext change" {style.stroke-dash: 3}
 ```
@@ -94,17 +94,19 @@ When you modify your flow code locally, everything restarts automatically (see [
 4. **Worker starts** - Worker compares flow shape with database
 5. **Auto-recompile if needed** - If shape changed, deletes old flow + data, compiles new one
 
-You don't need to manually curl or restart anything after the initial setup.
+After initial registration, cron starts a replacement once the previous worker stops or its heartbeat becomes stale. A pending request suppresses additional startup for up to 60 seconds. See [Startup handshake](/deploy/worker-management/#startup-handshake) for retries, manual requests, and rollout limits.
 
 ## Local vs Production Behavior
 
 | Aspect              | Local                        | Production                            |
 | ------------------- | ---------------------------- | ------------------------------------- |
 | Cron interval       | 1 second                     | 1 second                              |
-| HTTP request        | Always for enabled functions | Only if not enough active workers     |
-| Debounce            | Bypassed                     | Applied (prevents too frequent pings) |
-| Active worker check | Bypassed                     | Required (enabled, non-deprecated)    |
+| HTTP request        | No healthy worker or unexpired pending invocation | Same |
+| Debounce            | Retry throttle               | Retry throttle                        |
+| Active worker check | Fresh, non-stopped, non-deprecated worker | Same |
 | Detection           | Automatic (is_local)         | Automatic                             |
+
+The pending-start handshake does not prevent every overlap after heartbeat loss. A previously ready worker can resume after replacement; strict ownership and fencing are separate from startup acknowledgement. External side effects still need retry-safe idempotency.
 
 ## Related
 

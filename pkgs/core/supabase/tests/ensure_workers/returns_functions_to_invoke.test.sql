@@ -25,6 +25,9 @@ select is(
   'In local mode, returns all enabled worker functions'
 );
 
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next environment')
+from pgflow.worker_functions;
+
 -- Reset last_invoked_at (was updated by previous ensure_workers call)
 update pgflow.worker_functions
 set last_invoked_at = now() - interval '10 seconds';
@@ -38,6 +41,9 @@ select is(
   2::bigint,
   'In production mode with no workers, returns all functions'
 );
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next worker state')
+from pgflow.worker_functions;
 
 -- Reset last_invoked_at again
 update pgflow.worker_functions
@@ -53,6 +59,9 @@ select is(
   0::bigint,
   'In production mode, function with alive worker is NOT returned'
 );
+
+select pgflow.dismiss_worker_invocation(function_name, invocation_id, 'test next worker state')
+from pgflow.worker_functions;
 
 -- Reset last_invoked_at for function-b only (function-a shouldn't be returned anyway)
 update pgflow.worker_functions

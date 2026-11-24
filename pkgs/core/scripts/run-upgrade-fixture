@@ -233,7 +233,7 @@ echo "upgrade fixture: PASS (0.16.0 slug conflict rollbacks)"
 #      at that interval, while the recovery job itself is untouched,
 #   2. paused (active = false) recovery gains a paused escalation job,
 #   3. an intentionally absent recovery job gains no escalation job.
-ESCALATION_BASELINE='20261001194538_pgflow_telemetry_endpoint_fix.sql'
+ESCALATION_BASELINE='20261120142040_pgflow_worker_startup_handshake.sql'
 escalation_migration=$(ls supabase/migrations/*_pgflow_escalate_permanently_stalled.sql)
 
 for cron_case in active paused absent; do
