@@ -626,6 +626,7 @@ export type Database = {
           request_id: number
         }[]
       }
+      escalate_permanently_stalled: { Args: never; Returns: number }
       fail_task: {
         Args: {
           error_message: string
