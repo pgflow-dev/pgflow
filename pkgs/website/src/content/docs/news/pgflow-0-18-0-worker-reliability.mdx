@@ -1,0 +1,43 @@
+---
+title: 'pgflow 0.18.0: Worker Reliability and Stalled Task Recovery'
+description: 'pgflow 0.18.0 prevents duplicate pending Supabase worker starts, preserves task outcomes, and applies the exhaustion policy when stalled task recovery gives up.'
+date: 2026-11-24
+authors:
+  - jumski
+tags:
+  - release
+  - bugfix
+featured: false
+draft: false
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+pgflow 0.18.0 prevents cron from requesting another Supabase worker start while the first is pending. Flow workers on Supabase, Node, and Bun now report a failed result write separately from a failed step handler. Tasks that run out of recovery requeues now follow their step's `whenExhausted` policy.
+
+<Aside
+  type="caution"
+  title="Apply the SQL migration before deploying new workers"
+>
+  Follow the [worker rollout
+  guide](/deploy/worker-management/#upgrade-existing-sql-and-workers) for
+  existing Supabase Edge Function workers. New HTTP workers cannot start against
+  the old SQL. Older workers can run against the new SQL, but they ignore the
+  startup handshake.
+</Aside>
+
+## Fewer duplicate worker starts
+
+Cron could send another HTTP request while a worker was still initializing. The [startup handshake](https://github.com/pgflow-dev/pgflow/pull/711) reserves one pending start per Supabase Edge Function in PostgreSQL. A worker claims the reservation when it registers as ready, not when it receives the request. If the request gets lost or startup hangs, the reservation expires after 60 seconds so pgflow can try again. The same check covers authenticated manual starts in production and HTTP starts in local development. Node and Bun process workers do not use it.
+
+## A reporting error is not a handler failure
+
+A failed database write could make a successful step handler look like it failed. With the [result reporting fix](https://github.com/pgflow-dev/pgflow/pull/708), the worker makes one attempt to save a successful result, even during shutdown or if logging the result fails. If that write returns an error, pgflow reports it without marking the task as failed or sending the write again: PostgreSQL might already have committed it.
+
+The fix also preserves `0`, `false`, and `""` as task outputs. Null and missing outputs become JSON `null` rather than SQL `NULL`.
+
+## Permanently stalled tasks follow the exhaustion policy
+
+If a task stalls again after three recovery requeues, pgflow archives its message. Previously, the task stayed active and could block the run indefinitely. A [separate cron job](https://github.com/pgflow-dev/pgflow/pull/713) now applies the step's `whenExhausted` policy: `fail`, `skip`, or `skip-cascade`. The stall timestamp and task claim count stay unchanged.
+
+When scheduled recovery is active, escalation also handles eligible tasks that stalled before the upgrade. [Check for existing stalls](/deploy/troubleshooting-stalled-tasks/#upgrade-with-existing-stamped-tasks) before you apply the migration: `skip` can start work that those tasks previously blocked.
