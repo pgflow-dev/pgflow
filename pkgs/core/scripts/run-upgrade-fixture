@@ -232,7 +232,8 @@ echo "upgrade fixture: PASS (0.16.0 slug conflict rollbacks)"
 #   1. active recovery at a custom interval gains an active escalation job
 #      at that interval, while the recovery job itself is untouched,
 #   2. paused (active = false) recovery gains a paused escalation job,
-#   3. an intentionally absent recovery job gains no escalation job.
+#   3. an intentionally absent recovery job gains no escalation job,
+#   4. a same-name job owned by another role does not affect the upgrade.
 ESCALATION_BASELINE='20261120142040_pgflow_worker_startup_handshake.sql'
 escalation_migration=$(ls supabase/migrations/*_pgflow_escalate_permanently_stalled.sql)
 
@@ -273,6 +274,18 @@ SELECT cron.unschedule('pgflow_requeue_stalled_tasks');
 SQL
       ;;
   esac
+
+  psql_in <<'SQL'
+CREATE ROLE fixture_other_cron_owner LOGIN;
+SELECT cron.schedule_in_database(
+  job_name => 'pgflow_requeue_stalled_tasks',
+  schedule => '55 seconds',
+  command => 'select 1',
+  database => current_database(),
+  username => 'fixture_other_cron_owner',
+  active => false
+);
+SQL
 
   echo "upgrade fixture escalation ${cron_case}: applying migration $(basename "$escalation_migration")"
   psql_in < "$escalation_migration"

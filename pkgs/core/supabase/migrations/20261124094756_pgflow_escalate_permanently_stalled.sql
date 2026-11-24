@@ -523,32 +523,17 @@ locks are taken (#689).
 Replaces existing jobs if they exist (idempotent).
 Returns a confirmation message with job IDs.';
 
--- Atlas cannot express this transition: schedule escalation only where
--- scheduled recovery already exists. When recovery is enabled, an operator's
--- custom recovery interval is preserved by copying the installed schedule
--- instead of resetting it, and a paused recovery job stays paused for
--- escalation too (documented Atlas data-transition patch, #689).
-SELECT cron.schedule(
+-- Atlas data transition (#689): mirror only this database's recovery job
+-- owned by the pgflow migration role. pg_cron scopes job names by owner.
+-- Set active on creation so a paused recovery job never starts escalation.
+SELECT cron.schedule_in_database(
   job_name => 'pgflow_escalate_permanently_stalled',
-  schedule => (
-    SELECT cron.job.schedule
-    FROM cron.job
-    WHERE cron.job.jobname = 'pgflow_requeue_stalled_tasks'
-  ),
-  command => 'select pgflow.escalate_permanently_stalled()'
-)
-WHERE EXISTS (
-  SELECT 1 FROM cron.job
-  WHERE cron.job.jobname = 'pgflow_requeue_stalled_tasks'
-);
-
--- cron.schedule() always creates an active job; mirror the recovery job's
--- paused state onto escalation so an upgrade cannot resume paused recovery
--- through the back door.
-SELECT cron.alter_job(
-  job_id => escalation.jobid,
+  schedule => recovery.schedule,
+  command => 'select pgflow.escalate_permanently_stalled()',
+  database => recovery.database,
   active => recovery.active
 )
-FROM cron.job escalation
-JOIN cron.job recovery ON recovery.jobname = 'pgflow_requeue_stalled_tasks'
-WHERE escalation.jobname = 'pgflow_escalate_permanently_stalled';
+FROM cron.job AS recovery
+WHERE recovery.jobname = 'pgflow_requeue_stalled_tasks'
+  AND recovery.username = current_user
+  AND recovery.database = current_database();

@@ -6,13 +6,31 @@ declare
   v_recovery record;
   v_escalation record;
 begin
-  select jobid, schedule, active into v_recovery
-  from cron.job
-  where cron.job.jobname = 'pgflow_requeue_stalled_tasks';
+  if not exists (
+    select 1 from cron.job as other_job
+    where other_job.jobname = 'pgflow_requeue_stalled_tasks'
+      and other_job.username = 'fixture_other_cron_owner'
+      and other_job.schedule = '55 seconds'
+      and not other_job.active
+  ) or exists (
+    select 1 from cron.job as other_job
+    where other_job.jobname = 'pgflow_escalate_permanently_stalled'
+      and other_job.username = 'fixture_other_cron_owner'
+  ) then
+    raise exception '__CASE__: upgrade changed jobs for the unrelated cron owner';
+  end if;
 
-  select jobid, schedule, active into v_escalation
-  from cron.job
-  where cron.job.jobname = 'pgflow_escalate_permanently_stalled';
+  select job.jobid, job.schedule, job.active into v_recovery
+  from cron.job as job
+  where job.jobname = 'pgflow_requeue_stalled_tasks'
+    and job.username = current_user
+    and job.database = current_database();
+
+  select job.jobid, job.schedule, job.active into v_escalation
+  from cron.job as job
+  where job.jobname = 'pgflow_escalate_permanently_stalled'
+    and job.username = current_user
+    and job.database = current_database();
 
   -- The recovery job itself is never rescheduled or toggled by the upgrade.
   if v_recovery.jobid is null then
