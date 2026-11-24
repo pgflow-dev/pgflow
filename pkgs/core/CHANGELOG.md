@@ -1,5 +1,20 @@
 # @pgflow/core
 
+## 0.18.0
+
+### Minor Changes
+
+- c8703a4: Terminalize permanently stalled tasks through the step's `whenExhausted` policy. A new `pgflow.escalate_permanently_stalled()` function, scheduled as its own `pgflow_escalate_permanently_stalled` cron job, hands tasks marked with `permanently_stalled_at` to `fail_task()`, which now treats the marker as exhaustion regardless of remaining attempts: the run fails, the step skips or cascades per policy, dependents start, and siblings are cancelled or archived. `attempts_count` stays untouched as committed task claims, and ordinary failure callbacks on a marked task exhaust it instead of requeueing against its archived message. Includes the SQL migration (which preserves an absent or paused recovery cron job and copies the installed recovery interval), generated types, and upgrade guidance with a stamped-backlog inventory query.
+
+### Patch Changes
+
+- f67145b: Preserve handler outcomes when worker logging or task settlement fails, and classify interruption from the worker shutdown signal instead of the exception name. Successful handlers get one completion attempt even during shutdown; settlement errors reach the worker error boundary without replay or conversion into handler failures.
+
+  Preserve falsy task outputs (`0`, `false`, and `""`) and store null or undefined outputs as JSON null instead of SQL NULL.
+
+- d04b79d: Coordinate pending worker starts with invocation handshakes. `ensure_workers()` now reserves a unique `invocation_id` per function under a row lock and enqueues it in one transaction; the HTTP worker start atomically consumes the still-current, unexpired invocation when it registers readiness. Duplicate cron starts, duplicate delivery to independent runtimes, and manual/local requests now share one reservation protocol with a 60-second pending deadline, idempotent acknowledgement, explicit dismissal on failure, and bounded watchdog/SQL-timeout recovery. `debounce` becomes a retry throttle instead of the correctness mechanism. Includes the SQL migration and generated types; requires applying the migration before deploying new workers.
+  - @pgflow/dsl@0.18.0
+
 ## 0.17.2
 
 ### Patch Changes
